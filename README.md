@@ -5,13 +5,14 @@ A browser-based graphic design editor that makes visual creation accessible to e
 ## Project structure
 
 ```
-├── frontend/   React 19 SPA — the canvas editor
-└── backend/    Node.js 24 API server (not yet scaffolded)
+├── frontend/    React 19 SPA — the canvas editor
+├── backend/     Node.js 24 API server
+└── specs/       Feature and architecture specifications
 ```
 
-All work lives in `frontend/` for now. The backend will handle authentication, project persistence, and export jobs in a future iteration.
-
 ## Tech stack
+
+### Frontend
 
 | Concern | Tool |
 |---|---|
@@ -27,9 +28,23 @@ All work lives in `frontend/` for now. The backend will handle authentication, p
 | E2E tests | Playwright |
 | Lint / format | ESLint 9 + Prettier |
 
+### Backend
+
+| Concern | Tool |
+|---|---|
+| Runtime | Node.js 24 |
+| Framework | Fastify 5 |
+| Database | PostgreSQL 17 (via postgres.js) |
+| Language | TypeScript 5 (strict) |
+| Package manager | pnpm |
+| Unit tests | Vitest 3 |
+| Lint / format | ESLint 9 + Prettier |
+
 ## Getting started
 
-**Prerequisites:** Node.js 20+, pnpm
+**Prerequisites:** Node.js 23+, pnpm
+
+### Frontend
 
 ```bash
 cd frontend
@@ -37,63 +52,127 @@ pnpm install
 pnpm exec playwright install   # download browser binaries for e2e tests
 ```
 
-## Development
+### Backend
 
 ```bash
-# Start the dev server at http://localhost:5173
-pnpm dev
+cd backend
+pnpm install
+cp .env.example .env           # configure local environment variables
+```
+
+The backend connects to PostgreSQL. For local development, use Docker Compose (see below) or point `DATABASE_URL` in `.env` at an existing Postgres instance.
+
+Migrations run automatically at server startup — no manual step needed.
+
+## Development
+
+### Frontend
+
+```bash
+cd frontend
+pnpm dev        # http://localhost:5173
+```
+
+### Backend
+
+```bash
+cd backend
+pnpm dev        # http://localhost:3001 (tsx watch, hot-reload)
 ```
 
 ## Building
 
-```bash
-# Type-check and produce a production build in frontend/dist/
-pnpm build
+### Frontend
 
-# Preview the production build locally
-pnpm preview
+```bash
+cd frontend
+pnpm build      # type-check + Vite production build → frontend/dist/
+pnpm preview    # serve the production build locally
+```
+
+### Backend
+
+```bash
+cd backend
+pnpm build      # tsc → backend/dist/
+pnpm start      # run the compiled output
 ```
 
 ## Testing
 
+### Frontend
+
 ```bash
-# Unit tests (watch mode)
-pnpm test
+cd frontend
 
-# Unit tests — single run
-pnpm test:run
+pnpm test           # unit tests (watch mode)
+pnpm test:run       # unit tests — single run
+pnpm coverage       # unit tests with v8 coverage report
 
-# Unit tests with coverage report
-pnpm coverage
-
-# E2E tests (starts the dev server automatically)
-pnpm test:e2e
-
-# E2E tests with the Playwright UI explorer
-pnpm test:e2e:ui
+pnpm test:e2e       # Playwright e2e (starts dev server automatically)
+pnpm test:e2e:ui    # Playwright UI explorer
 ```
+
+### Backend
+
+```bash
+cd backend
+
+pnpm test           # unit tests (watch mode)
+pnpm test:run       # unit tests — single run
+pnpm coverage       # unit tests with v8 coverage report
+```
+
+## Code quality
+
+Both applications share the same workflow:
+
+```bash
+pnpm lint           # ESLint
+pnpm format         # Prettier (write)
+pnpm format:check   # Prettier (check only, for CI)
+pnpm type-check     # tsc --noEmit (backend only; frontend uses tsc -b via pnpm build)
+```
+
+## Environment variables (backend)
+
+Copy `backend/.env.example` and adjust as needed:
+
+| Variable | Default | Description |
+|---|---|---|
+| `NODE_ENV` | `development` | Controls logging verbosity and error detail |
+| `PORT` | `3000` | Port the server listens on |
+| `HOST` | `0.0.0.0` | Bind address |
+| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin for the frontend |
+| `DATABASE_URL` | `postgres://postgres:postgres@localhost:5432/design_editor` | PostgreSQL connection string |
+| `ASSET_DIR` | `./assets` | Directory where uploaded image files are stored |
 
 ## Docker
 
 **Prerequisites:** Docker with Compose
 
 ```bash
-# Build the image and start the container (app served at http://localhost:3000)
+# Build all images and start the full stack
+# Frontend → http://localhost:3000
+# Backend  → http://localhost:3001
 docker compose up --build
 
 # Run in the background
 docker compose up --build -d
 
-# Stop and remove containers
+# Stop and remove containers (data volumes are preserved)
 docker compose down
+
+# Stop and remove containers and all volumes (full reset)
+docker compose down -v
 ```
 
-The frontend is built with a two-stage Dockerfile (`node:22-alpine` for the build, `nginx:1.27-alpine` to serve the static assets). Nginx is configured with a fallback to `index.html` so React Router's client-side routes work correctly.
+### Services
 
-## Code quality
+| Service | Exposed port | Description |
+|---|---|---|
+| `frontend` | `3000` | React SPA served by nginx |
+| `backend` | `3001` | Fastify API server |
+| `db` | `5432` | PostgreSQL 17 |
 
-```bash
-pnpm lint           # ESLint
-pnpm format         # Prettier (write)
-pnpm format:check   # Prettier (check only, for CI)
-```
+Image assets uploaded via the editor are stored in the `asset_data` named volume, mounted at `/app/assets` inside the backend container. Database data persists in the `db_data` volume.

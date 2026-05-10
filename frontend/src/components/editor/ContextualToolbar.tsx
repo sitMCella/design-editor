@@ -1,6 +1,8 @@
 import { useRef, useState, useEffect } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { useCanvasStore } from '../../stores/canvasStore'
 import type { TextElement, ImageElement } from '../../types/canvas'
+import { fetchAssetFromUrl } from '../../api/assets'
 
 const FONT_FAMILIES = [
   { label: 'Inter', value: 'Inter, sans-serif' },
@@ -126,22 +128,42 @@ function ImageToolbar({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isDataUrl = element.src.startsWith('data:')
   const [urlInput, setUrlInput] = useState(isDataUrl ? '' : element.src)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
     setUrlInput(isDataUrl ? '' : element.src)
   }, [element.src, isDataUrl])
 
+  const { mutate: fetchAsset, isPending: isFetching } = useMutation({
+    mutationFn: (url: string) => fetchAssetFromUrl(url),
+    onSuccess: (asset) => {
+      update({ src: asset.url })
+      setFetchError(null)
+    },
+    onError: (err) => {
+      setFetchError(err instanceof Error ? err.message : 'Failed to fetch image')
+    },
+  })
+
+  const applyUrl = (raw: string) => {
+    const trimmed = raw.trim()
+    if (!trimmed || trimmed === element.src) return
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      fetchAsset(trimmed)
+    } else {
+      update({ src: trimmed })
+    }
+  }
+
   const handleUrlBlur = () => {
     if (isDataUrl) return
-    const trimmed = urlInput.trim()
-    if (trimmed !== element.src) update({ src: trimmed })
+    applyUrl(urlInput)
   }
 
   const handleUrlKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (isDataUrl) return
     if (e.key === 'Enter') {
-      const trimmed = urlInput.trim()
-      if (trimmed !== element.src) update({ src: trimmed })
+      applyUrl(urlInput)
       ;(e.target as HTMLInputElement).blur()
     }
   }
@@ -162,14 +184,15 @@ function ImageToolbar({
         aria-label="Image URL"
         type="text"
         placeholder="Paste image URL…"
-        value={urlInput}
-        readOnly={isDataUrl}
+        value={isFetching ? 'Downloading…' : urlInput}
+        readOnly={isDataUrl || isFetching}
         onChange={(e) => setUrlInput(e.target.value)}
         onBlur={handleUrlBlur}
         onKeyDown={handleUrlKeyDown}
         className="h-6 w-52 rounded border border-gray-200 px-2 text-sm placeholder-gray-400 disabled:bg-gray-50"
       />
       {isDataUrl && <span className="text-xs text-gray-400">Uploaded file</span>}
+      {fetchError && <span className="text-xs text-red-500">{fetchError}</span>}
 
       <button
         aria-label="Upload image"

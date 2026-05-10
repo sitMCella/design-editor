@@ -8,7 +8,8 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "esbuild",
+      "@vitest/coverage-v8"
     ]
   },
   "scripts": {
@@ -25,6 +26,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",
+    "ajv": "^8.20.0",
     "fastify": "^5.3.2",
     "postgres": "^3.4.9"
   },
@@ -38,5 +40,6 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1",
     "vitest": "^3.1.4"
-  }
+  },
+  "packageManager": "pnpm@11.0.9+sha512.34ce82e6780233cf9cad8685029a8f81d2e06196c5a9bad98879f7424940c6817c4e4524fb7d38b8553ceed48b9758b8ebaf1abd3600c232c4c8cf7366086f38"
 }

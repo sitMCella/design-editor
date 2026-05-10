@@ -43,12 +43,12 @@ type GroupElement = BaseElement & {
 
 export type CanvasElement = ShapeElement | TextElement | ImageElement | GroupElement;
 
-// Design document
+// Project
 
-export type Design = {
+export type Project = {
   id: string;
   name: string;
-  elements: CanvasElement[];
+  canvas: { elements: CanvasElement[] };
   createdAt: string;
   updatedAt: string;
 };
@@ -58,6 +58,7 @@ export type Design = {
 export type Asset = {
   id: string;
   name: string;
+  originalUrl: string | null;
   url: string;
   mimeType: string;
   sizeBytes: number;

@@ -7,7 +7,8 @@ services:
       - "3000:80"
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_started
 
   backend:
     build:
@@ -21,6 +22,9 @@ services:
       HOST: "0.0.0.0"
       CORS_ORIGIN: "http://localhost:3000"
       DATABASE_URL: "postgres://postgres:postgres@db:5432/design_editor"
+      ASSET_DIR: /app/assets
+    volumes:
+      - asset_data:/app/assets
     restart: unless-stopped
     depends_on:
       db:
@@ -45,3 +49,4 @@ services:
 
 volumes:
   db_data:
+  asset_data:

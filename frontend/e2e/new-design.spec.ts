@@ -20,6 +20,50 @@ async function openModal(page: Page) {
 
 test.describe('05 – New design creation', () => {
   test.beforeEach(async ({ page }) => {
+    // Intercept POST /api/projects so tests pass without a running backend.
+    // The handler mirrors the real 201 response shape, forwarding the id and
+    // name the frontend sent so navigation and store initialisation work as
+    // they would in production.
+    await page.route(/\/api\/projects$/, async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue()
+        return
+      }
+      const body = (await route.request().postDataJSON()) as { id: string; name: string }
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          data: {
+            id: body.id,
+            name: body.name,
+            canvas: { elements: [] },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        }),
+      })
+    })
+
+    // Intercept PATCH /api/projects/:id for auto-save calls that may fire
+    // while the editor is open during a test.
+    await page.route(/\/api\/projects\/[^/]+$/, async (route) => {
+      if (route.request().method() !== 'PATCH') {
+        await route.continue()
+        return
+      }
+      const id = new URL(route.request().url()).pathname.split('/').pop()!
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          data: { id, updatedAt: new Date().toISOString() },
+        }),
+      })
+    })
+
     await page.goto('/')
   })
 

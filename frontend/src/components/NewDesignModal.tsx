@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 type Props = {
   onConfirm: (name: string) => void
   onClose: () => void
+  isLoading?: boolean
 }
 
-export function NewDesignModal({ onConfirm, onClose }: Props) {
+export function NewDesignModal({ onConfirm, onClose, isLoading = false }: Props) {
   const [name, setName] = useState('Untitled design')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -60,10 +61,10 @@ export function NewDesignModal({ onConfirm, onClose }: Props) {
           </button>
           <button
             onClick={handleCreate}
-            disabled={!isValid}
+            disabled={!isValid || isLoading}
             className="rounded bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Create
+            {isLoading ? 'Creating…' : 'Create'}
           </button>
         </div>
       </div>

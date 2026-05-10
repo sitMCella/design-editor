@@ -1,10 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import type { Design } from '../types/index.js';
 
-export async function designRoutes(app: FastifyInstance): Promise<void> {
+export function designRoutes(app: FastifyInstance): void {
   // GET /designs — list all designs
   app.get('/designs', async (_request, reply) => {
-    const designs: Design[] = [];
+    const designs: unknown[] = [];
     await reply.status(200).send({ ok: true, data: designs });
   });
 

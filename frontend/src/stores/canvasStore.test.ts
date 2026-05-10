@@ -130,3 +130,75 @@ describe('selectElements / clearSelection', () => {
     expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
   })
 })
+
+// ---------------------------------------------------------------------------
+// initDesign — resets store for a new design
+// ---------------------------------------------------------------------------
+
+describe('initDesign', () => {
+  it('sets designId and name', () => {
+    useCanvasStore.getState().initDesign('new-id', 'New Design')
+    expect(useCanvasStore.getState().designId).toBe('new-id')
+    expect(useCanvasStore.getState().name).toBe('New Design')
+  })
+
+  it('clears any existing elements', () => {
+    useCanvasStore.getState().addElement(makeElement())
+    useCanvasStore.getState().initDesign('new-id', 'New Design')
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('clears selection', () => {
+    useCanvasStore.getState().selectElements(['el-1'])
+    useCanvasStore.getState().initDesign('new-id', 'New Design')
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('resets isDirty to false', () => {
+    useCanvasStore.getState().addElement(makeElement())
+    expect(useCanvasStore.getState().isDirty).toBe(true)
+    useCanvasStore.getState().initDesign('new-id', 'New Design')
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('resets zoom and pan to defaults', () => {
+    useCanvasStore.setState({ zoom: 2, panX: 100, panY: 200 })
+    useCanvasStore.getState().initDesign('new-id', 'New Design')
+    const { zoom, panX, panY } = useCanvasStore.getState()
+    expect(zoom).toBe(1)
+    expect(panX).toBe(0)
+    expect(panY).toBe(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// markSaved — clears isDirty after a successful auto-save
+// ---------------------------------------------------------------------------
+
+describe('markSaved', () => {
+  it('sets isDirty to false', () => {
+    useCanvasStore.getState().addElement(makeElement())
+    expect(useCanvasStore.getState().isDirty).toBe(true)
+    useCanvasStore.getState().markSaved()
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('does not affect elements', () => {
+    useCanvasStore.getState().addElement(makeElement())
+    useCanvasStore.getState().markSaved()
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+
+  it('does not affect selection', () => {
+    useCanvasStore.getState().addElement(makeElement())
+    useCanvasStore.getState().selectElements(['el-1'])
+    useCanvasStore.getState().markSaved()
+    expect(useCanvasStore.getState().selectedIds).toEqual(['el-1'])
+  })
+
+  it('is a no-op when already clean', () => {
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+    useCanvasStore.getState().markSaved()
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+})
