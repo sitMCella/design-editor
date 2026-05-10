@@ -54,10 +54,11 @@ describe('Project routes', () => {
       expect(response.statusCode).toBe(200);
       const body = response.json<{ ok: boolean; data: { id: string; elementCount: number }[] }>();
       expect(body.data).toHaveLength(2);
-      expect(body.data[0].id).toBe('p1');
-      expect(body.data[0].elementCount).toBe(3);
-      expect(body.data[1].id).toBe('p2');
-      expect(body.data[1].elementCount).toBe(0);
+      const [first, second] = body.data;
+      expect(first!.id).toBe('p1');
+      expect(first!.elementCount).toBe(3);
+      expect(second!.id).toBe('p2');
+      expect(second!.elementCount).toBe(0);
     });
 
     it('defaults elementCount to 0 when jsonb_array_length returns null', async () => {
@@ -75,7 +76,7 @@ describe('Project routes', () => {
 
       expect(response.statusCode).toBe(200);
       const body = response.json<{ data: { elementCount: number }[] }>();
-      expect(body.data[0].elementCount).toBe(0);
+      expect(body.data[0]!.elementCount).toBe(0);
     });
 
     it('does not include the canvas field in the response', async () => {
@@ -86,7 +87,7 @@ describe('Project routes', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects' });
 
       const body = response.json<{ data: Record<string, unknown>[] }>();
-      expect(body.data[0]).not.toHaveProperty('canvas');
+      expect(body.data[0]!).not.toHaveProperty('canvas');
     });
 
     it('returns createdAt and updatedAt as ISO strings', async () => {
@@ -99,8 +100,8 @@ describe('Project routes', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects' });
 
       const body = response.json<{ data: { createdAt: string; updatedAt: string }[] }>();
-      expect(body.data[0].createdAt).toBe('2026-05-01T09:00:00.000Z');
-      expect(body.data[0].updatedAt).toBe('2026-05-10T10:07:00.000Z');
+      expect(body.data[0]!.createdAt).toBe('2026-05-01T09:00:00.000Z');
+      expect(body.data[0]!.updatedAt).toBe('2026-05-10T10:07:00.000Z');
     });
 
     it('requires no authentication', async () => {
