@@ -1,8 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { EditorPage } from './EditorPage'
 import { useCanvasStore } from '../stores/canvasStore'
+import { patchProject } from '../api/projects'
+
+vi.mock('../api/projects', () => ({
+  patchProject: vi.fn(),
+}))
+
+const mockPatchProject = vi.mocked(patchProject)
 
 const mockNavigate = vi.fn()
 
@@ -11,15 +19,32 @@ vi.mock('react-router', async (importOriginal) => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
+function makeQueryClient() {
+  return new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+}
+
 function renderEditor() {
-  const router = createMemoryRouter([{ path: '/', element: <EditorPage /> }], {
-    initialEntries: ['/'],
-  })
+  const queryClient = makeQueryClient()
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/',
+        element: (
+          <QueryClientProvider client={queryClient}>
+            <EditorPage />
+          </QueryClientProvider>
+        ),
+      },
+    ],
+    { initialEntries: ['/'] },
+  )
   render(<RouterProvider router={router} />)
 }
 
 beforeEach(() => {
   mockNavigate.mockReset()
+  mockPatchProject.mockReset()
+  mockPatchProject.mockResolvedValue({ id: 'test-id', updatedAt: '2026-05-10T10:05:00Z' })
   useCanvasStore.setState({
     designId: 'test-id',
     name: 'My Design',
@@ -29,7 +54,14 @@ beforeEach(() => {
   })
 })
 
-// AC 11 — Close button is always visible in the editor header
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+// ---------------------------------------------------------------------------
+// AC11 — Close button is always visible in the editor header
+// ---------------------------------------------------------------------------
+
 describe('AC11 — Close button visibility', () => {
   it('renders a Close button in the header', () => {
     renderEditor()
@@ -49,7 +81,10 @@ describe('AC11 — Close button visibility', () => {
   })
 })
 
-// AC 12 — Clicking Close navigates to / without confirmation
+// ---------------------------------------------------------------------------
+// AC12 — Clicking Close navigates to / without confirmation
+// ---------------------------------------------------------------------------
+
 describe('AC12 — Close navigates to home', () => {
   it('clicking Close calls navigate with "/"', () => {
     renderEditor()
@@ -66,8 +101,156 @@ describe('AC12 — Close navigates to home', () => {
   it('no confirmation dialog is shown before navigating', () => {
     renderEditor()
     fireEvent.click(screen.getByRole('button', { name: /close design/i }))
-    // Navigation fires immediately — no dialog present
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(mockNavigate).toHaveBeenCalledWith('/')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC10 (spec 06) — "Unsaved changes" indicator reflects isDirty
+// ---------------------------------------------------------------------------
+
+describe('AC10 — unsaved changes indicator', () => {
+  it('shows "Unsaved changes" when isDirty is true', () => {
+    useCanvasStore.setState({ isDirty: true })
+    renderEditor()
+    expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument()
+  })
+
+  it('does not show "Unsaved changes" when isDirty is false', () => {
+    useCanvasStore.setState({ isDirty: false })
+    renderEditor()
+    expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument()
+  })
+
+  it('"Unsaved changes" disappears after markSaved clears the flag', async () => {
+    useCanvasStore.setState({ isDirty: true })
+    renderEditor()
+    expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument()
+    act(() => {
+      useCanvasStore.getState().markSaved()
+    })
+    expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC10 (spec 06) — auto-save debounce fires patchProject after 2 s
+// ---------------------------------------------------------------------------
+
+describe('AC10 — auto-save', () => {
+  it('does not call patchProject before the 2-second debounce', async () => {
+    vi.useFakeTimers()
+    renderEditor()
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: true })
+    })
+
+    vi.advanceTimersByTime(1999)
+    expect(mockPatchProject).not.toHaveBeenCalled()
+  })
+
+  it('calls patchProject after the 2-second debounce when isDirty becomes true', async () => {
+    vi.useFakeTimers()
+    renderEditor()
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: true })
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000)
+    })
+
+    expect(mockPatchProject).toHaveBeenCalledWith(
+      'test-id',
+      expect.objectContaining({
+        name: 'My Design',
+        canvas: expect.objectContaining({ elements: expect.any(Array) }),
+      }),
+    )
+  })
+
+  it('does not call patchProject when isDirty is false', async () => {
+    vi.useFakeTimers()
+    renderEditor()
+
+    // isDirty stays false — no patch should fire
+    await act(async () => {
+      vi.advanceTimersByTime(3000)
+    })
+
+    expect(mockPatchProject).not.toHaveBeenCalled()
+  })
+
+  it('does not call patchProject when designId is empty', async () => {
+    vi.useFakeTimers()
+    useCanvasStore.setState({ designId: '' })
+    renderEditor()
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: true })
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000)
+    })
+
+    expect(mockPatchProject).not.toHaveBeenCalled()
+  })
+
+  it('debounces rapid mutations — only one patchProject call after the final change', async () => {
+    vi.useFakeTimers()
+    renderEditor()
+
+    // Simulate three rapid state changes
+    act(() => { useCanvasStore.setState({ isDirty: true, name: 'Draft 1' }) })
+    vi.advanceTimersByTime(500)
+    act(() => { useCanvasStore.setState({ name: 'Draft 2' }) })
+    vi.advanceTimersByTime(500)
+    act(() => { useCanvasStore.setState({ name: 'Draft 3' }) })
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000)
+    })
+
+    expect(mockPatchProject).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears isDirty (markSaved) after a successful patchProject', async () => {
+    vi.useFakeTimers()
+    renderEditor()
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: true })
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000)
+      // Flush the resolved promise from the mocked patchProject
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('leaves isDirty true when patchProject rejects', async () => {
+    vi.useFakeTimers()
+    mockPatchProject.mockRejectedValue(new Error('Network error'))
+    renderEditor()
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: true })
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(useCanvasStore.getState().isDirty).toBe(true)
   })
 })
