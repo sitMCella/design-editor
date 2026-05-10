@@ -20,4 +20,28 @@ services:
       PORT: "3000"
       HOST: "0.0.0.0"
       CORS_ORIGIN: "http://localhost:3000"
+      DATABASE_URL: "postgres://postgres:postgres@db:5432/design_editor"
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: design_editor
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d design_editor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db_data:
