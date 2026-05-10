@@ -11,6 +11,9 @@ importers:
       '@fastify/cors':
         specifier: ^10.0.2
         version: 10.1.0
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
       fastify:
         specifier: ^5.3.2
         version: 5.8.5
