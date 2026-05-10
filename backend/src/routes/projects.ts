@@ -126,11 +126,11 @@ export function projectRoutes(app: FastifyInstance): void {
         .send({ ok: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
     }
 
-    const canvasJson = JSON.stringify(newCanvas ?? current.canvas);
+    const canvasValue = (newCanvas ?? current.canvas) as Record<string, unknown>;
     const [row] = await sql<{ id: string; name: string; updated_at: Date }[]>`
       UPDATE project
       SET name = ${newName ?? current.name},
-          canvas = ${canvasJson}::jsonb,
+          canvas = ${sql.json(canvasValue)},
           updated_at = now()
       WHERE id = ${id}
       RETURNING id, name, updated_at
