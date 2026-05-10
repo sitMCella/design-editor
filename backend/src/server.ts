@@ -2,9 +2,10 @@ import cors from '@fastify/cors';
 import Fastify from 'fastify';
 
 import { sql } from './lib/db.js';
+import { migrate } from './lib/migrate.js';
 import { assetRoutes } from './routes/assets.js';
-import { designRoutes } from './routes/designs.js';
 import { healthRoutes } from './routes/health.js';
+import { projectRoutes } from './routes/projects.js';
 
 export async function buildServer() {
   const isDev = process.env['NODE_ENV'] !== 'production';
@@ -14,19 +15,19 @@ export async function buildServer() {
       : true,
   });
 
+  await migrate();
+
   await app.register(cors, {
     origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:5173',
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   });
-
-  app.decorate('db', sql);
 
   app.addHook('onClose', async () => {
     await sql.end();
   });
 
   await app.register(healthRoutes);
-  await app.register(designRoutes, { prefix: '/api' });
+  await app.register(projectRoutes, { prefix: '/api' });
   await app.register(assetRoutes, { prefix: '/api' });
 
   app.setNotFoundHandler(async (_request, reply) => {
