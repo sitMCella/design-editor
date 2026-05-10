@@ -53,6 +53,14 @@ export type Project = {
   updatedAt: string;
 };
 
+export type ProjectSummary = {
+  id: string;
+  name: string;
+  elementCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 // Asset
 
 export type Asset = {

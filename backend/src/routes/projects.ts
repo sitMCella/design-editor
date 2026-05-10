@@ -1,11 +1,19 @@
 import type { FastifyInstance } from 'fastify';
 import { sql } from '../lib/db.js';
-import type { Project, CanvasElement } from '../types/index.js';
+import type { Project, ProjectSummary, CanvasElement } from '../types/index.js';
 
 type ProjectRow = {
   id: string;
   name: string;
   canvas: { elements: CanvasElement[] };
+  created_at: Date;
+  updated_at: Date;
+};
+
+type ProjectSummaryRow = {
+  id: string;
+  name: string;
+  element_count: number;
   created_at: Date;
   updated_at: Date;
 };
@@ -20,7 +28,29 @@ function toProject(row: ProjectRow): Project {
   };
 }
 
+function toProjectSummary(row: ProjectSummaryRow): ProjectSummary {
+  return {
+    id: row.id,
+    name: row.name,
+    elementCount: row.element_count ?? 0,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  };
+}
+
 export function projectRoutes(app: FastifyInstance): void {
+  // GET /projects — list all projects ordered by most recently updated
+  app.get('/projects', async (_request, reply) => {
+    const rows = await sql<ProjectSummaryRow[]>`
+      SELECT id, name,
+             COALESCE(jsonb_array_length(canvas->'elements'), 0) AS element_count,
+             created_at, updated_at
+      FROM project
+      ORDER BY updated_at DESC
+    `;
+    return reply.status(200).send({ ok: true, data: rows.map(toProjectSummary) });
+  });
+
   // POST /projects — create a new project
   app.post<{ Body: { id?: unknown; name?: unknown } }>('/projects', async (request, reply) => {
     const { id, name } = request.body;
@@ -96,11 +126,14 @@ export function projectRoutes(app: FastifyInstance): void {
         .send({ ok: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
     }
 
-    const canvasJson = JSON.stringify(newCanvas ?? current.canvas);
+    // Pass the object directly — postgres.js serializes plain objects as JSON,
+    // avoiding the double-encoding that JSON.stringify + ::jsonb cast causes.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const canvasValue = (newCanvas ?? current.canvas) as any;
     const [row] = await sql<{ id: string; name: string; updated_at: Date }[]>`
       UPDATE project
       SET name = ${newName ?? current.name},
-          canvas = ${canvasJson}::jsonb,
+          canvas = ${canvasValue},
           updated_at = now()
       WHERE id = ${id}
       RETURNING id, name, updated_at

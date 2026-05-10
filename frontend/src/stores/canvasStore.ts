@@ -15,6 +15,7 @@ type State = {
 
 type Actions = {
   initDesign: (id: string, name: string) => void
+  loadDesign: (id: string, name: string, elements: CanvasElement[]) => void
   addElement: (element: CanvasElement) => void
   updateElement: (id: string, patch: Partial<CanvasElement>) => void
   removeElements: (ids: string[]) => void
@@ -39,6 +40,18 @@ export const useCanvasStore = create<State & Actions>()(
         state.designId = id
         state.name = name
         state.elements = []
+        state.selectedIds = []
+        state.zoom = 1
+        state.panX = 0
+        state.panY = 0
+        state.isDirty = false
+      }),
+
+    loadDesign: (id, name, elements) =>
+      set((state) => {
+        state.designId = id
+        state.name = name
+        state.elements = elements ?? []
         state.selectedIds = []
         state.zoom = 1
         state.panX = 0
