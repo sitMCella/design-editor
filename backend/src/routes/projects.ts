@@ -126,11 +126,14 @@ export function projectRoutes(app: FastifyInstance): void {
         .send({ ok: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
     }
 
-    const canvasValue = (newCanvas ?? current.canvas) as Record<string, unknown>;
+    // Pass the object directly — postgres.js serializes plain objects as JSON,
+    // avoiding the double-encoding that JSON.stringify + ::jsonb cast causes.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const canvasValue = (newCanvas ?? current.canvas) as any;
     const [row] = await sql<{ id: string; name: string; updated_at: Date }[]>`
       UPDATE project
       SET name = ${newName ?? current.name},
-          canvas = ${sql.json(canvasValue)},
+          canvas = ${canvasValue},
           updated_at = now()
       WHERE id = ${id}
       RETURNING id, name, updated_at
