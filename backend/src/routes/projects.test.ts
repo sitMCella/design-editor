@@ -26,6 +26,92 @@ describe('Project routes', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // GET /api/projects — list all projects
+  // ---------------------------------------------------------------------------
+
+  describe('GET /api/projects', () => {
+    it('returns an empty array when no projects exist', async () => {
+      mockSql.mockResolvedValueOnce([]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ ok: boolean; data: unknown[] }>();
+      expect(body.ok).toBe(true);
+      expect(body.data).toEqual([]);
+    });
+
+    it('returns project summaries ordered by most recently updated', async () => {
+      const now = new Date('2026-05-10T10:07:00Z');
+      const earlier = new Date('2026-05-09T08:00:00Z');
+      mockSql.mockResolvedValueOnce([
+        { id: 'p1', name: 'Recent', element_count: 3, created_at: earlier, updated_at: now },
+        { id: 'p2', name: 'Older', element_count: 0, created_at: earlier, updated_at: earlier },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ ok: boolean; data: { id: string; elementCount: number }[] }>();
+      expect(body.data).toHaveLength(2);
+      expect(body.data[0].id).toBe('p1');
+      expect(body.data[0].elementCount).toBe(3);
+      expect(body.data[1].id).toBe('p2');
+      expect(body.data[1].elementCount).toBe(0);
+    });
+
+    it('defaults elementCount to 0 when jsonb_array_length returns null', async () => {
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'p1',
+          name: 'Design',
+          element_count: null,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ data: { elementCount: number }[] }>();
+      expect(body.data[0].elementCount).toBe(0);
+    });
+
+    it('does not include the canvas field in the response', async () => {
+      mockSql.mockResolvedValueOnce([
+        { id: 'p1', name: 'Design', element_count: 1, created_at: new Date(), updated_at: new Date() },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      const body = response.json<{ data: Record<string, unknown>[] }>();
+      expect(body.data[0]).not.toHaveProperty('canvas');
+    });
+
+    it('returns createdAt and updatedAt as ISO strings', async () => {
+      const created = new Date('2026-05-01T09:00:00Z');
+      const updated = new Date('2026-05-10T10:07:00Z');
+      mockSql.mockResolvedValueOnce([
+        { id: 'p1', name: 'Design', element_count: 0, created_at: created, updated_at: updated },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      const body = response.json<{ data: { createdAt: string; updatedAt: string }[] }>();
+      expect(body.data[0].createdAt).toBe('2026-05-01T09:00:00.000Z');
+      expect(body.data[0].updatedAt).toBe('2026-05-10T10:07:00.000Z');
+    });
+
+    it('requires no authentication', async () => {
+      mockSql.mockResolvedValueOnce([]);
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+      expect(response.statusCode).not.toBe(401);
+      expect(response.statusCode).not.toBe(403);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // POST /api/projects — AC1, AC12
   // ---------------------------------------------------------------------------
 

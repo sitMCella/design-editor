@@ -4,20 +4,27 @@ import { MemoryRouter, createMemoryRouter, RouterProvider } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HomePage } from './HomePage'
 import { useCanvasStore } from '../stores/canvasStore'
-import { createProject } from '../api/projects'
+import { createProject, getProjects, getProject } from '../api/projects'
 
 vi.mock('../api/projects', () => ({
   createProject: vi.fn(),
+  getProjects: vi.fn(),
+  getProject: vi.fn(),
 }))
 
 const mockCreateProject = vi.mocked(createProject)
+const mockGetProjects = vi.mocked(getProjects)
+const mockGetProject = vi.mocked(getProject)
 
 function makeQueryClient() {
-  return new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+  return new QueryClient({
+    defaultOptions: {
+      mutations: { retry: false },
+      queries: { retry: false },
+    },
+  })
 }
 
-// Render inside a memory router that also registers the editor route so
-// navigation assertions can detect the route change.
 function renderWithRouter() {
   const queryClient = makeQueryClient()
   const router = createMemoryRouter(
@@ -66,9 +73,62 @@ const initialStoreState = {
   isDirty: false,
 }
 
+const summaryRecord = {
+  id: 'proj-1',
+  name: 'My Design',
+  elementCount: 2,
+  createdAt: '2026-05-10T10:00:00Z',
+  updatedAt: '2026-05-10T10:07:00Z',
+}
+
+const fullProject = {
+  id: 'proj-1',
+  name: 'My Design',
+  canvas: {
+    elements: [
+      {
+        id: 't1',
+        type: 'text' as const,
+        x: 560,
+        y: 320,
+        width: 160,
+        height: 40,
+        rotation: 0,
+        opacity: 1,
+        locked: false,
+        content: 'Hello',
+        fontSize: 16,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: 'normal' as const,
+        fontStyle: 'normal' as const,
+        color: '#111827',
+        align: 'left' as const,
+      },
+      {
+        id: 'i1',
+        type: 'image' as const,
+        x: 100,
+        y: 100,
+        width: 320,
+        height: 240,
+        rotation: 0,
+        opacity: 1,
+        locked: false,
+        src: '/api/assets/xyz/content',
+        objectFit: 'cover' as const,
+      },
+    ],
+  },
+  createdAt: '2026-05-10T10:00:00Z',
+  updatedAt: '2026-05-10T10:07:00Z',
+}
+
 beforeEach(() => {
   useCanvasStore.setState(initialStoreState)
   mockCreateProject.mockReset()
+  mockGetProjects.mockReset()
+  mockGetProject.mockReset()
+
   mockCreateProject.mockResolvedValue({
     id: 'mock-id',
     name: 'Mock Design',
@@ -76,6 +136,8 @@ beforeEach(() => {
     createdAt: '2026-05-10T10:00:00Z',
     updatedAt: '2026-05-10T10:00:00Z',
   })
+  mockGetProjects.mockResolvedValue([])
+  mockGetProject.mockResolvedValue(fullProject)
 })
 
 // ---------------------------------------------------------------------------
@@ -216,12 +278,10 @@ describe('AC5 — createProject failure', () => {
     })
     renderStandalone()
 
-    // First attempt — fails
     const { createBtn } = openModal()
     fireEvent.click(createBtn)
     await waitFor(() => expect(screen.getByText(/first error/i)).toBeInTheDocument())
 
-    // Close modal and reopen
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     fireEvent.click(screen.getByRole('button', { name: /new design/i }))
     expect(screen.queryByText(/first error/i)).not.toBeInTheDocument()
@@ -349,5 +409,168 @@ describe('AC10 — no stale modal state on fresh render', () => {
   it('modal is closed when the home page mounts fresh', () => {
     renderStandalone()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 1 (feat 07) — skeleton cards shown while project list is loading
+// ---------------------------------------------------------------------------
+
+describe('AC1 (feat07) — loading state shows skeletons', () => {
+  it('renders skeleton cards while the project list is being fetched', () => {
+    let resolve: (v: never[]) => void
+    mockGetProjects.mockReturnValue(new Promise((r) => { resolve = r }))
+    renderStandalone()
+    // skeleton cards are rendered as non-interactive divs (not buttons)
+    const skeletons = document.querySelectorAll('.animate-pulse')
+    expect(skeletons.length).toBeGreaterThan(0)
+    resolve!([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 2 (feat 07) — project grid renders when projects exist
+// ---------------------------------------------------------------------------
+
+describe('AC2 (feat07) — project grid', () => {
+  it('renders project cards after successful fetch', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    renderStandalone()
+    await waitFor(() => expect(screen.getByText('My Design')).toBeInTheDocument())
+  })
+
+  it('renders one card per project', async () => {
+    const second = { ...summaryRecord, id: 'proj-2', name: 'Second Design' }
+    mockGetProjects.mockResolvedValue([summaryRecord, second])
+    renderStandalone()
+    await waitFor(() => expect(screen.getByText('My Design')).toBeInTheDocument())
+    expect(screen.getByText('Second Design')).toBeInTheDocument()
+  })
+
+  it('shows the element count on the card', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    renderStandalone()
+    await waitFor(() => expect(screen.getByText(/2 elements/i)).toBeInTheDocument())
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 4 (feat 07) — empty state when no projects
+// ---------------------------------------------------------------------------
+
+describe('AC4 (feat07) — empty state', () => {
+  it('shows empty state message when there are no projects', async () => {
+    mockGetProjects.mockResolvedValue([])
+    renderStandalone()
+    await waitFor(() =>
+      expect(screen.getByText(/no designs yet/i)).toBeInTheDocument()
+    )
+  })
+
+  it('does not render the "Recent designs" heading when empty', async () => {
+    mockGetProjects.mockResolvedValue([])
+    renderStandalone()
+    await waitFor(() => expect(screen.queryByText(/recent designs/i)).not.toBeInTheDocument())
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 5 (feat 07) — error state with retry
+// ---------------------------------------------------------------------------
+
+describe('AC5 (feat07) — project list error state', () => {
+  it('shows error message and retry button when getProjects fails', async () => {
+    mockGetProjects.mockRejectedValue(new Error('Network failure'))
+    renderStandalone()
+    await waitFor(() =>
+      expect(screen.getByText(/could not load your designs/i)).toBeInTheDocument()
+    )
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 6 & 7 (feat 07) — clicking a card loads the project and navigates
+// ---------------------------------------------------------------------------
+
+describe('AC6 & AC7 (feat07) — loading a project from a card', () => {
+  it('calls getProject with the card id when a card is clicked', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    renderWithRouter()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+    await waitFor(() => expect(mockGetProject).toHaveBeenCalledWith('proj-1'))
+  })
+
+  it('hydrates the canvas store with the loaded elements', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    renderWithRouter()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+    await waitFor(() => expect(useCanvasStore.getState().elements).toHaveLength(2))
+    expect(useCanvasStore.getState().designId).toBe('proj-1')
+    expect(useCanvasStore.getState().name).toBe('My Design')
+  })
+
+  it('sets isDirty to false after loading', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    renderWithRouter()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+    await waitFor(() => expect(useCanvasStore.getState().elements).toHaveLength(2))
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('navigates to the editor after loading', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    const router = renderWithRouter()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/editor/proj-1')
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 10 (feat 07) — card load error shows notification
+// ---------------------------------------------------------------------------
+
+describe('AC10 (feat07) — card load error', () => {
+  it('shows error notification when getProject fails', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    mockGetProject.mockRejectedValue(new Error('load failed'))
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+    await waitFor(() =>
+      expect(screen.getByText(/failed to load project/i)).toBeInTheDocument()
+    )
+  })
+
+  it('does not navigate when getProject fails', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    mockGetProject.mockRejectedValue(new Error('load failed'))
+    const router = renderWithRouter()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+    await waitFor(() => screen.getByText(/failed to load project/i))
+    expect(router.state.location.pathname).toBe('/')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 11 (feat 07) — list refreshes after creating a new design
+// ---------------------------------------------------------------------------
+
+describe('AC11 (feat07) — list invalidated after create', () => {
+  it('calls getProjects again after a new design is created', async () => {
+    mockGetProjects.mockResolvedValue([])
+    renderWithRouter()
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalledTimes(1))
+
+    const { createBtn } = openModal()
+    fireEvent.click(createBtn)
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalledTimes(2))
   })
 })

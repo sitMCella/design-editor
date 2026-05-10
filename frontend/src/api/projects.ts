@@ -9,10 +9,26 @@ export type Project = {
   updatedAt: string
 }
 
+export type ProjectSummary = {
+  id: string
+  name: string
+  elementCount: number
+  createdAt: string
+  updatedAt: string
+}
+
 export type PatchProjectResult = {
   id: string
   name?: string
   updatedAt: string
+}
+
+export function getProjects(): Promise<ProjectSummary[]> {
+  return apiFetch<ProjectSummary[]>('/api/projects')
+}
+
+export function getProject(id: string): Promise<Project> {
+  return apiFetch<Project>(`/api/projects/${id}`)
 }
 
 export function createProject(id: string, name: string): Promise<Project> {

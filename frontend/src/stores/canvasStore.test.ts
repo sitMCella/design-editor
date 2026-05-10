@@ -172,6 +172,75 @@ describe('initDesign', () => {
 })
 
 // ---------------------------------------------------------------------------
+// loadDesign — hydrates store from a persisted design
+// ---------------------------------------------------------------------------
+
+describe('loadDesign', () => {
+  it('sets designId and name', () => {
+    useCanvasStore.getState().loadDesign('loaded-id', 'Loaded Design', [])
+    expect(useCanvasStore.getState().designId).toBe('loaded-id')
+    expect(useCanvasStore.getState().name).toBe('Loaded Design')
+  })
+
+  it('populates elements from the provided array', () => {
+    const el = makeElement({ id: 'persisted-1' })
+    useCanvasStore.getState().loadDesign('id', 'Name', [el])
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    expect(useCanvasStore.getState().elements[0].id).toBe('persisted-1')
+  })
+
+  it('restores all text element properties intact', () => {
+    const el = makeElement({
+      id: 'styled',
+      content: 'Hello',
+      fontSize: 24,
+      fontFamily: 'Georgia, serif',
+      fontWeight: 'bold',
+      fontStyle: 'italic',
+      color: '#FF0000',
+      align: 'center',
+    })
+    useCanvasStore.getState().loadDesign('id', 'Name', [el])
+    const loaded = useCanvasStore.getState().elements[0] as TextElement
+    expect(loaded.fontSize).toBe(24)
+    expect(loaded.fontFamily).toBe('Georgia, serif')
+    expect(loaded.fontWeight).toBe('bold')
+    expect(loaded.fontStyle).toBe('italic')
+    expect(loaded.color).toBe('#FF0000')
+    expect(loaded.align).toBe('center')
+  })
+
+  it('clears selection', () => {
+    useCanvasStore.getState().selectElements(['old-id'])
+    useCanvasStore.getState().loadDesign('id', 'Name', [])
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('sets isDirty to false', () => {
+    useCanvasStore.getState().addElement(makeElement())
+    expect(useCanvasStore.getState().isDirty).toBe(true)
+    useCanvasStore.getState().loadDesign('id', 'Name', [])
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('resets zoom and pan to defaults', () => {
+    useCanvasStore.setState({ zoom: 2, panX: 150, panY: 75 })
+    useCanvasStore.getState().loadDesign('id', 'Name', [])
+    expect(useCanvasStore.getState().zoom).toBe(1)
+    expect(useCanvasStore.getState().panX).toBe(0)
+    expect(useCanvasStore.getState().panY).toBe(0)
+  })
+
+  it('replaces existing elements rather than appending', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'old' }))
+    useCanvasStore.getState().loadDesign('id', 'Name', [makeElement({ id: 'new' })])
+    const elements = useCanvasStore.getState().elements
+    expect(elements).toHaveLength(1)
+    expect(elements[0].id).toBe('new')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // markSaved — clears isDirty after a successful auto-save
 // ---------------------------------------------------------------------------
 
