@@ -17,9 +17,7 @@ export async function migrate(): Promise<void> {
     (await sql<{ filename: string }[]>`SELECT filename FROM _migration`).map((r) => r.filename),
   );
 
-  const files = (await readdir(MIGRATIONS_DIR))
-    .filter((f) => f.endsWith('.sql'))
-    .sort();
+  const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort();
 
   for (const file of files) {
     if (applied.has(file)) continue;

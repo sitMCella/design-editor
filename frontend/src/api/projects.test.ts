@@ -37,7 +37,7 @@ describe('createProject', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ id: 'abc123', name: 'My Design' }),
-      }),
+      })
     )
   })
 
@@ -102,7 +102,7 @@ describe('patchProject', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/projects/abc123',
-      expect.objectContaining({ method: 'PATCH' }),
+      expect.objectContaining({ method: 'PATCH' })
     )
   })
 
@@ -115,7 +115,7 @@ describe('patchProject', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/projects/abc123',
-      expect.objectContaining({ body: JSON.stringify({ name: 'Renamed' }) }),
+      expect.objectContaining({ body: JSON.stringify({ name: 'Renamed' }) })
     )
   })
 
@@ -129,7 +129,7 @@ describe('patchProject', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/projects/abc123',
-      expect.objectContaining({ body: JSON.stringify({ canvas: { elements } }) }),
+      expect.objectContaining({ body: JSON.stringify({ canvas: { elements } }) })
     )
   })
 

@@ -34,7 +34,10 @@ export function HomePage() {
       <h1 className="text-4xl font-bold text-gray-900">Design Studio</h1>
       <p className="text-lg text-gray-600">Start creating something great</p>
       <button
-        onClick={() => { setError(null); setIsModalOpen(true) }}
+        onClick={() => {
+          setError(null)
+          setIsModalOpen(true)
+        }}
         className="mt-2 rounded bg-blue-500 px-6 py-3 text-sm font-medium text-white hover:bg-blue-600"
       >
         + New design

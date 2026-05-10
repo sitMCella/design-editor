@@ -36,7 +36,7 @@ function renderEditor() {
         ),
       },
     ],
-    { initialEntries: ['/'] },
+    { initialEntries: ['/'] }
   )
   render(<RouterProvider router={router} />)
 }
@@ -168,7 +168,7 @@ describe('AC10 — auto-save', () => {
       expect.objectContaining({
         name: 'My Design',
         canvas: expect.objectContaining({ elements: expect.any(Array) }),
-      }),
+      })
     )
   })
 
@@ -205,11 +205,17 @@ describe('AC10 — auto-save', () => {
     renderEditor()
 
     // Simulate three rapid state changes
-    act(() => { useCanvasStore.setState({ isDirty: true, name: 'Draft 1' }) })
+    act(() => {
+      useCanvasStore.setState({ isDirty: true, name: 'Draft 1' })
+    })
     vi.advanceTimersByTime(500)
-    act(() => { useCanvasStore.setState({ name: 'Draft 2' }) })
+    act(() => {
+      useCanvasStore.setState({ name: 'Draft 2' })
+    })
     vi.advanceTimersByTime(500)
-    act(() => { useCanvasStore.setState({ name: 'Draft 3' }) })
+    act(() => {
+      useCanvasStore.setState({ name: 'Draft 3' })
+    })
 
     await act(async () => {
       vi.advanceTimersByTime(2000)

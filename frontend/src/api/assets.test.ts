@@ -37,7 +37,7 @@ describe('fetchAssetFromUrl — success', () => {
     await fetchAssetFromUrl('https://example.com/photo.jpg')
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/assets/fetch',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({ method: 'POST' })
     )
   })
 
@@ -47,7 +47,7 @@ describe('fetchAssetFromUrl — success', () => {
       '/api/assets/fetch',
       expect.objectContaining({
         body: expect.stringContaining('"url":"https://example.com/photo.jpg"'),
-      }),
+      })
     )
   })
 
@@ -57,7 +57,7 @@ describe('fetchAssetFromUrl — success', () => {
       '/api/assets/fetch',
       expect.objectContaining({
         body: JSON.stringify({ url: 'https://example.com/photo.jpg', name: 'photo.jpg' }),
-      }),
+      })
     )
   })
 
@@ -134,7 +134,9 @@ describe('fetchAssetFromUrl — errors', () => {
         }),
     })
 
-    await expect(fetchAssetFromUrl('https://unreachable.example.com/image.jpg')).rejects.toMatchObject({
+    await expect(
+      fetchAssetFromUrl('https://unreachable.example.com/image.jpg')
+    ).rejects.toMatchObject({
       code: 'FETCH_FAILED',
       status: 502,
     })

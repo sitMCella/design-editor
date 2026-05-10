@@ -24,7 +24,7 @@ export function createProject(id: string, name: string): Promise<Project> {
 
 export function patchProject(
   id: string,
-  patch: { name?: string; canvas?: { elements: CanvasElement[] } },
+  patch: { name?: string; canvas?: { elements: CanvasElement[] } }
 ): Promise<PatchProjectResult> {
   return apiFetch<PatchProjectResult>(`/api/projects/${id}`, {
     method: 'PATCH',

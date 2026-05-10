@@ -118,17 +118,15 @@ describe('Project routes', () => {
 
     it('requires no authentication (AC12)', async () => {
       // Request with no auth headers must not be rejected with 401 or 403
-      mockSql
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([
-          {
-            id: 'noauth1',
-            name: 'Design',
-            canvas: { elements: [] },
-            created_at: new Date(),
-            updated_at: new Date(),
-          },
-        ]);
+      mockSql.mockResolvedValueOnce([]).mockResolvedValueOnce([
+        {
+          id: 'noauth1',
+          name: 'Design',
+          canvas: { elements: [] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
 
       const response = await app.inject({
         method: 'POST',
@@ -229,7 +227,7 @@ describe('Project routes', () => {
       expect(response.statusCode).toBe(200);
       const body = response.json<{
         ok: boolean;
-        data: { canvas: { elements: typeof textElement[] } };
+        data: { canvas: { elements: (typeof textElement)[] } };
       }>();
       expect(body.data.canvas.elements[0]).toEqual(textElement);
     });
@@ -377,9 +375,7 @@ describe('Project routes', () => {
 
       mockSql
         .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
-        .mockResolvedValueOnce([
-          { id: 'proj1', name: 'Design', updated_at: new Date() },
-        ]);
+        .mockResolvedValueOnce([{ id: 'proj1', name: 'Design', updated_at: new Date() }]);
 
       const response = await app.inject({
         method: 'PATCH',
@@ -393,9 +389,7 @@ describe('Project routes', () => {
       const sqlParts = updateCall?.[0] as TemplateStringsArray;
       const sqlArgs = updateCall?.slice(1) as unknown[];
       // The canvas arg should contain the serialised canvas with all properties
-      const canvasArg = sqlArgs.find(
-        (a) => typeof a === 'string' && a.includes('"fontWeight"'),
-      );
+      const canvasArg = sqlArgs.find((a) => typeof a === 'string' && a.includes('"fontWeight"'));
       expect(canvasArg).toContain('"fontWeight":"bold"');
       expect(canvasArg).toContain('"fontStyle":"italic"');
       expect(canvasArg).toContain('"align":"center"');
@@ -496,7 +490,13 @@ describe('Project routes', () => {
       mockSql
         .mockResolvedValueOnce([]) // no existing
         .mockResolvedValueOnce([
-          { id: 'proj1', name: 'Design 1', canvas: { elements: [] }, created_at: now, updated_at: now },
+          {
+            id: 'proj1',
+            name: 'Design 1',
+            canvas: { elements: [] },
+            created_at: now,
+            updated_at: now,
+          },
         ]);
       const resp1 = await app.inject({
         method: 'POST',
@@ -509,7 +509,13 @@ describe('Project routes', () => {
       mockSql
         .mockResolvedValueOnce([]) // no existing
         .mockResolvedValueOnce([
-          { id: 'proj2', name: 'Design 2', canvas: { elements: [] }, created_at: now, updated_at: now },
+          {
+            id: 'proj2',
+            name: 'Design 2',
+            canvas: { elements: [] },
+            created_at: now,
+            updated_at: now,
+          },
         ]);
       const resp2 = await app.inject({
         method: 'POST',

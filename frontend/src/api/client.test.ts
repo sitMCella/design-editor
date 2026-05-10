@@ -38,16 +38,13 @@ describe('apiFetch — success', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         json: () => Promise.resolve({ ok: true, data: { id: 'abc' } }),
-      }),
+      })
     )
   })
 
   it('calls fetch with the given path', async () => {
     await apiFetch('/api/projects')
-    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-      '/api/projects',
-      expect.objectContaining({}),
-    )
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/projects', expect.objectContaining({}))
   })
 
   it('includes Content-Type: application/json header', async () => {
@@ -56,7 +53,7 @@ describe('apiFetch — success', () => {
       '/api/projects',
       expect.objectContaining({
         headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
-      }),
+      })
     )
   })
 
@@ -69,7 +66,7 @@ describe('apiFetch — success', () => {
     await apiFetch('/api/projects', { method: 'POST', body: '{"name":"x"}' })
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
       '/api/projects',
-      expect.objectContaining({ method: 'POST', body: '{"name":"x"}' }),
+      expect.objectContaining({ method: 'POST', body: '{"name":"x"}' })
     )
   })
 
@@ -82,7 +79,7 @@ describe('apiFetch — success', () => {
           'Content-Type': 'application/json',
           Authorization: 'Bearer token',
         }),
-      }),
+      })
     )
   })
 })
@@ -102,7 +99,7 @@ describe('apiFetch — error', () => {
             ok: false,
             error: { code: 'NOT_FOUND', message: 'not found' },
           }),
-      }),
+      })
     )
 
     await expect(apiFetch('/api/projects/xyz')).rejects.toMatchObject({
@@ -119,7 +116,7 @@ describe('apiFetch — error', () => {
       vi.fn().mockResolvedValue({
         status: 500,
         json: () => Promise.resolve({ ok: false }),
-      }),
+      })
     )
 
     await expect(apiFetch('/api/test')).rejects.toMatchObject({
@@ -135,7 +132,7 @@ describe('apiFetch — error', () => {
         status: 409,
         json: () =>
           Promise.resolve({ ok: false, error: { code: 'CONFLICT', message: 'conflict' } }),
-      }),
+      })
     )
 
     await expect(apiFetch('/api/projects')).rejects.toBeInstanceOf(Error)

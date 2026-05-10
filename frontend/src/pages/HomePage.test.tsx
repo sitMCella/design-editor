@@ -32,7 +32,7 @@ function renderWithRouter() {
       },
       { path: '/editor/:designId', element: <div data-testid="editor-page" /> },
     ],
-    { initialEntries: ['/'] },
+    { initialEntries: ['/'] }
   )
   render(<RouterProvider router={router} />)
   return router
@@ -45,7 +45,7 @@ function renderStandalone() {
       <MemoryRouter>
         <HomePage />
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   )
 }
 

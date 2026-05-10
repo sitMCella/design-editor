@@ -40,8 +40,7 @@ export async function buildServer() {
   app.setErrorHandler(async (error: { statusCode?: number; message: string }, _request, reply) => {
     app.log.error(error);
     const status = typeof error.statusCode === 'number' ? error.statusCode : 500;
-    const message =
-      process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message;
+    const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message;
     await reply.status(status).send({
       ok: false,
       error: { code: 'INTERNAL_ERROR', message },

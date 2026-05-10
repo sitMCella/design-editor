@@ -15,14 +15,12 @@ const { mockSql, mockMkdir, mockStat, mockCreateWriteStream, mockCreateReadStrea
       mockStat: vi.fn().mockResolvedValue({}),
       mockCreateWriteStream: vi.fn().mockReturnValue({ destroy: vi.fn() }),
       mockCreateReadStream: vi.fn(),
-      mockPipeline: vi.fn().mockImplementation(
-        async (genFn: () => AsyncGenerator<Uint8Array>) => {
-          // Consume the generator so sizeBytes accumulates inside the route
-          for await (const chunk of genFn()) {
-            void chunk;
-          }
-        },
-      ),
+      mockPipeline: vi.fn().mockImplementation(async (genFn: () => AsyncGenerator<Uint8Array>) => {
+        // Consume the generator so sizeBytes accumulates inside the route
+        for await (const chunk of genFn()) {
+          void chunk;
+        }
+      }),
     };
   });
 
@@ -39,10 +37,7 @@ vi.mock('node:stream/promises', () => ({ pipeline: mockPipeline }));
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeImageResponse(
-  mimeType = 'image/jpeg',
-  chunks: Uint8Array[] = [new Uint8Array(1024)],
-) {
+function makeImageResponse(mimeType = 'image/jpeg', chunks: Uint8Array[] = [new Uint8Array(1024)]) {
   let chunkIndex = 0;
   const reader = {
     read: vi.fn().mockImplementation(() => {
@@ -147,10 +142,7 @@ describe('Asset routes', () => {
     });
 
     it('returns 502 FETCH_FAILED when origin returns non-2xx status', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({ ok: false, status: 404, body: null }),
-      );
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404, body: null }));
 
       const response = await app.inject({
         method: 'POST',
@@ -223,7 +215,10 @@ describe('Asset routes', () => {
     it('returns 400 TOO_LARGE when response exceeds 10 MB (AC9)', async () => {
       // A single chunk larger than 10 MB
       const oversizedChunk = new Uint8Array(11 * 1024 * 1024);
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeImageResponse('image/jpeg', [oversizedChunk])));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(makeImageResponse('image/jpeg', [oversizedChunk])),
+      );
 
       const response = await app.inject({
         method: 'POST',
@@ -264,7 +259,10 @@ describe('Asset routes', () => {
 
     it('downloads and stores an image, returns 201 with local URL (AC5, AC6)', async () => {
       const imageChunk = new Uint8Array(1024); // 1 KB
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeImageResponse('image/jpeg', [imageChunk])));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(makeImageResponse('image/jpeg', [imageChunk])),
+      );
 
       const createdAt = new Date('2026-05-10T10:06:00Z');
       mockSql.mockResolvedValueOnce([
@@ -311,7 +309,10 @@ describe('Asset routes', () => {
 
     it('local asset URL uses /api/assets/:id/content format (AC5)', async () => {
       const imageChunk = new Uint8Array(512);
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeImageResponse('image/png', [imageChunk])));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(makeImageResponse('image/png', [imageChunk])),
+      );
 
       mockSql.mockResolvedValueOnce([
         {
@@ -361,9 +362,7 @@ describe('Asset routes', () => {
 
   describe('GET /api/assets/:id/content', () => {
     it('streams the image with correct Content-Type and cache headers (AC7)', async () => {
-      mockSql.mockResolvedValueOnce([
-        { storage_path: 'xyz789.jpg', mime_type: 'image/jpeg' },
-      ]);
+      mockSql.mockResolvedValueOnce([{ storage_path: 'xyz789.jpg', mime_type: 'image/jpeg' }]);
       mockStat.mockResolvedValue({}); // file exists
       mockCreateReadStream.mockReturnValue(Readable.from(['fake image bytes']));
 

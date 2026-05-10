@@ -28,7 +28,7 @@ function renderToolbar() {
   return render(
     <QueryClientProvider client={queryClient}>
       <ContextualToolbar />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   )
 }
 
@@ -54,7 +54,7 @@ const makeElement = (id: string, overrides: Partial<TextElement> = {}): TextElem
 
 const makeImageElement = (
   id: string,
-  overrides: Partial<ImageElementType> = {},
+  overrides: Partial<ImageElementType> = {}
 ): ImageElementType => ({
   id,
   type: 'image',
@@ -487,7 +487,9 @@ describe('AC6: HTTP URL triggers asset fetch', () => {
     fireEvent.change(input, { target: { value: 'https://example.com/photo.jpg' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
-    await waitFor(() => expect(mockFetchAsset).toHaveBeenCalledWith('https://example.com/photo.jpg'))
+    await waitFor(() =>
+      expect(mockFetchAsset).toHaveBeenCalledWith('https://example.com/photo.jpg')
+    )
   })
 
   it('replaces element src with the local asset URL on success', async () => {
@@ -510,9 +512,7 @@ describe('AC6: HTTP URL triggers asset fetch', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
 
     await waitFor(() =>
-      expect(asImage(useCanvasStore.getState().elements[0]).src).toBe(
-        '/api/assets/xyz789/content',
-      ),
+      expect(asImage(useCanvasStore.getState().elements[0]).src).toBe('/api/assets/xyz789/content')
     )
   })
 
@@ -527,9 +527,7 @@ describe('AC6: HTTP URL triggers asset fetch', () => {
     fireEvent.change(input, { target: { value: 'https://example.com/broken.jpg' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
-    await waitFor(() =>
-      expect(screen.getByText(/failed to fetch image/i)).toBeInTheDocument(),
-    )
+    await waitFor(() => expect(screen.getByText(/failed to fetch image/i)).toBeInTheDocument())
   })
 
   it('does not update element src when fetchAssetFromUrl fails', async () => {
