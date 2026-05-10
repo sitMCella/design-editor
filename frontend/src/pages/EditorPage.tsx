@@ -18,12 +18,25 @@ export function EditorPage() {
   const markSaved = useCanvasStore((s) => s.markSaved)
   const navigate = useNavigate()
 
+  // Always-current refs so the mutationFn never closes over stale values
+  const nameRef = useRef(name)
+  nameRef.current = name
+  const designIdRef = useRef(designId)
+  designIdRef.current = designId
+  const elementsRef = useRef(elements)
+  elementsRef.current = elements
+  const isDirtyRef = useRef(isDirty)
+  isDirtyRef.current = isDirty
+
   const { mutate: save } = useMutation({
-    mutationFn: () => patchProject(designId, { name, canvas: { elements } }),
+    mutationFn: () =>
+      patchProject(designIdRef.current, {
+        name: nameRef.current,
+        canvas: { elements: elementsRef.current },
+      }),
     onSuccess: () => markSaved(),
   })
 
-  // Refs to hold the latest values for the retry timer without re-creating effects
   const saveRef = useRef(save)
   saveRef.current = save
 
@@ -39,9 +52,11 @@ export function EditorPage() {
       saveRef.current()
     }, AUTOSAVE_DEBOUNCE_MS)
 
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
+    // Do NOT clear the timeout on cleanup — let it fire even if the
+    // component unmounts (e.g. the user closes the editor).  The mutation
+    // runs against the TanStack Query cache, not the component, so it is
+    // safe to execute after unmount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty, designId, name, elements])
 
   // Fallback retry timer: if still dirty after 10 s, save again
@@ -53,17 +68,26 @@ export function EditorPage() {
     retryRef.current = setTimeout(() => {
       if (useCanvasStore.getState().isDirty) saveRef.current()
     }, AUTOSAVE_RETRY_MS)
-
-    return () => {
-      if (retryRef.current) clearTimeout(retryRef.current)
-    }
+    // Same as the debounce effect: let the retry fire after unmount if needed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty, designId])
+
+  const handleClose = () => {
+    // Cancel any pending debounce so we don't double-save.
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (retryRef.current) clearTimeout(retryRef.current)
+    // Flush immediately if there are unsaved changes.
+    if (isDirtyRef.current && designIdRef.current) {
+      saveRef.current()
+    }
+    void navigate('/')
+  }
 
   return (
     <div className="flex h-screen flex-col">
       <header className="flex items-center gap-3 border-b bg-white px-4 py-2 shadow-sm">
         <button
-          onClick={() => void navigate('/')}
+          onClick={handleClose}
           title="Close"
           aria-label="Close design"
           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700"
