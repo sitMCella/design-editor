@@ -116,6 +116,7 @@ const fullProject = {
         locked: false,
         src: '/api/assets/xyz/content',
         objectFit: 'cover' as const,
+        objectPosition: 'center',
       },
     ],
   },
