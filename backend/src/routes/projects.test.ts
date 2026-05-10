@@ -81,7 +81,13 @@ describe('Project routes', () => {
 
     it('does not include the canvas field in the response', async () => {
       mockSql.mockResolvedValueOnce([
-        { id: 'p1', name: 'Design', element_count: 1, created_at: new Date(), updated_at: new Date() },
+        {
+          id: 'p1',
+          name: 'Design',
+          element_count: 1,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
       ]);
 
       const response = await app.inject({ method: 'GET', url: '/api/projects' });

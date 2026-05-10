@@ -420,7 +420,11 @@ describe('AC10 — no stale modal state on fresh render', () => {
 describe('AC1 (feat07) — loading state shows skeletons', () => {
   it('renders skeleton cards while the project list is being fetched', () => {
     let resolve: (v: never[]) => void
-    mockGetProjects.mockReturnValue(new Promise((r) => { resolve = r }))
+    mockGetProjects.mockReturnValue(
+      new Promise((r) => {
+        resolve = r
+      })
+    )
     renderStandalone()
     // skeleton cards are rendered as non-interactive divs (not buttons)
     const skeletons = document.querySelectorAll('.animate-pulse')
@@ -463,9 +467,7 @@ describe('AC4 (feat07) — empty state', () => {
   it('shows empty state message when there are no projects', async () => {
     mockGetProjects.mockResolvedValue([])
     renderStandalone()
-    await waitFor(() =>
-      expect(screen.getByText(/no designs yet/i)).toBeInTheDocument()
-    )
+    await waitFor(() => expect(screen.getByText(/no designs yet/i)).toBeInTheDocument())
   })
 
   it('does not render the "Recent designs" heading when empty', async () => {
@@ -527,9 +529,7 @@ describe('AC6 & AC7 (feat07) — loading a project from a card', () => {
     const router = renderWithRouter()
     await waitFor(() => screen.getByText('My Design'))
     fireEvent.click(screen.getByText('My Design'))
-    await waitFor(() =>
-      expect(router.state.location.pathname).toBe('/editor/proj-1')
-    )
+    await waitFor(() => expect(router.state.location.pathname).toBe('/editor/proj-1'))
   })
 })
 
@@ -544,9 +544,7 @@ describe('AC10 (feat07) — card load error', () => {
     renderStandalone()
     await waitFor(() => screen.getByText('My Design'))
     fireEvent.click(screen.getByText('My Design'))
-    await waitFor(() =>
-      expect(screen.getByText(/failed to load project/i)).toBeInTheDocument()
-    )
+    await waitFor(() => expect(screen.getByText(/failed to load project/i)).toBeInTheDocument())
   })
 
   it('does not navigate when getProject fails', async () => {

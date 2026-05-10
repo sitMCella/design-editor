@@ -91,9 +91,7 @@ export function HomePage() {
           </>
         ) : projectsError ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <p className="text-sm text-gray-500">
-              Could not load your designs. Please try again.
-            </p>
+            <p className="text-sm text-gray-500">Could not load your designs. Please try again.</p>
             <button
               onClick={() => void refetchProjects()}
               className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
