@@ -18,8 +18,8 @@ const { mockSql, mockMkdir, mockStat, mockCreateWriteStream, mockCreateReadStrea
       mockPipeline: vi.fn().mockImplementation(
         async (genFn: () => AsyncGenerator<Uint8Array>) => {
           // Consume the generator so sizeBytes accumulates inside the route
-          for await (const _chunk of genFn()) {
-            /* no-op */
+          for await (const chunk of genFn()) {
+            void chunk;
           }
         },
       ),
@@ -45,7 +45,7 @@ function makeImageResponse(
 ) {
   let chunkIndex = 0;
   const reader = {
-    read: vi.fn().mockImplementation(async () => {
+    read: vi.fn().mockImplementation(() => {
       if (chunkIndex < chunks.length) {
         return { done: false, value: chunks[chunkIndex++] };
       }
@@ -74,8 +74,8 @@ describe('Asset routes', () => {
     mockStat.mockResolvedValue({});
     mockCreateWriteStream.mockReturnValue({ destroy: vi.fn() });
     mockPipeline.mockImplementation(async (genFn: () => AsyncGenerator<Uint8Array>) => {
-      for await (const _chunk of genFn()) {
-        /* no-op */
+      for await (const chunk of genFn()) {
+        void chunk;
       }
     });
     app = await buildServer();

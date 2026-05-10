@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { sql } from '../lib/db.js';
 
-export async function healthRoutes(app: FastifyInstance): Promise<void> {
+export function healthRoutes(app: FastifyInstance): void {
   app.get('/health', async (_request, reply) => {
     try {
       await sql`SELECT 1`;

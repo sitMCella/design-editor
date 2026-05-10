@@ -20,10 +20,10 @@ function toProject(row: ProjectRow): Project {
   };
 }
 
-export async function projectRoutes(app: FastifyInstance): Promise<void> {
+export function projectRoutes(app: FastifyInstance): void {
   // POST /projects — create a new project
   app.post<{ Body: { id?: unknown; name?: unknown } }>('/projects', async (request, reply) => {
-    const { id, name } = request.body ?? {};
+    const { id, name } = request.body;
     if (typeof id !== 'string' || !id.trim()) {
       return reply
         .status(400)
@@ -48,7 +48,8 @@ export async function projectRoutes(app: FastifyInstance): Promise<void> {
       RETURNING id, name, canvas, created_at, updated_at
     `;
 
-    return reply.status(201).send({ ok: true, data: toProject(row!) });
+    if (!row) throw new Error('INSERT project returned no rows');
+    return reply.status(201).send({ ok: true, data: toProject(row) });
   });
 
   // GET /projects/:id — load a project
@@ -73,7 +74,7 @@ export async function projectRoutes(app: FastifyInstance): Promise<void> {
     Body: { name?: unknown; canvas?: unknown };
   }>('/projects/:id', async (request, reply) => {
     const { id } = request.params;
-    const { name, canvas } = request.body ?? {};
+    const { name, canvas } = request.body;
 
     const newName = typeof name === 'string' && name.trim().length > 0 ? name.trim() : null;
     const newCanvas = canvas !== null && typeof canvas === 'object' ? canvas : null;
@@ -105,9 +106,10 @@ export async function projectRoutes(app: FastifyInstance): Promise<void> {
       RETURNING id, name, updated_at
     `;
 
+    if (!row) throw new Error('UPDATE project returned no rows');
     return reply.status(200).send({
       ok: true,
-      data: { id: row!.id, name: row!.name, updatedAt: row!.updated_at.toISOString() },
+      data: { id: row.id, name: row.name, updatedAt: row.updated_at.toISOString() },
     });
   });
 }

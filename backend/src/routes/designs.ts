@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
-export async function designRoutes(app: FastifyInstance): Promise<void> {
+export function designRoutes(app: FastifyInstance): void {
   // GET /designs — list all designs
   app.get('/designs', async (_request, reply) => {
     const designs: unknown[] = [];

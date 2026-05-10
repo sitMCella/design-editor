@@ -1,6 +1,6 @@
 import { createReadStream, createWriteStream } from 'node:fs';
 import { mkdir, stat } from 'node:fs/promises';
-import { join, extname } from 'node:path';
+import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import type { FastifyInstance } from 'fastify';
 import { sql } from '../lib/db.js';
@@ -9,7 +9,7 @@ import type { Asset } from '../types/index.js';
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
 function assetDir(): string {
-  return process.env['ASSET_DIR'] ?? './assets';
+  return process.env.ASSET_DIR ?? './assets';
 }
 
 function toAsset(row: {
@@ -45,12 +45,12 @@ function mimeToExt(mime: string): string {
   return map[mime] ?? '.bin';
 }
 
-export async function assetRoutes(app: FastifyInstance): Promise<void> {
+export function assetRoutes(app: FastifyInstance): void {
   // POST /assets/fetch — download an HTTP image URL and store it locally
   app.post<{ Body: { url?: unknown; name?: unknown } }>(
     '/assets/fetch',
     async (request, reply) => {
-      const { url, name } = request.body ?? {};
+      const { url, name } = request.body;
 
       if (typeof url !== 'string') {
         return reply
@@ -85,7 +85,7 @@ export async function assetRoutes(app: FastifyInstance): Promise<void> {
       if (!response.ok || !response.body) {
         return reply.status(502).send({
           ok: false,
-          error: { code: 'FETCH_FAILED', message: `Origin responded with ${response.status}` },
+          error: { code: 'FETCH_FAILED', message: `Origin responded with ${String(response.status)}` },
         });
       }
 
@@ -109,10 +109,10 @@ export async function assetRoutes(app: FastifyInstance): Promise<void> {
       let sizeBytes = 0;
       try {
         const writer = createWriteStream(filePath);
-        const reader = response.body.getReader();
+        const reader = response.body.getReader() as ReadableStreamDefaultReader<Uint8Array>;
         await pipeline(
           async function* () {
-            while (true) {
+            for (;;) {
               const { done, value } = await reader.read();
               if (done) break;
               sizeBytes += value.length;
@@ -154,7 +154,8 @@ export async function assetRoutes(app: FastifyInstance): Promise<void> {
         RETURNING id, name, original_url, storage_path, mime_type, size_bytes, created_at
       `;
 
-      return reply.status(201).send({ ok: true, data: toAsset(row!) });
+      if (!row) throw new Error('INSERT asset returned no rows');
+      return reply.status(201).send({ ok: true, data: toAsset(row) });
     },
   );
 
