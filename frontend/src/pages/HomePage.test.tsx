@@ -12,7 +12,7 @@ function renderWithRouter() {
       { path: '/', element: <HomePage /> },
       { path: '/editor/:designId', element: <div data-testid="editor-page" /> },
     ],
-    { initialEntries: ['/'] },
+    { initialEntries: ['/'] }
   )
   render(<RouterProvider router={router} />)
   return router
@@ -48,7 +48,7 @@ describe('AC1 — home page layout', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     expect(screen.getByRole('heading', { name: /design studio/i })).toBeInTheDocument()
   })
@@ -57,7 +57,7 @@ describe('AC1 — home page layout', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     expect(screen.getByText(/start creating something great/i)).toBeInTheDocument()
   })
@@ -66,7 +66,7 @@ describe('AC1 — home page layout', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     expect(screen.getByRole('button', { name: /new design/i })).toBeInTheDocument()
   })
@@ -80,7 +80,7 @@ describe('AC2 — opening the modal', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
@@ -89,7 +89,7 @@ describe('AC2 — opening the modal', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     fireEvent.click(screen.getByRole('button', { name: /new design/i }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -99,7 +99,7 @@ describe('AC2 — opening the modal', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     const { input } = openModal()
     expect(input).toHaveValue('Untitled design')
@@ -155,7 +155,7 @@ describe('AC6 — cancel closes modal without creating', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     const { cancelBtn } = openModal()
     fireEvent.click(cancelBtn)
@@ -166,7 +166,7 @@ describe('AC6 — cancel closes modal without creating', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     const { cancelBtn } = openModal()
     fireEvent.click(cancelBtn)
@@ -183,7 +183,7 @@ describe('AC7 — Escape closes modal without creating', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     const { input } = openModal()
     fireEvent.keyDown(input, { key: 'Escape' })
@@ -194,7 +194,7 @@ describe('AC7 — Escape closes modal without creating', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     const { input } = openModal()
     fireEvent.keyDown(input, { key: 'Escape' })
@@ -210,7 +210,7 @@ describe('AC8 — backdrop click closes modal without creating', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     openModal()
     fireEvent.mouseDown(screen.getByRole('dialog'))
@@ -221,7 +221,7 @@ describe('AC8 — backdrop click closes modal without creating', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     openModal()
     fireEvent.mouseDown(screen.getByRole('dialog'))
@@ -266,7 +266,7 @@ describe('AC10 — no stale modal state on fresh render', () => {
     render(
       <MemoryRouter>
         <HomePage />
-      </MemoryRouter>,
+      </MemoryRouter>
     )
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })

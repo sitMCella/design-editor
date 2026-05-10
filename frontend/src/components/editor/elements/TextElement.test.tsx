@@ -24,7 +24,7 @@ const baseElement: TextElementType = {
 
 const renderElement = (
   overrides: Partial<TextElementType> = {},
-  props: { isSelected?: boolean } = {},
+  props: { isSelected?: boolean } = {}
 ) => {
   const onSelect = vi.fn()
   const onUpdate = vi.fn()
@@ -37,7 +37,7 @@ const renderElement = (
       onSelect={onSelect}
       onUpdate={onUpdate}
       onRemove={onRemove}
-    />,
+    />
   )
 
   return { ...result, onSelect, onUpdate, onRemove }
@@ -216,11 +216,7 @@ describe('empty content removal', () => {
 // ---------------------------------------------------------------------------
 
 describe('drag behaviour', () => {
-  const drag = (
-    el: HTMLElement,
-    from: { x: number; y: number },
-    to: { x: number; y: number },
-  ) => {
+  const drag = (el: HTMLElement, from: { x: number; y: number }, to: { x: number; y: number }) => {
     fireEvent.mouseDown(el, { clientX: from.x, clientY: from.y })
     fireEvent.mouseMove(window, { clientX: to.x, clientY: to.y })
     fireEvent.mouseUp(window)

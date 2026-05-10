@@ -51,9 +51,7 @@ function TextToolbar({
           min={8}
           max={200}
           value={element.fontSize}
-          onChange={(e) =>
-            update({ fontSize: Math.max(8, Math.min(200, Number(e.target.value))) })
-          }
+          onChange={(e) => update({ fontSize: Math.max(8, Math.min(200, Number(e.target.value))) })}
           className="w-10 rounded border border-gray-200 px-1 py-0.5 text-center text-sm"
         />
         <button
@@ -79,9 +77,7 @@ function TextToolbar({
       <button
         aria-label="Italic"
         aria-pressed={element.fontStyle === 'italic'}
-        onClick={() =>
-          update({ fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })
-        }
+        onClick={() => update({ fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })}
         className={`flex h-6 w-6 items-center justify-center rounded text-sm italic ${
           element.fontStyle === 'italic' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'
         }`}
@@ -173,9 +169,7 @@ function ImageToolbar({
         onKeyDown={handleUrlKeyDown}
         className="h-6 w-52 rounded border border-gray-200 px-2 text-sm placeholder-gray-400 disabled:bg-gray-50"
       />
-      {isDataUrl && (
-        <span className="text-xs text-gray-400">Uploaded file</span>
-      )}
+      {isDataUrl && <span className="text-xs text-gray-400">Uploaded file</span>}
 
       <button
         aria-label="Upload image"
@@ -198,9 +192,7 @@ function ImageToolbar({
       <select
         aria-label="Object fit"
         value={element.objectFit}
-        onChange={(e) =>
-          update({ objectFit: e.target.value as ImageElement['objectFit'] })
-        }
+        onChange={(e) => update({ objectFit: e.target.value as ImageElement['objectFit'] })}
         className="rounded border border-gray-200 px-1 py-0.5 text-sm"
       >
         <option value="cover">Cover</option>
@@ -232,10 +224,7 @@ export function ContextualToolbar() {
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <TextToolbar
-          element={element}
-          update={(patch) => updateElement(selectedId, patch)}
-        />
+        <TextToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
       </div>
     )
   }
@@ -247,10 +236,7 @@ export function ContextualToolbar() {
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <ImageToolbar
-          element={element}
-          update={(patch) => updateElement(selectedId, patch)}
-        />
+        <ImageToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
       </div>
     )
   }

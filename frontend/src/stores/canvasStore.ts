@@ -82,5 +82,5 @@ export const useCanvasStore = create<State & Actions>()(
       set((state) => {
         state.isDirty = false
       }),
-  })),
+  }))
 )

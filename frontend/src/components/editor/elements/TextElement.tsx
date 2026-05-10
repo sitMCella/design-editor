@@ -34,7 +34,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
     range.collapse(false)
     window.getSelection()?.removeAllRanges()
     window.getSelection()?.addRange(range)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing])
 
   const handleClick = (e: React.MouseEvent) => {
@@ -67,8 +67,14 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
       isDraggingRef.current = true
       document.body.style.cursor = 'grabbing'
 
-      const newX = Math.max(0, Math.min(SURFACE_WIDTH - element.width, dragStartRef.current.elementX + dx))
-      const newY = Math.max(0, Math.min(SURFACE_HEIGHT - element.height, dragStartRef.current.elementY + dy))
+      const newX = Math.max(
+        0,
+        Math.min(SURFACE_WIDTH - element.width, dragStartRef.current.elementX + dx)
+      )
+      const newY = Math.max(
+        0,
+        Math.min(SURFACE_HEIGHT - element.height, dragStartRef.current.elementY + dy)
+      )
       onUpdate({ x: newX, y: newY })
     }
 
@@ -78,7 +84,9 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
       // Reset isDragging on next tick so the click handler can check it
-      setTimeout(() => { isDraggingRef.current = false }, 0)
+      setTimeout(() => {
+        isDraggingRef.current = false
+      }, 0)
     }
 
     window.addEventListener('mousemove', handleMouseMove)

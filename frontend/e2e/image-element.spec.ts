@@ -34,7 +34,7 @@ test.describe('03 – Image Element', () => {
 
     // Confirm it is in the aside sidebar
     const aside = page.locator('aside')
-    await expect(aside).toContainText('')           // aside present
+    await expect(aside).toContainText('') // aside present
     await expect(aside.locator('[title="Image"]')).toBeVisible()
 
     // Image button is below the T button — both visible, T rendered first

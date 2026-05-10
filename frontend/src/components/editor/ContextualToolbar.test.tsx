@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ContextualToolbar } from './ContextualToolbar'
 import { useCanvasStore } from '../../stores/canvasStore'
-import type { TextElement, ImageElement as ImageElementType, CanvasElement } from '../../types/canvas'
+import type {
+  TextElement,
+  ImageElement as ImageElementType,
+  CanvasElement,
+} from '../../types/canvas'
 
 const asText = (el: CanvasElement) => el as TextElement
 const asImage = (el: CanvasElement) => el as ImageElementType
@@ -297,10 +301,7 @@ describe('AC12: independent element formatting', () => {
 
   it('toolbar shows the properties of the selected element, not another', () => {
     useCanvasStore.setState({
-      elements: [
-        makeElement('el-1', { fontSize: 24 }),
-        makeElement('el-2', { fontSize: 48 }),
-      ],
+      elements: [makeElement('el-1', { fontSize: 24 }), makeElement('el-2', { fontSize: 48 })],
       selectedIds: ['el-2'],
     })
     render(<ContextualToolbar />)
@@ -313,7 +314,10 @@ describe('AC12: independent element formatting', () => {
 // Image element — helpers
 // ---------------------------------------------------------------------------
 
-const makeImageElement = (id: string, overrides: Partial<ImageElementType> = {}): ImageElementType => ({
+const makeImageElement = (
+  id: string,
+  overrides: Partial<ImageElementType> = {}
+): ImageElementType => ({
   id,
   type: 'image',
   x: 480,
@@ -437,7 +441,9 @@ describe('AC7: file upload', () => {
     class MockFileReader {
       result = dataUrl
       onload: (() => void) | null = null
-      readAsDataURL() { this.onload?.() }
+      readAsDataURL() {
+        this.onload?.()
+      }
     }
     vi.stubGlobal('FileReader', MockFileReader)
 

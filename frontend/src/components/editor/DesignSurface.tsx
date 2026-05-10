@@ -1,7 +1,10 @@
 import { useCanvasStore } from '../../stores/canvasStore'
 import { ImageElement } from './elements/ImageElement'
 import { TextElement } from './elements/TextElement'
-import type { TextElement as TextElementType, ImageElement as ImageElementType } from '../../types/canvas'
+import type {
+  TextElement as TextElementType,
+  ImageElement as ImageElementType,
+} from '../../types/canvas'
 
 export const SURFACE_WIDTH = 1280
 export const SURFACE_HEIGHT = 720

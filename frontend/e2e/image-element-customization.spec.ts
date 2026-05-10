@@ -3,8 +3,7 @@ import { expect, Page, test } from '@playwright/test'
 const EDITOR_URL = '/editor/test-design'
 
 // Tiny 1×1 GIF — works without any network access
-const TEST_IMAGE_URL =
-  'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs='
+const TEST_IMAGE_URL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs='
 
 // ---------------------------------------------------------------------------
 // Helpers

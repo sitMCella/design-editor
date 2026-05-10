@@ -57,19 +57,28 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
   const [isCropping, setIsCropping] = useState(false)
 
   const dragStartRef = useRef<{
-    mouseX: number; mouseY: number; elementX: number; elementY: number
+    mouseX: number
+    mouseY: number
+    elementX: number
+    elementY: number
   } | null>(null)
   const isDraggingRef = useRef(false)
 
   const resizeStartRef = useRef<{
-    mouseX: number; mouseY: number
-    elementX: number; elementY: number
-    elementW: number; elementH: number
+    mouseX: number
+    mouseY: number
+    elementX: number
+    elementY: number
+    elementW: number
+    elementH: number
     handle: Handle
   } | null>(null)
 
   const panStartRef = useRef<{
-    mouseX: number; mouseY: number; posX: number; posY: number
+    mouseX: number
+    mouseY: number
+    posX: number
+    posY: number
   } | null>(null)
 
   // Reset crop mode when element is deselected
@@ -92,8 +101,10 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
     e.preventDefault()
     e.stopPropagation()
     dragStartRef.current = {
-      mouseX: e.clientX, mouseY: e.clientY,
-      elementX: element.x, elementY: element.y,
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      elementX: element.x,
+      elementY: element.y,
     }
     isDraggingRef.current = false
 
@@ -106,7 +117,10 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
       document.body.style.cursor = 'grabbing'
       onUpdate({
         x: Math.max(0, Math.min(SURFACE_WIDTH - element.width, dragStartRef.current.elementX + dx)),
-        y: Math.max(0, Math.min(SURFACE_HEIGHT - element.height, dragStartRef.current.elementY + dy)),
+        y: Math.max(
+          0,
+          Math.min(SURFACE_HEIGHT - element.height, dragStartRef.current.elementY + dy)
+        ),
       })
     }
 
@@ -115,7 +129,9 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
       dragStartRef.current = null
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
-      setTimeout(() => { isDraggingRef.current = false }, 0)
+      setTimeout(() => {
+        isDraggingRef.current = false
+      }, 0)
     }
 
     window.addEventListener('mousemove', onMouseMove)
@@ -141,9 +157,12 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
     e.preventDefault()
     e.stopPropagation()
     resizeStartRef.current = {
-      mouseX: e.clientX, mouseY: e.clientY,
-      elementX: element.x, elementY: element.y,
-      elementW: element.width, elementH: element.height,
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      elementX: element.x,
+      elementY: element.y,
+      elementW: element.width,
+      elementH: element.height,
       handle,
     }
 
@@ -153,17 +172,41 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
       const dx = me.clientX - s.mouseX
       const dy = me.clientY - s.mouseY
 
-      let x = s.elementX, y = s.elementY
-      let w = s.elementW, h = s.elementH
+      let x = s.elementX,
+        y = s.elementY
+      let w = s.elementW,
+        h = s.elementH
 
-      if (handle === 'tl') { x = s.elementX + dx; y = s.elementY + dy; w = s.elementW - dx; h = s.elementH - dy }
-      if (handle === 'tr') {                        y = s.elementY + dy; w = s.elementW + dx; h = s.elementH - dy }
-      if (handle === 'bl') { x = s.elementX + dx;                        w = s.elementW - dx; h = s.elementH + dy }
-      if (handle === 'br') {                                               w = s.elementW + dx; h = s.elementH + dy }
+      if (handle === 'tl') {
+        x = s.elementX + dx
+        y = s.elementY + dy
+        w = s.elementW - dx
+        h = s.elementH - dy
+      }
+      if (handle === 'tr') {
+        y = s.elementY + dy
+        w = s.elementW + dx
+        h = s.elementH - dy
+      }
+      if (handle === 'bl') {
+        x = s.elementX + dx
+        w = s.elementW - dx
+        h = s.elementH + dy
+      }
+      if (handle === 'br') {
+        w = s.elementW + dx
+        h = s.elementH + dy
+      }
 
       // Enforce minimum size
-      if (w < MIN_SIZE) { w = MIN_SIZE; if (handle === 'tl' || handle === 'bl') x = s.elementX + s.elementW - MIN_SIZE }
-      if (h < MIN_SIZE) { h = MIN_SIZE; if (handle === 'tl' || handle === 'tr') y = s.elementY + s.elementH - MIN_SIZE }
+      if (w < MIN_SIZE) {
+        w = MIN_SIZE
+        if (handle === 'tl' || handle === 'bl') x = s.elementX + s.elementW - MIN_SIZE
+      }
+      if (h < MIN_SIZE) {
+        h = MIN_SIZE
+        if (handle === 'tl' || handle === 'tr') y = s.elementY + s.elementH - MIN_SIZE
+      }
 
       // Clamp to surface bounds
       x = Math.max(0, x)
@@ -199,8 +242,14 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
       const s = panStartRef.current
       if (!s) return
       // Convert pixel delta to percentage of element size
-      const newX = Math.max(0, Math.min(100, s.posX - ((me.clientX - s.mouseX) / element.width) * 100))
-      const newY = Math.max(0, Math.min(100, s.posY - ((me.clientY - s.mouseY) / element.height) * 100))
+      const newX = Math.max(
+        0,
+        Math.min(100, s.posX - ((me.clientX - s.mouseX) / element.width) * 100)
+      )
+      const newY = Math.max(
+        0,
+        Math.min(100, s.posY - ((me.clientY - s.mouseY) / element.height) * 100)
+      )
       onUpdate({ objectPosition: `${newX.toFixed(1)}% ${newY.toFixed(1)}%` })
     }
 
@@ -225,11 +274,7 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
   // Styles
   // -------------------------------------------------------------------------
 
-  const outline = !isSelected
-    ? 'none'
-    : isCropping
-      ? '2px dashed #3B82F6'
-      : '2px solid #3B82F6'
+  const outline = !isSelected ? 'none' : isCropping ? '2px dashed #3B82F6' : '2px solid #3B82F6'
 
   const cursor = isCropping ? 'move' : isSelected ? 'grab' : 'default'
 
@@ -289,21 +334,23 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
       )}
 
       {/* Corner resize handles — shown when selected and not in crop mode */}
-      {isSelected && !isCropping && (['tl', 'tr', 'bl', 'br'] as Handle[]).map((h) => (
-        <div
-          key={h}
-          data-testid={`resize-handle-${h}`}
-          style={{
-            position: 'absolute',
-            width: 10,
-            height: 10,
-            background: '#3B82F6',
-            borderRadius: 2,
-            ...handleStyles[h],
-          }}
-          onMouseDown={(e) => handleResizeMouseDown(e, h)}
-        />
-      ))}
+      {isSelected &&
+        !isCropping &&
+        (['tl', 'tr', 'bl', 'br'] as Handle[]).map((h) => (
+          <div
+            key={h}
+            data-testid={`resize-handle-${h}`}
+            style={{
+              position: 'absolute',
+              width: 10,
+              height: 10,
+              background: '#3B82F6',
+              borderRadius: 2,
+              ...handleStyles[h],
+            }}
+            onMouseDown={(e) => handleResizeMouseDown(e, h)}
+          />
+        ))}
     </div>
   )
 }

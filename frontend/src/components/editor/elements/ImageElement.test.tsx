@@ -20,7 +20,7 @@ const baseElement: ImageElementType = {
 
 const renderElement = (
   overrides: Partial<ImageElementType> = {},
-  props: { isSelected?: boolean } = {},
+  props: { isSelected?: boolean } = {}
 ) => {
   const onSelect = vi.fn()
   const onUpdate = vi.fn()
@@ -30,7 +30,7 @@ const renderElement = (
       isSelected={props.isSelected ?? false}
       onSelect={onSelect}
       onUpdate={onUpdate}
-    />,
+    />
   )
   return { ...result, onSelect, onUpdate }
 }
@@ -39,11 +39,7 @@ const renderElement = (
 // Helpers
 // ---------------------------------------------------------------------------
 
-const drag = (
-  el: HTMLElement,
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-) => {
+const drag = (el: HTMLElement, from: { x: number; y: number }, to: { x: number; y: number }) => {
   fireEvent.mouseDown(el, { clientX: from.x, clientY: from.y })
   fireEvent.mouseMove(window, { clientX: to.x, clientY: to.y })
   fireEvent.mouseUp(window)
@@ -52,7 +48,7 @@ const drag = (
 const resize = (
   handle: HTMLElement,
   from: { x: number; y: number },
-  to: { x: number; y: number },
+  to: { x: number; y: number }
 ) => {
   fireEvent.mouseDown(handle, { clientX: from.x, clientY: from.y })
   fireEvent.mouseMove(window, { clientX: to.x, clientY: to.y })
@@ -235,7 +231,7 @@ describe('AC4: resize behaviour', () => {
     // Drag tl right 20, down 20 → x+20, y+20, w-20, h-20
     resize(screen.getByTestId('resize-handle-tl'), { x: 0, y: 0 }, { x: 20, y: 20 })
     expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ x: 500, y: 260, width: 300, height: 220 }),
+      expect.objectContaining({ x: 500, y: 260, width: 300, height: 220 })
     )
   })
 
@@ -249,7 +245,10 @@ describe('AC4: resize behaviour', () => {
   })
 
   it('element cannot extend past the right edge of the design surface', () => {
-    const { onUpdate } = renderElement({ x: 1100, y: 240, width: 100, height: 100 }, { isSelected: true })
+    const { onUpdate } = renderElement(
+      { x: 1100, y: 240, width: 100, height: 100 },
+      { isSelected: true }
+    )
     // Drag br far right; x=1100, so max width = 1280 - 1100 = 180
     resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 500, y: 0 })
     const last = onUpdate.mock.calls.at(-1)![0]
@@ -257,7 +256,10 @@ describe('AC4: resize behaviour', () => {
   })
 
   it('element cannot extend past the bottom edge of the design surface', () => {
-    const { onUpdate } = renderElement({ x: 480, y: 600, width: 100, height: 100 }, { isSelected: true })
+    const { onUpdate } = renderElement(
+      { x: 480, y: 600, width: 100, height: 100 },
+      { isSelected: true }
+    )
     // Drag br far down; y=600, so max height = 720 - 600 = 120
     resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 0, y: 500 })
     const last = onUpdate.mock.calls.at(-1)![0]
@@ -300,7 +302,7 @@ describe('AC9/AC10/AC11: crop/pan mode', () => {
   it('AC10: dragging in crop mode calls onUpdate with a new objectPosition', () => {
     const { container, onUpdate } = renderElement(
       { src: 'https://example.com/img.jpg', objectPosition: '50% 50%' },
-      { isSelected: true },
+      { isSelected: true }
     )
     const el = container.firstChild as HTMLElement
     fireEvent.doubleClick(el)
@@ -309,14 +311,14 @@ describe('AC9/AC10/AC11: crop/pan mode', () => {
     fireEvent.mouseMove(window, { clientX: 50, clientY: 40 })
     fireEvent.mouseUp(window)
     expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ objectPosition: expect.stringContaining('%') }),
+      expect.objectContaining({ objectPosition: expect.stringContaining('%') })
     )
   })
 
   it('AC10: dragging in crop mode does NOT call onUpdate with x/y (only objectPosition)', () => {
     const { container, onUpdate } = renderElement(
       { src: 'https://example.com/img.jpg', objectPosition: '50% 50%' },
-      { isSelected: true },
+      { isSelected: true }
     )
     const el = container.firstChild as HTMLElement
     fireEvent.doubleClick(el)
@@ -357,7 +359,7 @@ describe('AC9/AC10/AC11: crop/pan mode', () => {
         isSelected={false}
         onSelect={vi.fn()}
         onUpdate={onUpdate}
-      />,
+      />
     )
     expect(el.style.outline).toBe('none')
   })
