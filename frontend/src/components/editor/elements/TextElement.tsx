@@ -150,6 +150,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
         userSelect: isEditing ? 'text' : 'none',
         whiteSpace: 'pre-wrap',
       }}
+      data-testid="text-element"
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       onMouseDown={handleMouseDown}

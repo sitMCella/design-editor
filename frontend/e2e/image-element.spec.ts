@@ -1,4 +1,5 @@
 import { expect, Page, test } from '@playwright/test'
+import { mockApiRoutes } from './mock-api'
 
 const EDITOR_URL = '/editor/test-design'
 
@@ -24,6 +25,7 @@ async function clickCanvasBackground(page: Page) {
 
 test.describe('03 – Image Element', () => {
   test.beforeEach(async ({ page }) => {
+    await mockApiRoutes(page)
     await page.goto(EDITOR_URL)
   })
 
