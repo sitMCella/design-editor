@@ -93,7 +93,15 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
     window.addEventListener('mouseup', handleMouseUp)
   }
 
-  const handleBlur = () => {
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    // Don't exit edit mode when focus moves to the contextual toolbar (e.g. colour picker).
+    // The toolbar will re-focus the contentEditable after applying the command.
+    if (
+      e.relatedTarget instanceof HTMLElement &&
+      e.relatedTarget.closest('[data-testid="contextual-toolbar"]')
+    ) {
+      return
+    }
     const html = editRef.current?.innerHTML ?? ''
     const text = editRef.current?.textContent?.trim() ?? ''
     setIsEditing(false)
