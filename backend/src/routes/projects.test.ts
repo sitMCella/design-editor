@@ -477,16 +477,19 @@ describe('Project routes', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      // Verify the SQL UPDATE was called with the canvas JSON serialised
+      // Verify the SQL UPDATE was called with the canvas object containing all properties.
+      // postgres.js receives plain objects (not JSON strings) as interpolated values.
       const updateCall = mockSql.mock.calls[1];
-      const sqlParts = updateCall?.[0] as TemplateStringsArray;
       const sqlArgs = updateCall?.slice(1) as unknown[];
-      // The canvas arg should contain the serialised canvas with all properties
-      const canvasArg = sqlArgs.find((a) => typeof a === 'string' && a.includes('"fontWeight"'));
-      expect(canvasArg).toContain('"fontWeight":"bold"');
-      expect(canvasArg).toContain('"fontStyle":"italic"');
-      expect(canvasArg).toContain('"align":"center"');
-      expect(sqlParts).toBeDefined();
+      const canvasArg = sqlArgs.find(
+        (a): a is { elements: Record<string, unknown>[] } =>
+          a !== null && typeof a === 'object' && 'elements' in (a as Record<string, unknown>),
+      );
+      expect(canvasArg?.elements[0]).toMatchObject({
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        align: 'center',
+      });
     });
 
     it('returns 400 INVALID_BODY when no valid field is provided (AC2)', async () => {
