@@ -24,6 +24,50 @@ function TextToolbar({
   element: TextElement
   update: (patch: Partial<TextElement>) => void
 }) {
+  const savedRangeRef = useRef<Range | null>(null)
+
+  const saveSelection = () => {
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0) {
+      savedRangeRef.current = null
+      return
+    }
+    const range = sel.getRangeAt(0)
+    const node = range.commonAncestorContainer
+    const el = node.nodeType === Node.TEXT_NODE ? (node as Text).parentElement : (node as Element)
+    savedRangeRef.current = el?.closest('[contenteditable]') ? range.cloneRange() : null
+  }
+
+  const execInline = (command: string, value?: string): boolean => {
+    // contentEditable is currently focused — selection is preserved (bold/italic use preventDefault)
+    if (document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable) {
+      document.execCommand(command, false, value)
+      return true
+    }
+    // Selection was saved before the color picker stole focus
+    if (savedRangeRef.current) {
+      const node = savedRangeRef.current.commonAncestorContainer
+      const el = node.nodeType === Node.TEXT_NODE ? (node as Text).parentElement : (node as Element)
+      const editable = el?.closest<HTMLElement>('[contenteditable]')
+      if (editable) {
+        editable.focus()
+        const sel = window.getSelection()
+        sel?.removeAllRanges()
+        sel?.addRange(savedRangeRef.current)
+        document.execCommand(command, false, value)
+        savedRangeRef.current = null
+        return true
+      }
+    }
+    return false
+  }
+
+  const preventBlurIfEditing = (e: React.MouseEvent) => {
+    if (document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable) {
+      e.preventDefault()
+    }
+  }
+
   return (
     <>
       <select
@@ -68,7 +112,12 @@ function TextToolbar({
       <button
         aria-label="Bold"
         aria-pressed={element.fontWeight === 'bold'}
-        onClick={() => update({ fontWeight: element.fontWeight === 'bold' ? 'normal' : 'bold' })}
+        onMouseDown={preventBlurIfEditing}
+        onClick={() => {
+          if (!execInline('bold')) {
+            update({ fontWeight: element.fontWeight === 'bold' ? 'normal' : 'bold' })
+          }
+        }}
         className={`flex h-6 w-6 items-center justify-center rounded text-sm font-bold ${
           element.fontWeight === 'bold' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'
         }`}
@@ -79,7 +128,12 @@ function TextToolbar({
       <button
         aria-label="Italic"
         aria-pressed={element.fontStyle === 'italic'}
-        onClick={() => update({ fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })}
+        onMouseDown={preventBlurIfEditing}
+        onClick={() => {
+          if (!execInline('italic')) {
+            update({ fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })
+          }
+        }}
         className={`flex h-6 w-6 items-center justify-center rounded text-sm italic ${
           element.fontStyle === 'italic' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'
         }`}
@@ -91,7 +145,12 @@ function TextToolbar({
         aria-label="Text color"
         type="color"
         value={element.color}
-        onChange={(e) => update({ color: e.target.value })}
+        onMouseDown={saveSelection}
+        onChange={(e) => {
+          if (!execInline('foreColor', e.target.value)) {
+            update({ color: e.target.value })
+          }
+        }}
         className="h-6 w-6 cursor-pointer rounded border border-gray-200 p-0.5"
       />
 

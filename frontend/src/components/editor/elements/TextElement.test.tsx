@@ -210,6 +210,221 @@ describe('empty content removal', () => {
 })
 
 // ---------------------------------------------------------------------------
+// Multiline text — display and edit-cycle
+// ---------------------------------------------------------------------------
+
+describe('multiline text', () => {
+  it('renders HTML content via dangerouslySetInnerHTML so line-break tags are not escaped', () => {
+    const { container } = renderElement({ content: 'Line one<br>Line two' })
+    // A real <br> element in the DOM confirms the markup was parsed, not escaped to &lt;br&gt;
+    expect(container.querySelector('br')).toBeInTheDocument()
+  })
+
+  it('initialises the contentEditable with the full innerHTML on edit entry', () => {
+    const { container } = renderElement({ content: 'Line one<br>Line two' }, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    expect(editable.innerHTML).toBe('Line one<br>Line two')
+  })
+
+  it('saves multiline HTML (including <br> tags) on each input event', () => {
+    const { container, onUpdate } = renderElement({ content: 'Line one' }, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = 'Line one<br>Line two'
+    fireEvent.input(editable)
+    expect(onUpdate).toHaveBeenCalledWith({ content: 'Line one<br>Line two' })
+  })
+
+  it('saves multiline HTML on blur', () => {
+    const { container, onUpdate } = renderElement({ content: 'Line one' }, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = 'Line one<br>Line two<br>Line three'
+    fireEvent.blur(editable)
+    expect(onUpdate).toHaveBeenLastCalledWith({ content: 'Line one<br>Line two<br>Line three' })
+  })
+
+  it('calls onRemove when blurred with content that is only whitespace across lines', () => {
+    const { container, onRemove } = renderElement(
+      { content: 'Line one<br>Line two' },
+      { isSelected: true }
+    )
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = '<br><br>'
+    fireEvent.blur(editable)
+    expect(onRemove).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Rich text display — bold, italic, colour spans rendered from stored HTML
+// ---------------------------------------------------------------------------
+
+describe('rich text display', () => {
+  it('renders bold markup', () => {
+    const { container } = renderElement({ content: 'Hello <b>world</b>' })
+    const display = container.querySelector('div > div') as HTMLElement
+    expect(display.querySelector('b')?.textContent).toBe('world')
+  })
+
+  it('renders italic markup', () => {
+    const { container } = renderElement({ content: 'Hello <i>world</i>' })
+    const display = container.querySelector('div > div') as HTMLElement
+    expect(display.querySelector('i')?.textContent).toBe('world')
+  })
+
+  it('renders a coloured span — style.color reflects the stored colour', () => {
+    const { container } = renderElement({
+      content: '<span style="color: #ff0000">red chunk</span> plain',
+    })
+    const display = container.querySelector('div > div') as HTMLElement
+    const span = display.querySelector('span') as HTMLElement
+    // jsdom normalises hex colours to rgb() when reading computed/inline style
+    expect(span.style.color).toBe('rgb(255, 0, 0)')
+    expect(span.textContent).toBe('red chunk')
+  })
+
+  it('renders combined bold, italic and colour markup independently', () => {
+    const content = '<b>bold</b> <i>italic</i> <span style="color: #0000ff">blue</span>'
+    const { container } = renderElement({ content })
+    const display = container.querySelector('div > div') as HTMLElement
+    expect(display.querySelector('b')?.textContent).toBe('bold')
+    expect(display.querySelector('i')?.textContent).toBe('italic')
+    const span = display.querySelector('span') as HTMLElement
+    expect(span.style.color).toBe('rgb(0, 0, 255)')
+    expect(span.textContent).toBe('blue')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Rich text editing — markup round-trips through input/blur; blur suppression
+// ---------------------------------------------------------------------------
+
+describe('rich text editing', () => {
+  it('initialises the contentEditable with existing bold markup on edit entry', () => {
+    const { container } = renderElement({ content: '<b>bold text</b>' }, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    expect(editable.querySelector('b')?.textContent).toBe('bold text')
+  })
+
+  it('initialises the contentEditable with existing italic markup on edit entry', () => {
+    const { container } = renderElement({ content: '<i>italic text</i>' }, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    expect(editable.querySelector('i')?.textContent).toBe('italic text')
+  })
+
+  it('initialises the contentEditable with existing colour span markup on edit entry', () => {
+    const { container } = renderElement(
+      { content: '<span style="color: #ff0000">red</span>' },
+      { isSelected: true }
+    )
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    expect(editable.querySelector('span')?.style.color).toBe('rgb(255, 0, 0)')
+  })
+
+  it('saves bold markup from innerHTML on each input event', () => {
+    const { container, onUpdate } = renderElement({}, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = 'Hello <b>world</b>'
+    fireEvent.input(editable)
+    expect(onUpdate).toHaveBeenCalledWith({ content: 'Hello <b>world</b>' })
+  })
+
+  it('saves italic markup from innerHTML on each input event', () => {
+    const { container, onUpdate } = renderElement({}, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = '<i>italic text</i>'
+    fireEvent.input(editable)
+    expect(onUpdate).toHaveBeenCalledWith({ content: '<i>italic text</i>' })
+  })
+
+  it('saves colour span markup on input — the stored HTML parses back to the correct colour', () => {
+    const { container, onUpdate } = renderElement({}, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = '<span style="color: #ff0000">red chunk</span> plain'
+    fireEvent.input(editable)
+
+    const savedContent: string = onUpdate.mock.calls.at(-1)![0].content
+    const tmp = document.createElement('div')
+    tmp.innerHTML = savedContent
+    expect(tmp.querySelector('span')?.style.color).toBe('rgb(255, 0, 0)')
+    expect(tmp.querySelector('span')?.textContent).toBe('red chunk')
+  })
+
+  it('saves combined bold, italic and colour markup on blur', () => {
+    const { container, onUpdate } = renderElement({}, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = '<b>bold</b> <i>italic</i>'
+    fireEvent.blur(editable)
+    expect(onUpdate).toHaveBeenLastCalledWith({ content: '<b>bold</b> <i>italic</i>' })
+  })
+
+  it('calls onRemove when blurred with markup that contains no text content', () => {
+    const { container, onRemove } = renderElement({}, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = '<b></b><i></i>'
+    fireEvent.blur(editable)
+    expect(onRemove).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not exit edit mode when blur relatedTarget is inside the contextual toolbar', () => {
+    const { container } = renderElement({}, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+
+    const toolbar = document.createElement('div')
+    toolbar.setAttribute('data-testid', 'contextual-toolbar')
+    const colorInput = document.createElement('input')
+    colorInput.type = 'color'
+    toolbar.appendChild(colorInput)
+    document.body.appendChild(toolbar)
+
+    fireEvent.blur(editable, { relatedTarget: colorInput })
+
+    expect(document.querySelector('[contenteditable="true"]')).toBeInTheDocument()
+    document.body.removeChild(toolbar)
+  })
+
+  it('does exit edit mode when blur relatedTarget is outside the contextual toolbar', () => {
+    const { container } = renderElement({}, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = '<b>text</b>'
+
+    const outsideButton = document.createElement('button')
+    document.body.appendChild(outsideButton)
+    fireEvent.blur(editable, { relatedTarget: outsideButton })
+
+    expect(document.querySelector('[contenteditable="true"]')).not.toBeInTheDocument()
+    document.body.removeChild(outsideButton)
+  })
+
+  it('saves content when blur target is outside the toolbar', () => {
+    const { container, onUpdate } = renderElement({}, { isSelected: true })
+    fireEvent.dblClick(container.firstChild as HTMLElement)
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.innerHTML = '<b>saved bold</b>'
+
+    const outsideButton = document.createElement('button')
+    document.body.appendChild(outsideButton)
+    fireEvent.blur(editable, { relatedTarget: outsideButton })
+
+    expect(onUpdate).toHaveBeenLastCalledWith({ content: '<b>saved bold</b>' })
+    document.body.removeChild(outsideButton)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // AC 1 — dragging a selected element moves it
 // AC 2 — dragging does not trigger deselection or edit mode
 // AC 3 — element cannot be dragged outside the design surface bounds

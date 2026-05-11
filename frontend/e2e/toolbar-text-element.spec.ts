@@ -1,4 +1,5 @@
 import { expect, Page, test } from '@playwright/test'
+import { mockApiRoutes } from './mock-api'
 
 const EDITOR_URL = '/editor/test-design'
 const DEFAULT_TEXT = 'Double-click to edit'
@@ -12,7 +13,7 @@ async function addTextElement(page: Page) {
 }
 
 async function getTextElement(page: Page, text = DEFAULT_TEXT) {
-  return page.getByText(text, { exact: true }).first()
+  return page.locator('[data-testid="text-element"]').filter({ hasText: text }).first()
 }
 
 async function enterEditMode(page: Page, text = DEFAULT_TEXT) {
@@ -33,6 +34,7 @@ async function clickCanvasBackground(page: Page) {
 
 test.describe('01 – Toolbar & Text Element', () => {
   test.beforeEach(async ({ page }) => {
+    await mockApiRoutes(page)
     await page.goto(EDITOR_URL)
   })
 

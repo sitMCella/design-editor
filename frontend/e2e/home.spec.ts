@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { mockApiRoutes } from './mock-api'
+
+test.beforeEach(async ({ page }) => {
+  await mockApiRoutes(page)
+})
 
 test('home page loads and shows heading', async ({ page }) => {
   await page.goto('/')

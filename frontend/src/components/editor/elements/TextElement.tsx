@@ -27,7 +27,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
 
   useEffect(() => {
     if (!isEditing || !editRef.current) return
-    editRef.current.textContent = element.content
+    editRef.current.innerHTML = element.content
     editRef.current.focus()
     const range = document.createRange()
     range.selectNodeContents(editRef.current)
@@ -93,18 +93,27 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
     window.addEventListener('mouseup', handleMouseUp)
   }
 
-  const handleBlur = () => {
-    const content = editRef.current?.textContent?.trim() ?? ''
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    // Don't exit edit mode when focus moves to the contextual toolbar (e.g. colour picker).
+    // The toolbar will re-focus the contentEditable after applying the command.
+    if (
+      e.relatedTarget instanceof HTMLElement &&
+      e.relatedTarget.closest('[data-testid="contextual-toolbar"]')
+    ) {
+      return
+    }
+    const html = editRef.current?.innerHTML ?? ''
+    const text = editRef.current?.textContent?.trim() ?? ''
     setIsEditing(false)
-    if (!content) {
+    if (!text) {
       onRemove()
     } else {
-      onUpdate({ content })
+      onUpdate({ content: html })
     }
   }
 
   const handleInput = () => {
-    onUpdate({ content: editRef.current?.textContent ?? '' })
+    onUpdate({ content: editRef.current?.innerHTML ?? '' })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -139,7 +148,9 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
         boxSizing: 'border-box',
         cursor,
         userSelect: isEditing ? 'text' : 'none',
+        whiteSpace: 'pre-wrap',
       }}
+      data-testid="text-element"
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       onMouseDown={handleMouseDown}
@@ -155,7 +166,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
           style={{ outline: 'none', whiteSpace: 'pre-wrap', minHeight: element.height }}
         />
       ) : (
-        element.content
+        <div dangerouslySetInnerHTML={{ __html: element.content }} />
       )}
     </div>
   )
