@@ -846,16 +846,42 @@ describe('AC8 (feat07 updated) — modal close behaviours', () => {
 // AC9 (feat07 updated) — opening a project from inside the modal
 // ---------------------------------------------------------------------------
 
-describe('AC9 (feat07 updated) — load project from modal', () => {
+// ---------------------------------------------------------------------------
+// AC16 (feat07) — every project is openable from the home page
+// ---------------------------------------------------------------------------
+
+describe('AC16 (feat07) — every project openable from home page', () => {
+  const sevenProjects = Array.from({ length: 7 }, (_, i) => makeSummary(i + 1))
+  const fullSeventh = {
+    id: 'proj-7',
+    name: 'Design 7',
+    canvas: {
+      elements: [
+        {
+          id: 't7',
+          type: 'text' as const,
+          x: 100,
+          y: 100,
+          width: 160,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          content: 'From modal',
+          fontSize: 20,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 'bold' as const,
+          fontStyle: 'normal' as const,
+          color: '#000000',
+          align: 'left' as const,
+        },
+      ],
+    },
+    createdAt: '2026-05-10T10:00:00Z',
+    updatedAt: '2026-05-10T10:07:00Z',
+  }
+
   it('calls getProject with the correct id when a modal card is clicked', async () => {
-    const sevenProjects = Array.from({ length: 7 }, (_, i) => makeSummary(i + 1))
-    const fullSeventh = {
-      id: 'proj-7',
-      name: 'Design 7',
-      canvas: { elements: [] },
-      createdAt: '2026-05-10T10:00:00Z',
-      updatedAt: '2026-05-10T10:07:00Z',
-    }
     mockGetProjects.mockResolvedValue(sevenProjects)
     mockGetProject.mockResolvedValue(fullSeventh)
     renderWithRouter()
@@ -864,5 +890,42 @@ describe('AC9 (feat07 updated) — load project from modal', () => {
     await waitFor(() => screen.getByText('Design 7'))
     fireEvent.click(screen.getByText('Design 7'))
     await waitFor(() => expect(mockGetProject).toHaveBeenCalledWith('proj-7'))
+  })
+
+  it('hydrates the canvas store with the full element array from a modal card', async () => {
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    mockGetProject.mockResolvedValue(fullSeventh)
+    renderWithRouter()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    await waitFor(() => screen.getByText('Design 7'))
+    fireEvent.click(screen.getByText('Design 7'))
+    await waitFor(() => expect(useCanvasStore.getState().designId).toBe('proj-7'))
+    expect(useCanvasStore.getState().name).toBe('Design 7')
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    expect(useCanvasStore.getState().elements[0]).toMatchObject({ id: 't7', content: 'From modal' })
+  })
+
+  it('sets isDirty to false after loading from the modal', async () => {
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    mockGetProject.mockResolvedValue(fullSeventh)
+    renderWithRouter()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    await waitFor(() => screen.getByText('Design 7'))
+    fireEvent.click(screen.getByText('Design 7'))
+    await waitFor(() => expect(useCanvasStore.getState().designId).toBe('proj-7'))
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('navigates to /editor/:designId after loading from the modal', async () => {
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    mockGetProject.mockResolvedValue(fullSeventh)
+    renderWithRouter()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    await waitFor(() => screen.getByText('Design 7'))
+    fireEvent.click(screen.getByText('Design 7'))
+    await waitFor(() => screen.getByTestId('editor-page'))
   })
 })

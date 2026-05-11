@@ -308,3 +308,4 @@ frontend/
 13. When `GET /api/projects/:id` fails, the spinner is removed, the card is interactive again, and an error notification is shown.
 14. Creating a new design and returning to the home page shows the newly created project in the list (and updates the "View all" count if applicable).
 15. Multiple projects load independently; navigating between them restores each one's distinct canvas state.
+16. Every project stored in the database is openable from the home page regardless of how many projects exist. Projects within the 6-card cap open directly from the grid. Projects beyond the cap open via the "All designs" modal. In both cases clicking the card fully loads the project: the canvas store is hydrated with the project's complete element array and the editor navigates to `/editor/:designId` with `isDirty = false`.
