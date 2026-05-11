@@ -116,6 +116,35 @@ describe('Project routes', () => {
       expect(response.statusCode).not.toBe(401);
       expect(response.statusCode).not.toBe(403);
     });
+
+    it('returns 500 INTERNAL_ERROR when the database throws (AC6)', async () => {
+      mockSql.mockRejectedValueOnce(new Error('DB connection lost'));
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      expect(response.statusCode).toBe(500);
+      const body = response.json<{ ok: boolean; error: { code: string } }>();
+      expect(body.ok).toBe(false);
+      expect(body.error.code).toBe('INTERNAL_ERROR');
+    });
+
+    it('returns all projects when more than 6 exist — no server-side cap (AC16)', async () => {
+      const base = new Date('2026-05-10T10:00:00Z');
+      const rows = Array.from({ length: 9 }, (_, i) => ({
+        id: `proj-${i + 1}`,
+        name: `Design ${i + 1}`,
+        element_count: i,
+        created_at: base,
+        updated_at: new Date(base.getTime() + i * 60_000),
+      }));
+      mockSql.mockResolvedValueOnce(rows);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ ok: boolean; data: unknown[] }>();
+      expect(body.data).toHaveLength(9);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -373,6 +402,17 @@ describe('Project routes', () => {
       expect(body.error.code).toBe('NOT_FOUND');
     });
 
+    it('returns 500 INTERNAL_ERROR when the database throws (AC13)', async () => {
+      mockSql.mockRejectedValueOnce(new Error('query timeout'));
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj1' });
+
+      expect(response.statusCode).toBe(500);
+      const body = response.json<{ ok: boolean; error: { code: string } }>();
+      expect(body.ok).toBe(false);
+      expect(body.error.code).toBe('INTERNAL_ERROR');
+    });
+
     it('requires no authentication (AC12)', async () => {
       mockSql.mockResolvedValueOnce([
         {
@@ -577,6 +617,36 @@ describe('Project routes', () => {
 
       // Canvases are independent
       expect(bodyA.data.canvas).not.toEqual(bodyB.data.canvas);
+    });
+
+    it('a newly created project is listable with elementCount 0 (AC14)', async () => {
+      const now = new Date('2026-05-11T09:00:00Z');
+      const id = 'fresh-proj';
+      const name = 'Brand New Design';
+
+      // POST /api/projects
+      mockSql
+        .mockResolvedValueOnce([]) // SELECT — no duplicate
+        .mockResolvedValueOnce([
+          { id, name, canvas: { elements: [] }, created_at: now, updated_at: now },
+        ]); // INSERT RETURNING
+      const postResp = await app.inject({
+        method: 'POST',
+        url: '/api/projects',
+        payload: { id, name },
+      });
+      expect(postResp.statusCode).toBe(201);
+
+      // GET /api/projects — backend includes the new project with elementCount: 0
+      mockSql.mockResolvedValueOnce([
+        { id, name, element_count: 0, created_at: now, updated_at: now },
+      ]);
+      const listResp = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      expect(listResp.statusCode).toBe(200);
+      const body = listResp.json<{ data: { id: string; name: string; elementCount: number }[] }>();
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0]).toMatchObject({ id, name, elementCount: 0 });
     });
 
     it('creating two projects with different ids both succeed (AC11)', async () => {
