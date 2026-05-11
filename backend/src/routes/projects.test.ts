@@ -108,7 +108,10 @@ describe('Project routes', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects' });
 
       const body = response.json<{ data: { createdAt: string; updatedAt: string }[] }>();
-      expect(body.data[0]).toMatchObject({ createdAt: '2026-05-01T09:00:00.000Z', updatedAt: '2026-05-10T10:07:00.000Z' });
+      expect(body.data[0]).toMatchObject({
+        createdAt: '2026-05-01T09:00:00.000Z',
+        updatedAt: '2026-05-10T10:07:00.000Z',
+      });
     });
 
     it('requires no authentication', async () => {
