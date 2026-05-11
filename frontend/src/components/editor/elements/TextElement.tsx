@@ -27,7 +27,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
 
   useEffect(() => {
     if (!isEditing || !editRef.current) return
-    editRef.current.textContent = element.content
+    editRef.current.innerHTML = element.content
     editRef.current.focus()
     const range = document.createRange()
     range.selectNodeContents(editRef.current)
@@ -94,17 +94,18 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
   }
 
   const handleBlur = () => {
-    const content = editRef.current?.innerText?.trim() ?? ''
+    const html = editRef.current?.innerHTML ?? ''
+    const text = editRef.current?.textContent?.trim() ?? ''
     setIsEditing(false)
-    if (!content) {
+    if (!text) {
       onRemove()
     } else {
-      onUpdate({ content })
+      onUpdate({ content: html })
     }
   }
 
   const handleInput = () => {
-    onUpdate({ content: editRef.current?.innerText ?? '' })
+    onUpdate({ content: editRef.current?.innerHTML ?? '' })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -156,7 +157,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
           style={{ outline: 'none', whiteSpace: 'pre-wrap', minHeight: element.height }}
         />
       ) : (
-        element.content
+        <div dangerouslySetInnerHTML={{ __html: element.content }} />
       )}
     </div>
   )
