@@ -17,6 +17,25 @@ export async function buildServer() {
 
   await migrate();
 
+  // Register error/not-found handlers before route plugins so encapsulated
+  // plugin scopes inherit them (Fastify v5 scoping requirement).
+  app.setNotFoundHandler((_request, reply) => {
+    void reply.status(404).send({
+      ok: false,
+      error: { code: 'NOT_FOUND', message: 'Route not found' },
+    });
+  });
+
+  app.setErrorHandler((error: { statusCode?: number; message: string }, _request, reply) => {
+    app.log.error(error);
+    const status = typeof error.statusCode === 'number' ? error.statusCode : 500;
+    const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message;
+    void reply.status(status).send({
+      ok: false,
+      error: { code: 'INTERNAL_ERROR', message },
+    });
+  });
+
   await app.register(cors, {
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -29,23 +48,6 @@ export async function buildServer() {
   await app.register(healthRoutes);
   await app.register(projectRoutes, { prefix: '/api' });
   await app.register(assetRoutes, { prefix: '/api' });
-
-  app.setNotFoundHandler(async (_request, reply) => {
-    await reply.status(404).send({
-      ok: false,
-      error: { code: 'NOT_FOUND', message: 'Route not found' },
-    });
-  });
-
-  app.setErrorHandler(async (error: { statusCode?: number; message: string }, _request, reply) => {
-    app.log.error(error);
-    const status = typeof error.statusCode === 'number' ? error.statusCode : 500;
-    const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message;
-    await reply.status(status).send({
-      ok: false,
-      error: { code: 'INTERNAL_ERROR', message },
-    });
-  });
 
   return app;
 }

@@ -59,6 +59,49 @@ afterEach(() => {
 })
 
 // ---------------------------------------------------------------------------
+// AC 9 (feat 07) — editor renders the loaded design, not a blank canvas
+// ---------------------------------------------------------------------------
+
+describe('AC9 (feat07) — editor reflects loadDesign state', () => {
+  it('shows the loaded design name in the header', () => {
+    useCanvasStore.setState({ designId: 'proj-1', name: 'Loaded Design', isDirty: false })
+    renderEditor()
+    expect(screen.getByText('Loaded Design')).toBeInTheDocument()
+  })
+
+  it('does not show "Unsaved changes" immediately after loadDesign (isDirty=false)', () => {
+    useCanvasStore.getState().loadDesign('proj-1', 'Loaded Design', [])
+    renderEditor()
+    expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument()
+  })
+
+  it('does not show "Unsaved changes" when loaded with elements (isDirty stays false)', () => {
+    const el = {
+      id: 't1',
+      type: 'text' as const,
+      x: 100,
+      y: 100,
+      width: 160,
+      height: 40,
+      rotation: 0,
+      opacity: 1,
+      locked: false,
+      content: 'Hello',
+      fontSize: 16,
+      fontFamily: 'Inter, sans-serif',
+      fontWeight: 'normal' as const,
+      fontStyle: 'normal' as const,
+      color: '#111827',
+      align: 'left' as const,
+    }
+    useCanvasStore.getState().loadDesign('proj-1', 'Loaded Design', [el])
+    renderEditor()
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+    expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
 // AC11 — Close button is always visible in the editor header
 // ---------------------------------------------------------------------------
 

@@ -559,6 +559,146 @@ describe('AC10 (feat07) — card load error', () => {
 })
 
 // ---------------------------------------------------------------------------
+// AC 3 (feat 07) — each card shows relative date from updatedAt
+// ---------------------------------------------------------------------------
+
+describe('AC3 (feat07) — card relative date', () => {
+  it('renders a non-empty subtitle with the element count and a time string', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    // subtitle contains element count and some relative time text
+    expect(screen.getByText(/2 elements/i)).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 6 (feat 07) — spinner overlay appears on the clicked card while loading
+// ---------------------------------------------------------------------------
+
+describe('AC6 (feat07) — spinner overlay on loading card', () => {
+  it('shows a spinner on the card while getProject is in flight', async () => {
+    let resolve: (v: typeof fullProject) => void
+    mockGetProject.mockReturnValue(
+      new Promise((r) => {
+        resolve = r
+      })
+    )
+    mockGetProjects.mockResolvedValue([summaryRecord])
+
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+
+    // Spinner should appear while the promise is pending
+    expect(document.querySelector('.animate-spin')).toBeInTheDocument()
+    resolve!(fullProject)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 10 (feat 07) — card is re-enabled after a failed load
+// ---------------------------------------------------------------------------
+
+describe('AC10 (feat07) — card re-enabled after error', () => {
+  it('re-enables the card button after getProject fails', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    mockGetProject.mockRejectedValue(new Error('load failed'))
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+
+    const card = screen.getByRole('button', { name: /my design/i })
+    fireEvent.click(card)
+
+    await waitFor(() => screen.getByText(/failed to load project/i))
+    expect(card).not.toBeDisabled()
+  })
+
+  it('removes the spinner after getProject fails', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    mockGetProject.mockRejectedValue(new Error('load failed'))
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+
+    await waitFor(() => screen.getByText(/failed to load project/i))
+    expect(document.querySelector('.animate-spin')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 12 (feat 07) — multiple projects load independently
+// ---------------------------------------------------------------------------
+
+describe('AC12 (feat07) — multiple projects are independent', () => {
+  it('each card has its own name and element count', async () => {
+    const second = {
+      id: 'proj-2',
+      name: 'Second Project',
+      elementCount: 5,
+      createdAt: '2026-05-09T10:00:00Z',
+      updatedAt: '2026-05-09T10:07:00Z',
+    }
+    mockGetProjects.mockResolvedValue([summaryRecord, second])
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    expect(screen.getByText('Second Project')).toBeInTheDocument()
+    expect(screen.getByText(/2 elements/i)).toBeInTheDocument()
+    expect(screen.getByText(/5 elements/i)).toBeInTheDocument()
+  })
+
+  it('clicking the second card calls getProject with the second id', async () => {
+    const second = {
+      id: 'proj-2',
+      name: 'Second Project',
+      elementCount: 5,
+      createdAt: '2026-05-09T10:00:00Z',
+      updatedAt: '2026-05-09T10:07:00Z',
+    }
+    const fullSecond = {
+      ...fullProject,
+      id: 'proj-2',
+      name: 'Second Project',
+      canvas: { elements: [] },
+    }
+    mockGetProjects.mockResolvedValue([summaryRecord, second])
+    mockGetProject.mockResolvedValue(fullSecond)
+
+    renderWithRouter()
+    await waitFor(() => screen.getByText('Second Project'))
+    fireEvent.click(screen.getByText('Second Project'))
+
+    await waitFor(() => expect(mockGetProject).toHaveBeenCalledWith('proj-2'))
+  })
+
+  it('loading the second project hydrates the store with the second project id', async () => {
+    const second = {
+      id: 'proj-2',
+      name: 'Second Project',
+      elementCount: 0,
+      createdAt: '2026-05-09T10:00:00Z',
+      updatedAt: '2026-05-09T10:07:00Z',
+    }
+    const fullSecond = {
+      id: 'proj-2',
+      name: 'Second Project',
+      canvas: { elements: [] },
+      createdAt: '2026-05-09T10:00:00Z',
+      updatedAt: '2026-05-09T10:07:00Z',
+    }
+    mockGetProjects.mockResolvedValue([summaryRecord, second])
+    mockGetProject.mockResolvedValue(fullSecond)
+
+    renderWithRouter()
+    await waitFor(() => screen.getByText('Second Project'))
+    fireEvent.click(screen.getByText('Second Project'))
+
+    await waitFor(() => expect(useCanvasStore.getState().designId).toBe('proj-2'))
+    expect(useCanvasStore.getState().name).toBe('Second Project')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // AC 11 (feat 07) — list refreshes after creating a new design
 // ---------------------------------------------------------------------------
 
@@ -571,5 +711,225 @@ describe('AC11 (feat07) — list invalidated after create', () => {
     const { createBtn } = openModal()
     fireEvent.click(createBtn)
     await waitFor(() => expect(mockGetProjects).toHaveBeenCalledTimes(2))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC2 / AC3 (feat07 updated) — 6-project cap and "View all" link
+// ---------------------------------------------------------------------------
+
+function makeSummary(i: number) {
+  return {
+    id: `proj-${i}`,
+    name: `Design ${i}`,
+    elementCount: i,
+    createdAt: '2026-05-10T10:00:00Z',
+    updatedAt: `2026-05-10T10:0${i}:00Z`,
+  }
+}
+
+describe('AC2 (feat07 updated) — ≤6 projects: no "View all" link', () => {
+  it('renders all 6 cards when exactly 6 projects exist', async () => {
+    const sixProjects = Array.from({ length: 6 }, (_, i) => makeSummary(i + 1))
+    mockGetProjects.mockResolvedValue(sixProjects)
+    renderStandalone()
+    await waitFor(() => screen.getByText('Design 1'))
+    for (let i = 1; i <= 6; i++) {
+      expect(screen.getByText(`Design ${i}`)).toBeInTheDocument()
+    }
+  })
+
+  it('does not show a "View all" link when there are 6 or fewer projects', async () => {
+    const sixProjects = Array.from({ length: 6 }, (_, i) => makeSummary(i + 1))
+    mockGetProjects.mockResolvedValue(sixProjects)
+    renderStandalone()
+    await waitFor(() => screen.getByText('Design 1'))
+    expect(screen.queryByText(/view all designs/i)).not.toBeInTheDocument()
+  })
+
+  it('does not show a "View all" link when there is only 1 project', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    expect(screen.queryByText(/view all designs/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('AC3 (feat07 updated) — >6 projects: exactly 6 cards and "View all (N)" link', () => {
+  it('renders exactly 6 cards when 7 projects exist', async () => {
+    const sevenProjects = Array.from({ length: 7 }, (_, i) => makeSummary(i + 1))
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    renderStandalone()
+    await waitFor(() => screen.getByText('Design 1'))
+    expect(screen.queryByText('Design 7')).not.toBeInTheDocument()
+    const cards = screen.getAllByRole('button', { name: /design \d/i })
+    expect(cards).toHaveLength(6)
+  })
+
+  it('shows "View all designs (N)" link with the total count', async () => {
+    const eightProjects = Array.from({ length: 8 }, (_, i) => makeSummary(i + 1))
+    mockGetProjects.mockResolvedValue(eightProjects)
+    renderStandalone()
+    await waitFor(() => screen.getByText(/view all designs \(8\)/i))
+  })
+
+  it('"View all" count reflects the total, not the visible cap', async () => {
+    const tenProjects = Array.from({ length: 10 }, (_, i) => makeSummary(i + 1))
+    mockGetProjects.mockResolvedValue(tenProjects)
+    renderStandalone()
+    await waitFor(() => screen.getByText(/view all designs \(10\)/i))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC7 (feat07 updated) — "View all designs" modal opens and shows all projects
+// ---------------------------------------------------------------------------
+
+describe('AC7 (feat07 updated) — "View all" modal', () => {
+  it('opens the modal when "View all designs" is clicked', async () => {
+    const sevenProjects = Array.from({ length: 7 }, (_, i) => makeSummary(i + 1))
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    renderStandalone()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    expect(screen.getByRole('dialog', { name: /all designs/i })).toBeInTheDocument()
+  })
+
+  it('modal contains cards for all projects, including those beyond the cap', async () => {
+    const sevenProjects = Array.from({ length: 7 }, (_, i) => makeSummary(i + 1))
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    renderStandalone()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('Design 7')).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC8 (feat07 updated) — modal closes on ✕, outside click, and Escape
+// ---------------------------------------------------------------------------
+
+describe('AC8 (feat07 updated) — modal close behaviours', () => {
+  async function openAllDesignsModal() {
+    const sevenProjects = Array.from({ length: 7 }, (_, i) => makeSummary(i + 1))
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    renderStandalone()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  }
+
+  it('closes when the ✕ button is clicked', async () => {
+    await openAllDesignsModal()
+    fireEvent.click(screen.getByRole('button', { name: /close all designs/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('closes when Escape is pressed', async () => {
+    await openAllDesignsModal()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('closes when clicking outside the modal panel', async () => {
+    await openAllDesignsModal()
+    const overlay = screen.getByRole('dialog')
+    fireEvent.mouseDown(overlay)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('does not close when clicking inside the modal panel', async () => {
+    await openAllDesignsModal()
+    fireEvent.mouseDown(screen.getByText('Design 7'))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC9 (feat07 updated) — opening a project from inside the modal
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// AC16 (feat07) — every project is openable from the home page
+// ---------------------------------------------------------------------------
+
+describe('AC16 (feat07) — every project openable from home page', () => {
+  const sevenProjects = Array.from({ length: 7 }, (_, i) => makeSummary(i + 1))
+  const fullSeventh = {
+    id: 'proj-7',
+    name: 'Design 7',
+    canvas: {
+      elements: [
+        {
+          id: 't7',
+          type: 'text' as const,
+          x: 100,
+          y: 100,
+          width: 160,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          content: 'From modal',
+          fontSize: 20,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 'bold' as const,
+          fontStyle: 'normal' as const,
+          color: '#000000',
+          align: 'left' as const,
+        },
+      ],
+    },
+    createdAt: '2026-05-10T10:00:00Z',
+    updatedAt: '2026-05-10T10:07:00Z',
+  }
+
+  it('calls getProject with the correct id when a modal card is clicked', async () => {
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    mockGetProject.mockResolvedValue(fullSeventh)
+    renderWithRouter()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    await waitFor(() => screen.getByText('Design 7'))
+    fireEvent.click(screen.getByText('Design 7'))
+    await waitFor(() => expect(mockGetProject).toHaveBeenCalledWith('proj-7'))
+  })
+
+  it('hydrates the canvas store with the full element array from a modal card', async () => {
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    mockGetProject.mockResolvedValue(fullSeventh)
+    renderWithRouter()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    await waitFor(() => screen.getByText('Design 7'))
+    fireEvent.click(screen.getByText('Design 7'))
+    await waitFor(() => expect(useCanvasStore.getState().designId).toBe('proj-7'))
+    expect(useCanvasStore.getState().name).toBe('Design 7')
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    expect(useCanvasStore.getState().elements[0]).toMatchObject({ id: 't7', content: 'From modal' })
+  })
+
+  it('sets isDirty to false after loading from the modal', async () => {
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    mockGetProject.mockResolvedValue(fullSeventh)
+    renderWithRouter()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    await waitFor(() => screen.getByText('Design 7'))
+    fireEvent.click(screen.getByText('Design 7'))
+    await waitFor(() => expect(useCanvasStore.getState().designId).toBe('proj-7'))
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('navigates to /editor/:designId after loading from the modal', async () => {
+    mockGetProjects.mockResolvedValue(sevenProjects)
+    mockGetProject.mockResolvedValue(fullSeventh)
+    renderWithRouter()
+    await waitFor(() => screen.getByText(/view all designs/i))
+    fireEvent.click(screen.getByText(/view all designs/i))
+    await waitFor(() => screen.getByText('Design 7'))
+    fireEvent.click(screen.getByText('Design 7'))
+    await waitFor(() => screen.getByTestId('editor-page'))
   })
 })
