@@ -4,7 +4,12 @@ import { buildServer } from '../server.js';
 // vi.hoisted ensures these mocks are available when vi.mock factories run
 const { mockSql } = vi.hoisted(() => {
   const fn = vi.fn();
-  return { mockSql: Object.assign(fn, { end: vi.fn().mockResolvedValue(undefined) }) };
+  return {
+    mockSql: Object.assign(fn, {
+      end: vi.fn().mockResolvedValue(undefined),
+      json: vi.fn((v: unknown) => v),
+    }),
+  };
 });
 
 vi.mock('../lib/db.js', () => ({ sql: mockSql }));
@@ -54,11 +59,8 @@ describe('Project routes', () => {
       expect(response.statusCode).toBe(200);
       const body = response.json<{ ok: boolean; data: { id: string; elementCount: number }[] }>();
       expect(body.data).toHaveLength(2);
-      const [first, second] = body.data;
-      expect(first!.id).toBe('p1');
-      expect(first!.elementCount).toBe(3);
-      expect(second!.id).toBe('p2');
-      expect(second!.elementCount).toBe(0);
+      expect(body.data[0]).toMatchObject({ id: 'p1', elementCount: 3 });
+      expect(body.data[1]).toMatchObject({ id: 'p2', elementCount: 0 });
     });
 
     it('defaults elementCount to 0 when jsonb_array_length returns null', async () => {
@@ -76,7 +78,7 @@ describe('Project routes', () => {
 
       expect(response.statusCode).toBe(200);
       const body = response.json<{ data: { elementCount: number }[] }>();
-      expect(body.data[0]!.elementCount).toBe(0);
+      expect(body.data[0]).toMatchObject({ elementCount: 0 });
     });
 
     it('does not include the canvas field in the response', async () => {
@@ -93,7 +95,7 @@ describe('Project routes', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects' });
 
       const body = response.json<{ data: Record<string, unknown>[] }>();
-      expect(body.data[0]!).not.toHaveProperty('canvas');
+      expect(body.data[0]).not.toHaveProperty('canvas');
     });
 
     it('returns createdAt and updatedAt as ISO strings', async () => {
@@ -106,8 +108,7 @@ describe('Project routes', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects' });
 
       const body = response.json<{ data: { createdAt: string; updatedAt: string }[] }>();
-      expect(body.data[0]!.createdAt).toBe('2026-05-01T09:00:00.000Z');
-      expect(body.data[0]!.updatedAt).toBe('2026-05-10T10:07:00.000Z');
+      expect(body.data[0]).toMatchObject({ createdAt: '2026-05-01T09:00:00.000Z', updatedAt: '2026-05-10T10:07:00.000Z' });
     });
 
     it('requires no authentication', async () => {
@@ -131,8 +132,8 @@ describe('Project routes', () => {
     it('returns all projects when more than 6 exist — no server-side cap (AC16)', async () => {
       const base = new Date('2026-05-10T10:00:00Z');
       const rows = Array.from({ length: 9 }, (_, i) => ({
-        id: `proj-${i + 1}`,
-        name: `Design ${i + 1}`,
+        id: `proj-${String(i + 1)}`,
+        name: `Design ${String(i + 1)}`,
         element_count: i,
         created_at: base,
         updated_at: new Date(base.getTime() + i * 60_000),

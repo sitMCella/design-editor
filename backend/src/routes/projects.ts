@@ -13,7 +13,7 @@ type ProjectRow = {
 type ProjectSummaryRow = {
   id: string;
   name: string;
-  element_count: number;
+  element_count: number | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -126,14 +126,11 @@ export function projectRoutes(app: FastifyInstance): void {
         .send({ ok: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
     }
 
-    // Pass the object directly — postgres.js serializes plain objects as JSON,
-    // avoiding the double-encoding that JSON.stringify + ::jsonb cast causes.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const canvasValue = (newCanvas ?? current.canvas) as any;
+    const canvasJSON = sql.json((newCanvas ?? current.canvas) as Parameters<typeof sql.json>[0]);
     const [row] = await sql<{ id: string; name: string; updated_at: Date }[]>`
       UPDATE project
       SET name = ${newName ?? current.name},
-          canvas = ${canvasValue},
+          canvas = ${canvasJSON},
           updated_at = now()
       WHERE id = ${id}
       RETURNING id, name, updated_at
