@@ -5,10 +5,14 @@ import { useCanvasStore } from '../stores/canvasStore'
 import { NewDesignModal } from '../components/NewDesignModal'
 import { ProjectCard } from '../components/ProjectCard'
 import { ProjectCardSkeleton } from '../components/ProjectCardSkeleton'
+import { AllDesignsModal } from '../components/AllDesignsModal'
 import { createProject, getProject, getProjects } from '../api/projects'
+
+const RECENT_LIMIT = 6
 
 export function HomePage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isAllDesignsOpen, setIsAllDesignsOpen] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [loadingCardId, setLoadingCardId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -106,7 +110,7 @@ export function HomePage() {
             </h2>
             {loadError && <p className="mb-3 text-sm text-red-500">{loadError}</p>}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {projects.map((project) => (
+              {projects.slice(0, RECENT_LIMIT).map((project) => (
                 <ProjectCard
                   key={project.id}
                   project={project}
@@ -115,6 +119,14 @@ export function HomePage() {
                 />
               ))}
             </div>
+            {projects.length > RECENT_LIMIT && (
+              <button
+                onClick={() => setIsAllDesignsOpen(true)}
+                className="mt-4 text-sm text-blue-500 hover:underline"
+              >
+                View all designs ({projects.length})
+              </button>
+            )}
           </>
         ) : (
           <p className="text-center text-sm text-gray-400">
@@ -128,6 +140,15 @@ export function HomePage() {
           onConfirm={handleCreate}
           onClose={() => setIsModalOpen(false)}
           isLoading={isPending}
+        />
+      )}
+
+      {isAllDesignsOpen && projects && (
+        <AllDesignsModal
+          projects={projects}
+          loadingCardId={loadingCardId}
+          onCardClick={(id) => void handleOpenProject(id)}
+          onClose={() => setIsAllDesignsOpen(false)}
         />
       )}
     </main>
