@@ -94,7 +94,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
   }
 
   const handleBlur = () => {
-    const content = editRef.current?.textContent?.trim() ?? ''
+    const content = editRef.current?.innerText?.trim() ?? ''
     setIsEditing(false)
     if (!content) {
       onRemove()
@@ -104,7 +104,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
   }
 
   const handleInput = () => {
-    onUpdate({ content: editRef.current?.textContent ?? '' })
+    onUpdate({ content: editRef.current?.innerText ?? '' })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -139,6 +139,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
         boxSizing: 'border-box',
         cursor,
         userSelect: isEditing ? 'text' : 'none',
+        whiteSpace: 'pre-wrap',
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
