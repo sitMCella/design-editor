@@ -559,6 +559,142 @@ describe('AC10 (feat07) — card load error', () => {
 })
 
 // ---------------------------------------------------------------------------
+// AC 3 (feat 07) — each card shows relative date from updatedAt
+// ---------------------------------------------------------------------------
+
+describe('AC3 (feat07) — card relative date', () => {
+  it('renders a non-empty subtitle with the element count and a time string', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    // subtitle contains element count and some relative time text
+    expect(screen.getByText(/2 elements/i)).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 6 (feat 07) — spinner overlay appears on the clicked card while loading
+// ---------------------------------------------------------------------------
+
+describe('AC6 (feat07) — spinner overlay on loading card', () => {
+  it('shows a spinner on the card while getProject is in flight', async () => {
+    let resolve: (v: typeof fullProject) => void
+    mockGetProject.mockReturnValue(new Promise((r) => { resolve = r }))
+    mockGetProjects.mockResolvedValue([summaryRecord])
+
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+
+    // Spinner should appear while the promise is pending
+    expect(document.querySelector('.animate-spin')).toBeInTheDocument()
+    resolve!(fullProject)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 10 (feat 07) — card is re-enabled after a failed load
+// ---------------------------------------------------------------------------
+
+describe('AC10 (feat07) — card re-enabled after error', () => {
+  it('re-enables the card button after getProject fails', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    mockGetProject.mockRejectedValue(new Error('load failed'))
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+
+    const card = screen.getByRole('button', { name: /my design/i })
+    fireEvent.click(card)
+
+    await waitFor(() => screen.getByText(/failed to load project/i))
+    expect(card).not.toBeDisabled()
+  })
+
+  it('removes the spinner after getProject fails', async () => {
+    mockGetProjects.mockResolvedValue([summaryRecord])
+    mockGetProject.mockRejectedValue(new Error('load failed'))
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    fireEvent.click(screen.getByText('My Design'))
+
+    await waitFor(() => screen.getByText(/failed to load project/i))
+    expect(document.querySelector('.animate-spin')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 12 (feat 07) — multiple projects load independently
+// ---------------------------------------------------------------------------
+
+describe('AC12 (feat07) — multiple projects are independent', () => {
+  it('each card has its own name and element count', async () => {
+    const second = {
+      id: 'proj-2',
+      name: 'Second Project',
+      elementCount: 5,
+      createdAt: '2026-05-09T10:00:00Z',
+      updatedAt: '2026-05-09T10:07:00Z',
+    }
+    mockGetProjects.mockResolvedValue([summaryRecord, second])
+    renderStandalone()
+    await waitFor(() => screen.getByText('My Design'))
+    expect(screen.getByText('Second Project')).toBeInTheDocument()
+    expect(screen.getByText(/2 elements/i)).toBeInTheDocument()
+    expect(screen.getByText(/5 elements/i)).toBeInTheDocument()
+  })
+
+  it('clicking the second card calls getProject with the second id', async () => {
+    const second = {
+      id: 'proj-2',
+      name: 'Second Project',
+      elementCount: 5,
+      createdAt: '2026-05-09T10:00:00Z',
+      updatedAt: '2026-05-09T10:07:00Z',
+    }
+    const fullSecond = {
+      ...fullProject,
+      id: 'proj-2',
+      name: 'Second Project',
+      canvas: { elements: [] },
+    }
+    mockGetProjects.mockResolvedValue([summaryRecord, second])
+    mockGetProject.mockResolvedValue(fullSecond)
+
+    renderWithRouter()
+    await waitFor(() => screen.getByText('Second Project'))
+    fireEvent.click(screen.getByText('Second Project'))
+
+    await waitFor(() => expect(mockGetProject).toHaveBeenCalledWith('proj-2'))
+  })
+
+  it('loading the second project hydrates the store with the second project id', async () => {
+    const second = {
+      id: 'proj-2',
+      name: 'Second Project',
+      elementCount: 0,
+      createdAt: '2026-05-09T10:00:00Z',
+      updatedAt: '2026-05-09T10:07:00Z',
+    }
+    const fullSecond = {
+      id: 'proj-2',
+      name: 'Second Project',
+      canvas: { elements: [] },
+      createdAt: '2026-05-09T10:00:00Z',
+      updatedAt: '2026-05-09T10:07:00Z',
+    }
+    mockGetProjects.mockResolvedValue([summaryRecord, second])
+    mockGetProject.mockResolvedValue(fullSecond)
+
+    renderWithRouter()
+    await waitFor(() => screen.getByText('Second Project'))
+    fireEvent.click(screen.getByText('Second Project'))
+
+    await waitFor(() => expect(useCanvasStore.getState().designId).toBe('proj-2'))
+    expect(useCanvasStore.getState().name).toBe('Second Project')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // AC 11 (feat 07) — list refreshes after creating a new design
 // ---------------------------------------------------------------------------
 
