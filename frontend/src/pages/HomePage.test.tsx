@@ -579,7 +579,11 @@ describe('AC3 (feat07) — card relative date', () => {
 describe('AC6 (feat07) — spinner overlay on loading card', () => {
   it('shows a spinner on the card while getProject is in flight', async () => {
     let resolve: (v: typeof fullProject) => void
-    mockGetProject.mockReturnValue(new Promise((r) => { resolve = r }))
+    mockGetProject.mockReturnValue(
+      new Promise((r) => {
+        resolve = r
+      })
+    )
     mockGetProjects.mockResolvedValue([summaryRecord])
 
     renderStandalone()
