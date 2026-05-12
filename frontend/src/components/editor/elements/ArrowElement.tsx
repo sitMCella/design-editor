@@ -26,12 +26,7 @@ export function ArrowElement({ element, isSelected, onSelect }: Props) {
         cursor: isSelected ? 'grab' : 'default',
       }}
     >
-      <svg
-        width={width}
-        height={height}
-        overflow="visible"
-        style={{ display: 'block' }}
-      >
+      <svg width={width} height={height} overflow="visible" style={{ display: 'block' }}>
         <defs>
           <marker
             id={`arrowhead-${id}`}
@@ -55,13 +50,7 @@ export function ArrowElement({ element, isSelected, onSelect }: Props) {
           markerEnd={`url(#arrowhead-${id})`}
           style={{ pointerEvents: 'none' }}
         />
-        <rect
-          x={0}
-          y={0}
-          width={width}
-          height={height}
-          fill="transparent"
-        />
+        <rect x={0} y={0} width={width} height={height} fill="transparent" />
       </svg>
     </div>
   )
