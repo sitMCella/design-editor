@@ -121,6 +121,25 @@ describe('Project routes', () => {
       expect(response.statusCode).not.toBe(403);
     });
 
+    // Feature 08 — arrow elements are counted like any other element
+    it('reflects arrow element count in elementCount (feat08)', async () => {
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-arrow',
+          name: 'Arrow Design',
+          element_count: 3,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ ok: boolean; data: { id: string; elementCount: number }[] }>();
+      expect(body.data[0]).toMatchObject({ id: 'proj-arrow', elementCount: 3 });
+    });
+
     it('returns 500 INTERNAL_ERROR when the database throws (AC6)', async () => {
       mockSql.mockRejectedValueOnce(new Error('DB connection lost'));
 
@@ -395,6 +414,101 @@ describe('Project routes', () => {
       expect(body.data.canvas).toEqual(savedCanvas);
     });
 
+    // Feature 08 — ArrowElement round-trip via GET
+    it('returns all arrow element properties intact (feat08)', async () => {
+      const arrowElement = {
+        id: 'arrow-1',
+        type: 'arrow',
+        x: 540,
+        y: 355,
+        width: 200,
+        height: 10,
+        rotation: 0,
+        opacity: 1,
+        locked: false,
+        stroke: '#111827',
+        strokeWidth: 2,
+        arrowHead: 'end',
+      };
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-arrow',
+          name: 'Arrow Design',
+          canvas: { elements: [arrowElement] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-arrow' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        ok: boolean;
+        data: { canvas: { elements: (typeof arrowElement)[] } };
+      }>();
+      expect(body.data.canvas.elements[0]).toEqual(arrowElement);
+    });
+
+    it('returns a canvas with mixed element types including an arrow (feat08)', async () => {
+      const elements = [
+        {
+          id: 'text-1',
+          type: 'text',
+          x: 100,
+          y: 100,
+          width: 160,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          content: 'Hello',
+          fontSize: 16,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          color: '#111827',
+          align: 'left',
+        },
+        {
+          id: 'arrow-1',
+          type: 'arrow',
+          x: 540,
+          y: 355,
+          width: 200,
+          height: 10,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          stroke: '#111827',
+          strokeWidth: 2,
+          arrowHead: 'end',
+        },
+      ];
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-mixed',
+          name: 'Mixed Design',
+          canvas: { elements },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-mixed' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        ok: boolean;
+        data: { canvas: { elements: typeof elements } };
+      }>();
+      expect(body.data.canvas.elements).toHaveLength(2);
+      expect(body.data.canvas.elements[0].type).toBe('text');
+      expect(body.data.canvas.elements[1].type).toBe('arrow');
+    });
+
     it('returns 404 NOT_FOUND when project does not exist (AC3)', async () => {
       mockSql.mockResolvedValueOnce([]); // no rows
 
@@ -534,6 +648,113 @@ describe('Project routes', () => {
         fontStyle: 'italic',
         align: 'center',
       });
+    });
+
+    // Feature 08 — ArrowElement persistence via PATCH
+    it('saves all arrow element properties to the canvas JSONB column (feat08)', async () => {
+      const canvas = {
+        elements: [
+          {
+            id: 'arrow-1',
+            type: 'arrow',
+            x: 540,
+            y: 355,
+            width: 200,
+            height: 10,
+            rotation: 0,
+            opacity: 1,
+            locked: false,
+            stroke: '#111827',
+            strokeWidth: 2,
+            arrowHead: 'end',
+          },
+        ],
+      };
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-arrow', name: 'Design', updated_at: new Date() }]);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-arrow',
+        payload: { canvas },
+      });
+
+      expect(response.statusCode).toBe(200);
+      // Verify the SQL UPDATE received the full arrow element structure
+      const updateCall = mockSql.mock.calls[1];
+      const sqlArgs = updateCall?.slice(1) as unknown[];
+      const canvasArg = sqlArgs.find(
+        (a): a is { elements: Record<string, unknown>[] } =>
+          a !== null && typeof a === 'object' && 'elements' in (a as Record<string, unknown>),
+      );
+      expect(canvasArg?.elements[0]).toMatchObject({
+        type: 'arrow',
+        stroke: '#111827',
+        strokeWidth: 2,
+        arrowHead: 'end',
+      });
+    });
+
+    it('saves a canvas with both text and arrow elements (feat08)', async () => {
+      const canvas = {
+        elements: [
+          {
+            id: 'text-1',
+            type: 'text',
+            x: 100,
+            y: 100,
+            width: 160,
+            height: 40,
+            rotation: 0,
+            opacity: 1,
+            locked: false,
+            content: 'Label',
+            fontSize: 16,
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 'normal',
+            fontStyle: 'normal',
+            color: '#111827',
+            align: 'left',
+          },
+          {
+            id: 'arrow-1',
+            type: 'arrow',
+            x: 540,
+            y: 355,
+            width: 200,
+            height: 10,
+            rotation: 0,
+            opacity: 1,
+            locked: false,
+            stroke: '#111827',
+            strokeWidth: 2,
+            arrowHead: 'end',
+          },
+        ],
+      };
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-mixed', name: 'Design', updated_at: new Date() }]);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-mixed',
+        payload: { canvas },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const updateCall = mockSql.mock.calls[1];
+      const sqlArgs = updateCall?.slice(1) as unknown[];
+      const canvasArg = sqlArgs.find(
+        (a): a is { elements: Record<string, unknown>[] } =>
+          a !== null && typeof a === 'object' && 'elements' in (a as Record<string, unknown>),
+      );
+      expect(canvasArg?.elements).toHaveLength(2);
+      expect(canvasArg?.elements[0]).toMatchObject({ type: 'text' });
+      expect(canvasArg?.elements[1]).toMatchObject({ type: 'arrow' });
     });
 
     it('returns 400 INVALID_BODY when no valid field is provided (AC2)', async () => {

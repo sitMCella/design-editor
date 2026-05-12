@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @specs/architecture/state-management.md
 @specs/features/01-toolbar-text-element.md
 @specs/features/02-text-element-customization.md
+@specs/features/03-toolbar-image-element.md
+@specs/features/04-image-element-customization.md
+@specs/features/05-new-design.md
+@specs/features/06-store-design-project.md
+@specs/features/07-load-design-project.md
+@specs/features/08-toolbar-arrow-element.md
 
 ## Project Overview
 

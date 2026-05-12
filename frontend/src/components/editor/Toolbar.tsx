@@ -1,6 +1,6 @@
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
-import type { TextElement, ImageElement } from '../../types/canvas'
+import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
 import { SURFACE_WIDTH, SURFACE_HEIGHT } from './DesignSurface'
 
 export function Toolbar() {
@@ -59,6 +59,29 @@ export function Toolbar() {
     setActiveTool('select')
   }
 
+  const handleArrowTool = () => {
+    setActiveTool('arrow')
+
+    const element: ArrowElement = {
+      id: crypto.randomUUID(),
+      type: 'arrow',
+      x: (SURFACE_WIDTH - 200) / 2,
+      y: (SURFACE_HEIGHT - 10) / 2,
+      width: 200,
+      height: 10,
+      rotation: 0,
+      opacity: 1,
+      locked: false,
+      stroke: '#111827',
+      strokeWidth: 2,
+      arrowHead: 'end',
+    }
+
+    addElement(element)
+    selectElements([element.id])
+    setActiveTool('select')
+  }
+
   return (
     <aside className="flex w-14 flex-col items-center gap-2 border-r bg-white py-3">
       <button
@@ -92,6 +115,15 @@ export function Toolbar() {
           <circle cx="7" cy="8" r="1.5" />
           <path d="M2 14 l4-4 4 4 3-3 5 5" />
         </svg>
+      </button>
+      <button
+        onClick={handleArrowTool}
+        title="Arrow"
+        className={`flex h-10 w-10 items-center justify-center rounded text-sm font-bold transition-colors ${
+          activeTool === 'arrow' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+        }`}
+      >
+        →
       </button>
     </aside>
   )
