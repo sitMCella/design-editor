@@ -7,6 +7,7 @@ import { fetchAssetFromUrl } from '../../api/assets'
 import type {
   TextElement,
   ImageElement as ImageElementType,
+  ArrowElement as ArrowElementType,
   CanvasElement,
 } from '../../types/canvas'
 
@@ -18,6 +19,7 @@ const mockFetchAsset = vi.mocked(fetchAssetFromUrl)
 
 const asText = (el: CanvasElement) => el as TextElement
 const asImage = (el: CanvasElement) => el as ImageElementType
+const asArrow = (el: CanvasElement) => el as ArrowElementType
 
 function makeQueryClient() {
   return new QueryClient({ defaultOptions: { mutations: { retry: false } } })
@@ -639,5 +641,292 @@ describe('AC12: session persistence', () => {
     fireEvent.change(screen.getByLabelText('Object fit'), { target: { value: 'fill' } })
     unmount()
     expect(asImage(useCanvasStore.getState().elements[0]).objectFit).toBe('fill')
+  })
+})
+
+// ===========================================================================
+// Arrow toolbar tests (feature 09)
+// ===========================================================================
+
+const makeArrowElement = (
+  id: string,
+  overrides: Partial<ArrowElementType> = {}
+): ArrowElementType => ({
+  id,
+  type: 'arrow',
+  x1: 540,
+  y1: 360,
+  x2: 740,
+  y2: 360,
+  x: 539,
+  y: 359,
+  width: 202,
+  height: 2,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  stroke: '#111827',
+  strokeWidth: 2,
+  arrowHead: 'end',
+  ...overrides,
+})
+
+// ---------------------------------------------------------------------------
+// Arrow toolbar — visibility (AC13)
+// ---------------------------------------------------------------------------
+
+describe('AC13: arrow toolbar visibility', () => {
+  it('renders the toolbar when an arrow element is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1')],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    expect(screen.getByTestId('contextual-toolbar')).toBeInTheDocument()
+  })
+
+  it('renders stroke color control when arrow is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1')],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Stroke color')).toBeInTheDocument()
+  })
+
+  it('renders stroke width control when arrow is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1')],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Stroke width')).toBeInTheDocument()
+  })
+
+  it('does not render text formatting controls when arrow is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1')],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    expect(screen.queryByLabelText('Font family')).toBeNull()
+    expect(screen.queryByLabelText('Font size')).toBeNull()
+  })
+
+  it('renders nothing when arrow exists but nothing is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1')],
+      selectedIds: [],
+    })
+    const { container } = renderToolbar()
+    expect(container.firstChild).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Arrowhead position buttons (AC14)
+// ---------------------------------------------------------------------------
+
+describe('AC14: arrowhead position buttons', () => {
+  it('sets arrowHead to "none" when "No arrowheads" is clicked', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { arrowHead: 'end' })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('No arrowheads'))
+    expect(asArrow(useCanvasStore.getState().elements[0]).arrowHead).toBe('none')
+  })
+
+  it('sets arrowHead to "start" when "Arrowhead at start" is clicked', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { arrowHead: 'end' })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Arrowhead at start'))
+    expect(asArrow(useCanvasStore.getState().elements[0]).arrowHead).toBe('start')
+  })
+
+  it('sets arrowHead to "end" when "Arrowhead at end" is clicked', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { arrowHead: 'none' })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Arrowhead at end'))
+    expect(asArrow(useCanvasStore.getState().elements[0]).arrowHead).toBe('end')
+  })
+
+  it('sets arrowHead to "both" when "Arrowheads at both ends" is clicked', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { arrowHead: 'end' })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Arrowheads at both ends'))
+    expect(asArrow(useCanvasStore.getState().elements[0]).arrowHead).toBe('both')
+  })
+
+  it('marks the active arrowhead button as pressed', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { arrowHead: 'both' })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Arrowheads at both ends')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Arrowhead at end')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('Arrowhead at start')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('No arrowheads')).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('reflects the current arrowHead value in the active button', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { arrowHead: 'start' })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Arrowhead at start')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Arrowhead at end')).toHaveAttribute('aria-pressed', 'false')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Stroke width (AC15)
+// ---------------------------------------------------------------------------
+
+describe('AC15: stroke width', () => {
+  it('updates strokeWidth when the input changes', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { strokeWidth: 2 })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Stroke width'), { target: { value: '7' } })
+    expect(asArrow(useCanvasStore.getState().elements[0]).strokeWidth).toBe(7)
+  })
+
+  it('reflects the current strokeWidth in the input', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { strokeWidth: 8 })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    expect((screen.getByLabelText('Stroke width') as HTMLInputElement).value).toBe('8')
+  })
+
+  it('increments strokeWidth by 1 when + is clicked', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { strokeWidth: 4 })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Increase stroke width'))
+    expect(asArrow(useCanvasStore.getState().elements[0]).strokeWidth).toBe(5)
+  })
+
+  it('decrements strokeWidth by 1 when − is clicked', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { strokeWidth: 4 })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Decrease stroke width'))
+    expect(asArrow(useCanvasStore.getState().elements[0]).strokeWidth).toBe(3)
+  })
+
+  it('does not go below the minimum of 1', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { strokeWidth: 1 })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Decrease stroke width'))
+    expect(asArrow(useCanvasStore.getState().elements[0]).strokeWidth).toBe(1)
+  })
+
+  it('does not exceed the maximum of 20', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { strokeWidth: 20 })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Increase stroke width'))
+    expect(asArrow(useCanvasStore.getState().elements[0]).strokeWidth).toBe(20)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Stroke colour (AC16)
+// ---------------------------------------------------------------------------
+
+describe('AC16: stroke color', () => {
+  it('updates stroke when the color picker changes', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { stroke: '#111827' })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Stroke color'), { target: { value: '#ff0000' } })
+    expect(asArrow(useCanvasStore.getState().elements[0]).stroke).toBe('#ff0000')
+  })
+
+  it('reflects the current stroke color in the picker', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { stroke: '#3b82f6' })],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    expect((screen.getByLabelText('Stroke color') as HTMLInputElement).value).toBe('#3b82f6')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC17 — independent per-arrow formatting
+// ---------------------------------------------------------------------------
+
+describe('AC17: independent arrow formatting', () => {
+  it('updating strokeWidth of one arrow does not affect another', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeArrowElement('arr-1', { strokeWidth: 2 }),
+        makeArrowElement('arr-2', { strokeWidth: 5 }),
+      ],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Increase stroke width'))
+    const elements = useCanvasStore.getState().elements
+    expect(asArrow(elements.find((e) => e.id === 'arr-1')!).strokeWidth).toBe(3)
+    expect(asArrow(elements.find((e) => e.id === 'arr-2')!).strokeWidth).toBe(5)
+  })
+
+  it('toolbar shows properties of the selected arrow, not another', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeArrowElement('arr-1', { strokeWidth: 3 }),
+        makeArrowElement('arr-2', { strokeWidth: 12 }),
+      ],
+      selectedIds: ['arr-2'],
+    })
+    renderToolbar()
+    expect((screen.getByLabelText('Stroke width') as HTMLInputElement).value).toBe('12')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC18 — customisations persist for the session lifetime
+// ---------------------------------------------------------------------------
+
+describe('AC18: arrow session persistence', () => {
+  it('arrow customisations remain in the store after the toolbar unmounts', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1', { arrowHead: 'end' })],
+      selectedIds: ['arr-1'],
+    })
+    const { unmount } = renderToolbar()
+    fireEvent.click(screen.getByLabelText('Arrowheads at both ends'))
+    unmount()
+    expect(asArrow(useCanvasStore.getState().elements[0]).arrowHead).toBe('both')
   })
 })

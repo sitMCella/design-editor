@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useCanvasStore } from './canvasStore'
-import type { TextElement } from '../types/canvas'
+import type { TextElement, ArrowElement } from '../types/canvas'
 
 const makeElement = (overrides: Partial<TextElement> = {}): TextElement => ({
   id: 'el-1',
@@ -237,6 +237,184 @@ describe('loadDesign', () => {
     const elements = useCanvasStore.getState().elements
     expect(elements).toHaveLength(1)
     expect(elements[0].id).toBe('new')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// updateElement — arrow bounding box recalculation (feature 09)
+// ---------------------------------------------------------------------------
+
+const makeArrow = (overrides: Partial<ArrowElement> = {}): ArrowElement => ({
+  id: 'arr-1',
+  type: 'arrow',
+  x1: 100,
+  y1: 200,
+  x2: 300,
+  y2: 200,
+  // derived bbox: x=99, y=199, width=202, height=2 (strokeWidth=2)
+  x: 99,
+  y: 199,
+  width: 202,
+  height: 2,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  stroke: '#111827',
+  strokeWidth: 2,
+  arrowHead: 'end',
+  ...overrides,
+})
+
+describe('updateElement — arrow bounding box', () => {
+  it('recalculates the bounding box when x1 changes', () => {
+    useCanvasStore.getState().addElement(makeArrow())
+    // Move start point to (200, 200) — arrow is now 100px wide instead of 200
+    useCanvasStore.getState().updateElement('arr-1', { x1: 200, y1: 200 })
+    const arr = useCanvasStore.getState().elements[0] as ArrowElement
+    // deriveBBox(200,200, 300,200, 2) → x=199, y=199, width=102, height=2
+    expect(arr.x).toBe(199)
+    expect(arr.y).toBe(199)
+    expect(arr.width).toBe(102)
+    expect(arr.height).toBe(2)
+  })
+
+  it('recalculates the bounding box when both endpoints change (diagonal)', () => {
+    useCanvasStore.getState().addElement(makeArrow())
+    useCanvasStore.getState().updateElement('arr-1', { x1: 100, y1: 100, x2: 200, y2: 300 })
+    const arr = useCanvasStore.getState().elements[0] as ArrowElement
+    // deriveBBox(100,100, 200,300, 2) → x=99, y=99, width=102, height=202
+    expect(arr.x).toBe(99)
+    expect(arr.y).toBe(99)
+    expect(arr.width).toBe(102)
+    expect(arr.height).toBe(202)
+  })
+
+  it('recalculates the bounding box when strokeWidth changes', () => {
+    useCanvasStore.getState().addElement(makeArrow())
+    useCanvasStore.getState().updateElement('arr-1', { strokeWidth: 6 })
+    const arr = useCanvasStore.getState().elements[0] as ArrowElement
+    // deriveBBox(100,200, 300,200, 6) → x=97, y=197, width=206, height=6
+    expect(arr.x).toBe(97)
+    expect(arr.y).toBe(197)
+    expect(arr.width).toBe(206)
+    expect(arr.height).toBe(6)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// updateElement — connected arrow endpoints follow target element (AC11)
+// ---------------------------------------------------------------------------
+
+describe('updateElement — connected endpoint following', () => {
+  it('AC11: moves connected start endpoint when target element moves', () => {
+    // Text element at (100,100) size 100×50; right anchor = (200, 125)
+    const text = makeElement({ id: 'txt-1', x: 100, y: 100, width: 100, height: 50 })
+    const arrow = makeArrow({
+      id: 'arr-1',
+      x1: 200,
+      y1: 125,
+      x2: 400,
+      y2: 125,
+      startAnchor: { elementId: 'txt-1', side: 'right' },
+    })
+    useCanvasStore.getState().addElement(text)
+    useCanvasStore.getState().addElement(arrow)
+
+    // Move text element 100px right → new right anchor = (300, 125)
+    useCanvasStore.getState().updateElement('txt-1', { x: 200 })
+
+    const updatedArrow = useCanvasStore.getState().elements[1] as ArrowElement
+    expect(updatedArrow.x1).toBe(300)
+    expect(updatedArrow.y1).toBe(125)
+  })
+
+  it('AC11: moves connected end endpoint when target element moves', () => {
+    // Text element at (400,100) size 100×50; left anchor = (400, 125)
+    const text = makeElement({ id: 'txt-2', x: 400, y: 100, width: 100, height: 50 })
+    const arrow = makeArrow({
+      id: 'arr-2',
+      x1: 200,
+      y1: 125,
+      x2: 400,
+      y2: 125,
+      endAnchor: { elementId: 'txt-2', side: 'left' },
+    })
+    useCanvasStore.getState().addElement(text)
+    useCanvasStore.getState().addElement(arrow)
+
+    // Move text element 100px right → new left anchor = (500, 125)
+    useCanvasStore.getState().updateElement('txt-2', { x: 500 })
+
+    const updatedArrow = useCanvasStore.getState().elements[1] as ArrowElement
+    expect(updatedArrow.x2).toBe(500)
+    expect(updatedArrow.y2).toBe(125)
+  })
+
+  it('AC11: updates arrow bounding box when connected target moves', () => {
+    const text = makeElement({ id: 'txt-3', x: 100, y: 100, width: 100, height: 50 })
+    const arrow = makeArrow({
+      id: 'arr-3',
+      x1: 200,
+      y1: 125,
+      x2: 400,
+      y2: 125,
+      startAnchor: { elementId: 'txt-3', side: 'right' },
+    })
+    useCanvasStore.getState().addElement(text)
+    useCanvasStore.getState().addElement(arrow)
+
+    useCanvasStore.getState().updateElement('txt-3', { x: 200 })
+
+    // new x1=300, x2=400, strokeWidth=2 → bbox x=299, y=124, width=102, height=2
+    const updatedArrow = useCanvasStore.getState().elements[1] as ArrowElement
+    expect(updatedArrow.x).toBe(299)
+    expect(updatedArrow.width).toBe(102)
+  })
+
+  it('AC11: both start and end endpoints follow their respective targets', () => {
+    const textA = makeElement({ id: 'txt-a', x: 100, y: 100, width: 100, height: 50 })
+    const textB = makeElement({ id: 'txt-b', x: 400, y: 100, width: 100, height: 50 })
+    // right anchor of textA = (200, 125); left anchor of textB = (400, 125)
+    const arrow = makeArrow({
+      id: 'arr-ab',
+      x1: 200,
+      y1: 125,
+      x2: 400,
+      y2: 125,
+      startAnchor: { elementId: 'txt-a', side: 'right' },
+      endAnchor: { elementId: 'txt-b', side: 'left' },
+    })
+    useCanvasStore.getState().addElement(textA)
+    useCanvasStore.getState().addElement(textB)
+    useCanvasStore.getState().addElement(arrow)
+
+    // Move textA right; textB stays
+    useCanvasStore.getState().updateElement('txt-a', { x: 200 })
+
+    const updatedArrow = useCanvasStore.getState().elements[2] as ArrowElement
+    // new right anchor of textA = (300, 125); textB.left = (400, 125) unchanged
+    expect(updatedArrow.x1).toBe(300)
+    expect(updatedArrow.x2).toBe(400)
+  })
+
+  it('does not move endpoints that are not connected to the moved element', () => {
+    const text = makeElement({ id: 'txt-x', x: 100, y: 100, width: 100, height: 50 })
+    const arrow = makeArrow({
+      id: 'arr-x',
+      x1: 200,
+      y1: 125,
+      x2: 400,
+      y2: 125,
+      // no anchor — free endpoints
+    })
+    useCanvasStore.getState().addElement(text)
+    useCanvasStore.getState().addElement(arrow)
+
+    useCanvasStore.getState().updateElement('txt-x', { x: 300 })
+
+    const arr = useCanvasStore.getState().elements[1] as ArrowElement
+    expect(arr.x1).toBe(200)
+    expect(arr.x2).toBe(400)
   })
 })
 
