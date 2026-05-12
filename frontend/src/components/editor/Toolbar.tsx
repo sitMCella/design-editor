@@ -62,18 +62,29 @@ export function Toolbar() {
   const handleArrowTool = () => {
     setActiveTool('arrow')
 
+    const x1 = 540
+    const y1 = 360
+    const x2 = 740
+    const y2 = 360
+    const strokeWidth = 2
+
     const element: ArrowElement = {
       id: crypto.randomUUID(),
       type: 'arrow',
-      x: (SURFACE_WIDTH - 200) / 2,
-      y: (SURFACE_HEIGHT - 10) / 2,
-      width: 200,
-      height: 10,
+      x1,
+      y1,
+      x2,
+      y2,
+      // Derived bounding box
+      x: Math.min(x1, x2) - strokeWidth / 2,
+      y: Math.min(y1, y2) - strokeWidth / 2,
+      width: Math.abs(x2 - x1) + strokeWidth,
+      height: Math.abs(y2 - y1) + strokeWidth,
       rotation: 0,
       opacity: 1,
       locked: false,
       stroke: '#111827',
-      strokeWidth: 2,
+      strokeWidth,
       arrowHead: 'end',
     }
 

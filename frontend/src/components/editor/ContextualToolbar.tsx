@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useCanvasStore } from '../../stores/canvasStore'
-import type { TextElement, ImageElement } from '../../types/canvas'
+import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
 import { fetchAssetFromUrl } from '../../api/assets'
 
 const FONT_FAMILIES = [
@@ -286,6 +286,86 @@ function ImageToolbar({
 }
 
 // ---------------------------------------------------------------------------
+// Arrow toolbar
+// ---------------------------------------------------------------------------
+
+const ARROWHEAD_OPTIONS: Array<{ value: ArrowElement['arrowHead']; label: string; title: string }> = [
+  { value: 'none', label: '—', title: 'No arrowheads' },
+  { value: 'end', label: '→', title: 'Arrowhead at end' },
+  { value: 'start', label: '←', title: 'Arrowhead at start' },
+  { value: 'both', label: '↔', title: 'Arrowheads at both ends' },
+]
+
+function ArrowToolbar({
+  element,
+  update,
+}: {
+  element: ArrowElement
+  update: (patch: Partial<ArrowElement>) => void
+}) {
+  return (
+    <>
+      <div className="flex items-center gap-0.5">
+        {ARROWHEAD_OPTIONS.map(({ value, label, title }) => (
+          <button
+            key={value}
+            aria-label={title}
+            aria-pressed={element.arrowHead === value}
+            title={title}
+            onClick={() => update({ arrowHead: value })}
+            className={`flex h-6 w-6 items-center justify-center rounded text-sm ${
+              element.arrowHead === value ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mx-1 h-4 w-px bg-gray-200" />
+
+      <div className="flex items-center gap-0.5">
+        <button
+          aria-label="Decrease stroke width"
+          onClick={() => update({ strokeWidth: Math.max(1, element.strokeWidth - 1) })}
+          className="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-gray-100"
+        >
+          −
+        </button>
+        <input
+          aria-label="Stroke width"
+          type="number"
+          min={1}
+          max={20}
+          value={element.strokeWidth}
+          onChange={(e) =>
+            update({ strokeWidth: Math.max(1, Math.min(20, Number(e.target.value))) })
+          }
+          className="w-10 rounded border border-gray-200 px-1 py-0.5 text-center text-sm"
+        />
+        <button
+          aria-label="Increase stroke width"
+          onClick={() => update({ strokeWidth: Math.min(20, element.strokeWidth + 1) })}
+          className="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-gray-100"
+        >
+          +
+        </button>
+      </div>
+
+      <div className="mx-1 h-4 w-px bg-gray-200" />
+
+      <input
+        aria-label="Stroke color"
+        type="color"
+        value={element.stroke}
+        onChange={(e) => update({ stroke: e.target.value })}
+        className="h-6 w-6 cursor-pointer rounded border border-gray-200 p-0.5"
+      />
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Shell
 // ---------------------------------------------------------------------------
 
@@ -319,6 +399,18 @@ export function ContextualToolbar() {
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
         <ImageToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
+      </div>
+    )
+  }
+
+  if (found.type === 'arrow') {
+    const element = found as ArrowElement
+    return (
+      <div
+        data-testid="contextual-toolbar"
+        className="flex h-10 items-center gap-2 border-b bg-white px-3"
+      >
+        <ArrowToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
       </div>
     )
   }

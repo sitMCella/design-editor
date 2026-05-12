@@ -69,6 +69,8 @@ export function DesignSurface() {
                 e.stopPropagation()
                 selectElements([element.id])
               }}
+              onUpdate={(patch) => updateElement(element.id, patch)}
+              allElements={elements}
             />
           )
         }
