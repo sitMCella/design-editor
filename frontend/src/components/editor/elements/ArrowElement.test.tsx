@@ -251,13 +251,13 @@ describe('endpoint handles', () => {
     const { getByTestId } = renderElement({}, { isSelected: true })
     const handle = getByTestId('endpoint-start')
     expect(handle.getAttribute('fill')).toBe('white')
-    expect(handle.getAttribute('stroke').toLowerCase()).toContain('3b82f6')
+    expect(handle.getAttribute('stroke')!.toLowerCase()).toContain('3b82f6')
   })
 
   it('end handle is a filled circle (blue fill)', () => {
     const { getByTestId } = renderElement({}, { isSelected: true })
     const handle = getByTestId('endpoint-end')
-    expect(handle.getAttribute('fill').toLowerCase()).toContain('3b82f6')
+    expect(handle.getAttribute('fill')!.toLowerCase()).toContain('3b82f6')
   })
 
   it('start handle is positioned at svgX1, svgY1', () => {
