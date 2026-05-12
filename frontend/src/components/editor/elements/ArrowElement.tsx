@@ -47,7 +47,7 @@ function ArrowMarkers({ id, stroke, arrowHead }: { id: string; stroke: string; a
           id={`arrowhead-start-${id}`}
           markerWidth="8"
           markerHeight="8"
-          refX="2"
+          refX="8"
           refY="3"
           orient="auto-start-reverse"
         >
