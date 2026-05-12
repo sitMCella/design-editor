@@ -36,12 +36,19 @@ type ImageElement = BaseElement & {
   objectFit: 'fill' | 'contain' | 'cover';
 };
 
+type ArrowElement = BaseElement & {
+  type: 'arrow';
+  stroke: string;
+  strokeWidth: number;
+  arrowHead: 'end';
+};
+
 type GroupElement = BaseElement & {
   type: 'group';
   children: CanvasElement[];
 };
 
-export type CanvasElement = ShapeElement | TextElement | ImageElement | GroupElement;
+export type CanvasElement = ShapeElement | TextElement | ImageElement | ArrowElement | GroupElement;
 
 // Project
 
