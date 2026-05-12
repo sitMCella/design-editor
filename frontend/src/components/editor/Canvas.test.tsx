@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import { Canvas } from './Canvas'
 import { useCanvasStore } from '../../stores/canvasStore'
-import type { TextElement, ImageElement } from '../../types/canvas'
+import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
 
 const makeTextElement = (id: string): TextElement => ({
   id,
@@ -36,6 +36,21 @@ const makeImageElement = (id: string): ImageElement => ({
   src: '',
   objectFit: 'cover',
   objectPosition: '50% 50%',
+})
+
+const makeArrowElement = (id: string): ArrowElement => ({
+  id,
+  type: 'arrow',
+  x: 540,
+  y: 355,
+  width: 200,
+  height: 10,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  stroke: '#111827',
+  strokeWidth: 2,
+  arrowHead: 'end',
 })
 
 // keep old name as alias so existing tests compile unchanged
@@ -104,5 +119,33 @@ describe('background click deselects image element', () => {
 
     expect(useCanvasStore.getState().elements).toHaveLength(1)
     expect(useCanvasStore.getState().elements[0].type).toBe('image')
+  })
+})
+
+// AC 6 (08-toolbar-arrow-element) — clicking the canvas background deselects an arrow element
+describe('background click deselects arrow element', () => {
+  it('clears selectedIds when a selected arrow element is deselected via canvas click', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arrow-1')],
+      selectedIds: ['arrow-1'],
+    })
+
+    const { container } = render(<Canvas />)
+    fireEvent.click(container.firstChild as HTMLElement)
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('leaves the arrow element in the store after deselection', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arrow-1')],
+      selectedIds: ['arrow-1'],
+    })
+
+    const { container } = render(<Canvas />)
+    fireEvent.click(container.firstChild as HTMLElement)
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    expect(useCanvasStore.getState().elements[0].type).toBe('arrow')
   })
 })
