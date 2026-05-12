@@ -1,9 +1,11 @@
 import { useCanvasStore } from '../../stores/canvasStore'
+import { ArrowElement } from './elements/ArrowElement'
 import { ImageElement } from './elements/ImageElement'
 import { TextElement } from './elements/TextElement'
 import type {
   TextElement as TextElementType,
   ImageElement as ImageElementType,
+  ArrowElement as ArrowElementType,
 } from '../../types/canvas'
 
 export const SURFACE_WIDTH = 1280
@@ -54,6 +56,19 @@ export function DesignSurface() {
                 selectElements([element.id])
               }}
               onUpdate={(patch) => updateElement(element.id, patch)}
+            />
+          )
+        }
+        if (element.type === 'arrow') {
+          return (
+            <ArrowElement
+              key={element.id}
+              element={element as ArrowElementType}
+              isSelected={selectedIds.includes(element.id)}
+              onSelect={(e) => {
+                e.stopPropagation()
+                selectElements([element.id])
+              }}
             />
           )
         }
