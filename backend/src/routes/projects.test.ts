@@ -505,8 +505,8 @@ describe('Project routes', () => {
         data: { canvas: { elements: typeof elements } };
       }>();
       expect(body.data.canvas.elements).toHaveLength(2);
-      expect(body.data.canvas.elements[0].type).toBe('text');
-      expect(body.data.canvas.elements[1].type).toBe('arrow');
+      expect(body.data.canvas.elements[0]!.type).toBe('text');
+      expect(body.data.canvas.elements[1]!.type).toBe('arrow');
     });
 
     it('returns 404 NOT_FOUND when project does not exist (AC3)', async () => {
