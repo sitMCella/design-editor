@@ -27,4 +27,11 @@ export type ImageElement = BaseElement & {
   objectPosition: string
 }
 
-export type CanvasElement = TextElement | ImageElement
+export type ArrowElement = BaseElement & {
+  type: 'arrow'
+  stroke: string
+  strokeWidth: number
+  arrowHead: 'end'
+}
+
+export type CanvasElement = TextElement | ImageElement | ArrowElement

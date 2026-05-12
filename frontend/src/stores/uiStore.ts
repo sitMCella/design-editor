@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-type ActiveTool = 'select' | 'text' | 'image'
+type ActiveTool = 'select' | 'text' | 'image' | 'arrow'
 type ActivePanel = 'layers' | 'assets' | 'templates' | null
 
 type State = {

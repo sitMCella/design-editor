@@ -145,6 +145,90 @@ describe('multiple image elements', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// Arrow tool — ACs from 08-toolbar-arrow-element.md
+// ---------------------------------------------------------------------------
+
+// AC 1 — toolbar shows an arrow button with tooltip "Arrow"
+describe('arrow tool button appearance', () => {
+  it('renders a button with title "Arrow"', () => {
+    render(<Toolbar />)
+    expect(screen.getByTitle('Arrow')).toBeInTheDocument()
+  })
+
+  it('the arrow button displays the → character', () => {
+    render(<Toolbar />)
+    expect(screen.getByTitle('Arrow')).toHaveTextContent('→')
+  })
+
+  it('the arrow button is inside the aside', () => {
+    const { container } = render(<Toolbar />)
+    expect(container.querySelector('aside')).toContainElement(screen.getByTitle('Arrow'))
+  })
+})
+
+// AC 3 — clicking the arrow button inserts an arrow element centred on the design surface
+describe('arrow tool insertion', () => {
+  it('adds exactly one arrow element to the canvas store', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Arrow'))
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+
+  it('adds an element of type arrow', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Arrow'))
+    expect(useCanvasStore.getState().elements[0].type).toBe('arrow')
+  })
+
+  it('places the element horizontally centred on the design surface', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Arrow'))
+    const el = useCanvasStore.getState().elements[0]
+    expect(el.x).toBe((SURFACE_WIDTH - el.width) / 2)
+  })
+
+  it('places the element vertically centred on the design surface', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Arrow'))
+    const el = useCanvasStore.getState().elements[0]
+    expect(el.y).toBe((SURFACE_HEIGHT - el.height) / 2)
+  })
+
+  it('selects the newly added arrow element', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Arrow'))
+    const el = useCanvasStore.getState().elements[0]
+    expect(useCanvasStore.getState().selectedIds).toContain(el.id)
+  })
+
+  // AC 8 — active tool reverts to select after insertion
+  it('resets the active tool to select after insertion', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Arrow'))
+    expect(useUIStore.getState().activeTool).toBe('select')
+  })
+})
+
+// AC 7 — multiple arrow elements can be added independently
+describe('multiple arrow elements', () => {
+  it('adds a new independent element on each click', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Arrow'))
+    fireEvent.click(screen.getByTitle('Arrow'))
+    fireEvent.click(screen.getByTitle('Arrow'))
+    expect(useCanvasStore.getState().elements).toHaveLength(3)
+  })
+
+  it('assigns a unique id to each arrow element', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Arrow'))
+    fireEvent.click(screen.getByTitle('Arrow'))
+    const [a, b] = useCanvasStore.getState().elements
+    expect(a.id).not.toBe(b.id)
+  })
+})
+
 // AC 9 — multiple text elements can be added independently
 describe('multiple elements', () => {
   it('adds a new independent element on each click', () => {
