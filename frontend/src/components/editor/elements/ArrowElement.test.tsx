@@ -159,9 +159,9 @@ describe('opacity and rotation', () => {
 
 // AC 5 — clicking the arrow element selects it and shows a blue bounding-box outline
 describe('selection', () => {
-  it('calls onSelect when the hit area is clicked', () => {
+  it('calls onSelect when the wrapper div is clicked', () => {
     const { container, onSelect } = renderElement()
-    fireEvent.click(container.querySelector('rect')!)
+    fireEvent.click(container.firstChild as HTMLElement)
     expect(onSelect).toHaveBeenCalledTimes(1)
   })
 
@@ -178,16 +178,16 @@ describe('selection', () => {
   })
 })
 
-// Cursor reflects selection state via the transparent hit-area rect
+// Cursor reflects selection state on the wrapper div
 describe('cursor', () => {
-  it('shows grab cursor on the hit area when selected', () => {
+  it('shows grab cursor on the wrapper when selected', () => {
     const { container } = renderElement({}, { isSelected: true })
-    expect((container.querySelector('rect') as HTMLElement).style.cursor).toBe('grab')
+    expect((container.firstChild as HTMLElement).style.cursor).toBe('grab')
   })
 
-  it('shows default cursor on the hit area when not selected', () => {
+  it('shows default cursor on the wrapper when not selected', () => {
     const { container } = renderElement({}, { isSelected: false })
-    expect((container.querySelector('rect') as HTMLElement).style.cursor).toBe('default')
+    expect((container.firstChild as HTMLElement).style.cursor).toBe('default')
   })
 })
 

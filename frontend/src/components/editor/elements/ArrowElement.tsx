@@ -11,6 +11,8 @@ export function ArrowElement({ element, isSelected, onSelect }: Props) {
 
   return (
     <div
+      data-testid="arrow-element"
+      onClick={onSelect}
       style={{
         position: 'absolute',
         left: x,
@@ -21,6 +23,7 @@ export function ArrowElement({ element, isSelected, onSelect }: Props) {
         opacity,
         outline: isSelected ? '2px solid #3B82F6' : 'none',
         outlineOffset: '2px',
+        cursor: isSelected ? 'grab' : 'default',
       }}
     >
       <svg
@@ -41,16 +44,7 @@ export function ArrowElement({ element, isSelected, onSelect }: Props) {
             <path d="M0,0 L0,6 L8,3 z" fill={stroke} />
           </marker>
         </defs>
-        {/* Transparent hit area to make thin lines easier to click */}
-        <rect
-          x={0}
-          y={0}
-          width={width}
-          height={height}
-          fill="transparent"
-          style={{ cursor: isSelected ? 'grab' : 'default' }}
-          onClick={onSelect}
-        />
+        {/* Transparent hit area — rendered last so it sits on top and captures clicks */}
         <line
           x1={0}
           y1={height / 2}
@@ -59,6 +53,14 @@ export function ArrowElement({ element, isSelected, onSelect }: Props) {
           stroke={stroke}
           strokeWidth={strokeWidth}
           markerEnd={`url(#arrowhead-${id})`}
+          style={{ pointerEvents: 'none' }}
+        />
+        <rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fill="transparent"
         />
       </svg>
     </div>
