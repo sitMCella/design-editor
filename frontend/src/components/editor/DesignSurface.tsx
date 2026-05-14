@@ -1,11 +1,13 @@
 import { useCanvasStore } from '../../stores/canvasStore'
 import { ArrowElement } from './elements/ArrowElement'
 import { ImageElement } from './elements/ImageElement'
+import { TableElement } from './elements/TableElement'
 import { TextElement } from './elements/TextElement'
 import type {
   TextElement as TextElementType,
   ImageElement as ImageElementType,
   ArrowElement as ArrowElementType,
+  TableElement as TableElementType,
 } from '../../types/canvas'
 
 export const SURFACE_WIDTH = 1280
@@ -71,6 +73,19 @@ export function DesignSurface() {
               }}
               onUpdate={(patch) => updateElement(element.id, patch)}
               allElements={elements}
+            />
+          )
+        }
+        if (element.type === 'table') {
+          return (
+            <TableElement
+              key={element.id}
+              element={element as TableElementType}
+              isSelected={selectedIds.includes(element.id)}
+              onSelect={(e) => {
+                e.stopPropagation()
+                selectElements([element.id])
+              }}
             />
           )
         }
