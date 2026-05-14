@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import type { CanvasElement } from '../types/canvas'
+import type { CanvasElement, ArrowElement } from '../types/canvas'
+import { anchorCoord, deriveBBox } from '../utils/anchorCoord'
 
 type State = {
   designId: string
@@ -68,9 +69,39 @@ export const useCanvasStore = create<State & Actions>()(
     updateElement: (id, patch) =>
       set((state) => {
         const index = state.elements.findIndex((el) => el.id === id)
-        if (index !== -1) {
-          Object.assign(state.elements[index], patch)
-          state.isDirty = true
+        if (index === -1) return
+        const el = state.elements[index]
+        Object.assign(el, patch)
+        state.isDirty = true
+
+        if (el.type === 'arrow') {
+          // Recalculate derived bounding box whenever endpoint or strokeWidth changes
+          const arr = el as ArrowElement
+          const bbox = deriveBBox(arr.x1, arr.y1, arr.x2, arr.y2, arr.strokeWidth)
+          Object.assign(el, bbox)
+        } else {
+          // When a non-arrow element moves/resizes, pull connected arrow endpoints with it
+          for (const other of state.elements) {
+            if (other.type !== 'arrow') continue
+            const arr = other as ArrowElement
+            let changed = false
+            if (arr.startAnchor?.elementId === id) {
+              const coord = anchorCoord(el, arr.startAnchor.side)
+              arr.x1 = coord.x
+              arr.y1 = coord.y
+              changed = true
+            }
+            if (arr.endAnchor?.elementId === id) {
+              const coord = anchorCoord(el, arr.endAnchor.side)
+              arr.x2 = coord.x
+              arr.y2 = coord.y
+              changed = true
+            }
+            if (changed) {
+              const bbox = deriveBBox(arr.x1, arr.y1, arr.x2, arr.y2, arr.strokeWidth)
+              Object.assign(arr, bbox)
+            }
+          }
         }
       }),
 

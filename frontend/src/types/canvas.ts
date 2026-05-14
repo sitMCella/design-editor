@@ -27,11 +27,27 @@ export type ImageElement = BaseElement & {
   objectPosition: string
 }
 
+export type AnchorSide = 'top' | 'right' | 'bottom' | 'left' | 'center'
+
+export type ArrowAnchor = {
+  elementId: string
+  side: AnchorSide
+}
+
 export type ArrowElement = BaseElement & {
   type: 'arrow'
+  // Authoritative endpoint coordinates (absolute design-surface pixels)
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  // Styling
   stroke: string
   strokeWidth: number
-  arrowHead: 'end'
+  arrowHead: 'none' | 'start' | 'end' | 'both'
+  // Optional sticky connections
+  startAnchor?: ArrowAnchor
+  endAnchor?: ArrowAnchor
 }
 
 export type CanvasElement = TextElement | ImageElement | ArrowElement
