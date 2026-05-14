@@ -921,4 +921,797 @@ describe('Project routes', () => {
       expect(body2.data.id).toBe('proj2');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Feature 11 — TableElement persistence
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Canonical default table element matching the spec's default values.
+   * Individual tests override only the fields they care about.
+   */
+  type TableElementShape = {
+    id: string;
+    type: 'table';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    opacity: number;
+    locked: boolean;
+    columns: number;
+    columnWidths: number[];
+    rows: {
+      isHeader: boolean;
+      height: number;
+      cells: string[];
+    }[];
+  };
+
+  function makeTableElement(overrides: Partial<TableElementShape> = {}): TableElementShape {
+    return {
+      id: 'tbl-1',
+      type: 'table',
+      x: 440,
+      y: 300,
+      width: 400,
+      height: 120,
+      rotation: 0,
+      opacity: 1,
+      locked: false,
+      columns: 2,
+      columnWidths: [200, 200],
+      rows: [
+        { isHeader: true, height: 40, cells: ['Header 1', 'Header 2'] },
+        { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2'] },
+        { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4'] },
+      ],
+      ...overrides,
+    };
+  }
+
+  /** Extract the canvas argument passed to the second SQL call (the UPDATE). */
+  function extractCanvasFromPatchCall(): { elements: Record<string, unknown>[] } | undefined {
+    const updateCall = mockSql.mock.calls[1];
+    const sqlArgs = (updateCall?.slice(1) ?? []) as unknown[];
+    return sqlArgs.find(
+      (a): a is { elements: Record<string, unknown>[] } =>
+        a !== null && typeof a === 'object' && 'elements' in (a as Record<string, unknown>),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // GET /api/projects — table element count (feat11)
+  // -------------------------------------------------------------------------
+
+  describe('GET /api/projects — table element count (feat11)', () => {
+    it('reflects table element count in elementCount (feat11)', async () => {
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-tbl',
+          name: 'Table Design',
+          element_count: 1,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ ok: boolean; data: { id: string; elementCount: number }[] }>();
+      expect(body.data[0]).toMatchObject({ id: 'proj-tbl', elementCount: 1 });
+    });
+
+    it('counts a mixed canvas of text + table elements correctly (feat11)', async () => {
+      // Design surface has 1 text + 1 table = 2 elements total
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-mixed',
+          name: 'Mixed',
+          element_count: 2,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ ok: boolean; data: { elementCount: number }[] }>();
+      expect(body.data[0]).toMatchObject({ elementCount: 2 });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // GET /api/projects/:id — table element round-trip (feat11)
+  // -------------------------------------------------------------------------
+
+  describe('GET /api/projects/:id — table element round-trip (feat11)', () => {
+    it('returns all table element base and table-specific properties intact (feat11, AC21)', async () => {
+      const tbl = makeTableElement();
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-tbl',
+          name: 'Table Design',
+          canvas: { elements: [tbl] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-tbl' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        data: { canvas: { elements: TableElementShape[] } };
+      }>();
+      expect(body.data.canvas.elements[0]).toEqual(tbl);
+    });
+
+    it('preserves non-equal custom column widths on GET (feat11, AC21)', async () => {
+      // Simulates a table after a column-divider drag that made column 0 wider
+      const tbl = makeTableElement({ columnWidths: [280, 120], width: 400 });
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-colw',
+          name: 'Col Widths',
+          canvas: { elements: [tbl] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-colw' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        data: { canvas: { elements: TableElementShape[] } };
+      }>();
+      expect(body.data.canvas.elements[0]).toMatchObject({ columnWidths: [280, 120] });
+    });
+
+    it('preserves non-equal custom row heights on GET (feat11, AC21)', async () => {
+      // Simulates a table after a row-divider drag that made the header taller
+      const tbl = makeTableElement({
+        height: 160,
+        rows: [
+          { isHeader: true, height: 80, cells: ['Header 1', 'Header 2'] },
+          { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2'] },
+          { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4'] },
+        ],
+      });
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-rowh',
+          name: 'Row Heights',
+          canvas: { elements: [tbl] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-rowh' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        data: { canvas: { elements: TableElementShape[] } };
+      }>();
+      const savedRows = body.data.canvas.elements[0]?.rows;
+      expect(savedRows?.[0]).toMatchObject({ isHeader: true, height: 80 });
+      expect(savedRows?.[1]).toMatchObject({ isHeader: false, height: 40 });
+    });
+
+    it('preserves an additional data row added via "Add row" (feat11, AC21)', async () => {
+      // Four rows: 1 header + 3 data rows
+      const tbl = makeTableElement({
+        height: 160,
+        rows: [
+          { isHeader: true, height: 40, cells: ['Header 1', 'Header 2'] },
+          { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2'] },
+          { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4'] },
+          { isHeader: false, height: 40, cells: ['', ''] },
+        ],
+      });
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-addrow',
+          name: 'Added Row',
+          canvas: { elements: [tbl] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-addrow' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        data: { canvas: { elements: TableElementShape[] } };
+      }>();
+      expect(body.data.canvas.elements[0]?.rows).toHaveLength(4);
+      expect(body.data.canvas.elements[0]?.rows[3]).toMatchObject({
+        isHeader: false,
+        height: 40,
+        cells: ['', ''],
+      });
+    });
+
+    it('preserves an additional column added via "Add column" (feat11, AC21)', async () => {
+      // Three columns: default 2 + 1 added (120 px wide)
+      const tbl = makeTableElement({
+        columns: 3,
+        columnWidths: [200, 200, 120],
+        width: 520,
+        rows: [
+          { isHeader: true, height: 40, cells: ['Header 1', 'Header 2', ''] },
+          { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2', ''] },
+          { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4', ''] },
+        ],
+      });
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-addcol',
+          name: 'Added Col',
+          canvas: { elements: [tbl] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-addcol' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        data: { canvas: { elements: TableElementShape[] } };
+      }>();
+      const el = body.data.canvas.elements[0];
+      expect(el?.columns).toBe(3);
+      expect(el?.columnWidths).toEqual([200, 200, 120]);
+      expect(el?.rows[0]?.cells).toHaveLength(3);
+    });
+
+    it('preserves edited cell content on GET (feat11, AC21)', async () => {
+      const tbl = makeTableElement({
+        rows: [
+          { isHeader: true, height: 40, cells: ['Q1', 'Q2'] },
+          { isHeader: false, height: 40, cells: ['Revenue', '€ 120 000'] },
+          { isHeader: false, height: 40, cells: ['Costs', '€ 80 000'] },
+        ],
+      });
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-cells',
+          name: 'Edited Cells',
+          canvas: { elements: [tbl] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-cells' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        data: { canvas: { elements: TableElementShape[] } };
+      }>();
+      const rows = body.data.canvas.elements[0]?.rows;
+      expect(rows?.[1]?.cells[0]).toBe('Revenue');
+      expect(rows?.[1]?.cells[1]).toBe('€ 120 000');
+      expect(rows?.[2]?.cells[0]).toBe('Costs');
+    });
+
+    it('returns a canvas with mixed element types including a table (feat11, AC22)', async () => {
+      const elements = [
+        {
+          id: 'txt-1',
+          type: 'text',
+          x: 100,
+          y: 100,
+          width: 160,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          content: 'Title',
+          fontSize: 20,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 'bold',
+          fontStyle: 'normal',
+          color: '#111827',
+          align: 'center',
+        },
+        makeTableElement({ id: 'tbl-1' }),
+      ];
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-mixed',
+          name: 'Mixed',
+          canvas: { elements },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-mixed' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        data: { canvas: { elements: Record<string, unknown>[] } };
+      }>();
+      expect(body.data.canvas.elements).toHaveLength(2);
+      expect(body.data.canvas.elements[0]?.type).toBe('text');
+      expect(body.data.canvas.elements[1]?.type).toBe('table');
+    });
+
+    it('returns two independent table elements in the same canvas (feat11, AC22)', async () => {
+      const tbl1 = makeTableElement({ id: 'tbl-1', x: 100, y: 100 });
+      const tbl2 = makeTableElement({
+        id: 'tbl-2',
+        x: 600,
+        y: 400,
+        columns: 3,
+        columnWidths: [150, 150, 100],
+        width: 400,
+        rows: [
+          { isHeader: true, height: 40, cells: ['A', 'B', 'C'] },
+          { isHeader: false, height: 60, cells: ['x', 'y', 'z'] },
+          { isHeader: false, height: 60, cells: ['p', 'q', 'r'] },
+        ],
+      });
+
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-two-tables',
+          name: 'Two Tables',
+          canvas: { elements: [tbl1, tbl2] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const response = await app.inject({ method: 'GET', url: '/api/projects/proj-two-tables' });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{
+        data: { canvas: { elements: TableElementShape[] } };
+      }>();
+      const els = body.data.canvas.elements;
+      expect(els).toHaveLength(2);
+      // First table: 2 columns, equal widths
+      expect(els[0]).toMatchObject({ id: 'tbl-1', columns: 2, columnWidths: [200, 200] });
+      // Second table: 3 columns, different heights
+      expect(els[1]).toMatchObject({ id: 'tbl-2', columns: 3, columnWidths: [150, 150, 100] });
+      expect(els[1]?.rows[1]?.height).toBe(60);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // PATCH /api/projects/:id — table element persistence (feat11)
+  // -------------------------------------------------------------------------
+
+  describe('PATCH /api/projects/:id — table element persistence (feat11)', () => {
+    it('saves all table element properties to the canvas JSONB column (feat11, AC20)', async () => {
+      const tbl = makeTableElement();
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-tbl', name: 'Design', updated_at: new Date() }]);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-tbl',
+        payload: { canvas: { elements: [tbl] } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const canvasArg = extractCanvasFromPatchCall();
+      expect(canvasArg?.elements[0]).toMatchObject({
+        type: 'table',
+        x: 440,
+        y: 300,
+        width: 400,
+        height: 120,
+        columns: 2,
+        columnWidths: [200, 200],
+      });
+      // Rows must be persisted verbatim
+      expect(
+        (canvasArg?.elements[0] as { rows?: unknown[] })?.rows,
+      ).toHaveLength(3);
+    });
+
+    it('saves custom non-equal column widths to the JSONB column (feat11, AC20)', async () => {
+      // After a column-divider drag: left column is now 280 px, right is 120 px
+      const tbl = makeTableElement({ columnWidths: [280, 120] });
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-colw', name: 'Design', updated_at: new Date() }]);
+
+      await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-colw',
+        payload: { canvas: { elements: [tbl] } },
+      });
+
+      const canvasArg = extractCanvasFromPatchCall();
+      expect(canvasArg?.elements[0]).toMatchObject({ columnWidths: [280, 120] });
+    });
+
+    it('saves custom row heights to the JSONB column (feat11, AC20)', async () => {
+      // After a row-divider drag: header is now 80 px tall
+      const tbl = makeTableElement({
+        height: 160,
+        rows: [
+          { isHeader: true, height: 80, cells: ['Header 1', 'Header 2'] },
+          { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2'] },
+          { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4'] },
+        ],
+      });
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-rowh', name: 'Design', updated_at: new Date() }]);
+
+      await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-rowh',
+        payload: { canvas: { elements: [tbl] } },
+      });
+
+      const canvasArg = extractCanvasFromPatchCall();
+      const rows = (canvasArg?.elements[0] as { rows?: { height: number }[] })?.rows;
+      expect(rows?.[0]?.height).toBe(80);
+      expect(rows?.[1]?.height).toBe(40);
+    });
+
+    it('saves a table with a newly added data row (feat11, AC20)', async () => {
+      // "Add row" was clicked once → 4 rows (1 header + 3 data)
+      const tbl = makeTableElement({
+        height: 160,
+        rows: [
+          { isHeader: true, height: 40, cells: ['Header 1', 'Header 2'] },
+          { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2'] },
+          { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4'] },
+          { isHeader: false, height: 40, cells: ['', ''] },
+        ],
+      });
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-addrow', name: 'Design', updated_at: new Date() }]);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-addrow',
+        payload: { canvas: { elements: [tbl] } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const canvasArg = extractCanvasFromPatchCall();
+      expect(
+        (canvasArg?.elements[0] as { rows?: unknown[] })?.rows,
+      ).toHaveLength(4);
+    });
+
+    it('saves a table with a newly added column (feat11, AC20)', async () => {
+      // "Add column" was clicked once → 3 columns
+      const tbl = makeTableElement({
+        columns: 3,
+        columnWidths: [200, 200, 120],
+        width: 520,
+        rows: [
+          { isHeader: true, height: 40, cells: ['Header 1', 'Header 2', ''] },
+          { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2', ''] },
+          { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4', ''] },
+        ],
+      });
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-addcol', name: 'Design', updated_at: new Date() }]);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-addcol',
+        payload: { canvas: { elements: [tbl] } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const canvasArg = extractCanvasFromPatchCall();
+      expect(canvasArg?.elements[0]).toMatchObject({
+        columns: 3,
+        columnWidths: [200, 200, 120],
+      });
+    });
+
+    it('saves edited cell content to the JSONB column (feat11, AC20)', async () => {
+      // User has typed into cells via double-click edit mode
+      const tbl = makeTableElement({
+        rows: [
+          { isHeader: true, height: 40, cells: ['Product', 'Price'] },
+          { isHeader: false, height: 40, cells: ['Widget A', '€ 9.99'] },
+          { isHeader: false, height: 40, cells: ['Widget B', '€ 14.99'] },
+        ],
+      });
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-cells', name: 'Design', updated_at: new Date() }]);
+
+      await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-cells',
+        payload: { canvas: { elements: [tbl] } },
+      });
+
+      const canvasArg = extractCanvasFromPatchCall();
+      const rows = (
+        canvasArg?.elements[0] as { rows?: { cells: string[] }[] }
+      )?.rows;
+      expect(rows?.[0]?.cells).toEqual(['Product', 'Price']);
+      expect(rows?.[1]?.cells).toEqual(['Widget A', '€ 9.99']);
+      expect(rows?.[2]?.cells).toEqual(['Widget B', '€ 14.99']);
+    });
+
+    it('saves two independent table elements in the same canvas payload (feat11, AC22)', async () => {
+      const tbl1 = makeTableElement({ id: 'tbl-1', x: 50, y: 50 });
+      const tbl2 = makeTableElement({
+        id: 'tbl-2',
+        x: 700,
+        y: 400,
+        columns: 3,
+        columnWidths: [160, 160, 80],
+        width: 400,
+        rows: [
+          { isHeader: true, height: 40, cells: ['A', 'B', 'C'] },
+          { isHeader: false, height: 50, cells: ['1', '2', '3'] },
+          { isHeader: false, height: 50, cells: ['4', '5', '6'] },
+        ],
+      });
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-two', name: 'Design', updated_at: new Date() }]);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-two',
+        payload: { canvas: { elements: [tbl1, tbl2] } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const canvasArg = extractCanvasFromPatchCall();
+      expect(canvasArg?.elements).toHaveLength(2);
+      expect(canvasArg?.elements[0]).toMatchObject({ id: 'tbl-1', columns: 2 });
+      expect(canvasArg?.elements[1]).toMatchObject({
+        id: 'tbl-2',
+        columns: 3,
+        columnWidths: [160, 160, 80],
+      });
+    });
+
+    it('saves a canvas with both a text element and a table element (feat11, AC22)', async () => {
+      const textEl = {
+        id: 'txt-1',
+        type: 'text',
+        x: 100,
+        y: 50,
+        width: 200,
+        height: 40,
+        rotation: 0,
+        opacity: 1,
+        locked: false,
+        content: 'Report Title',
+        fontSize: 24,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: 'bold',
+        fontStyle: 'normal',
+        color: '#111827',
+        align: 'center',
+      };
+      const tbl = makeTableElement({ id: 'tbl-1', y: 150 });
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-text-tbl', name: 'Design', updated_at: new Date() }]);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-text-tbl',
+        payload: { canvas: { elements: [textEl, tbl] } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const canvasArg = extractCanvasFromPatchCall();
+      expect(canvasArg?.elements).toHaveLength(2);
+      expect(canvasArg?.elements[0]).toMatchObject({ type: 'text', content: 'Report Title' });
+      expect(canvasArg?.elements[1]).toMatchObject({ type: 'table', columns: 2 });
+    });
+
+    it('saves a canvas with all four element types including a table (feat11)', async () => {
+      const elements = [
+        {
+          id: 'txt-1',
+          type: 'text',
+          x: 50,
+          y: 50,
+          width: 160,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          content: 'Label',
+          fontSize: 16,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          color: '#111827',
+          align: 'left',
+        },
+        {
+          id: 'img-1',
+          type: 'image',
+          x: 300,
+          y: 50,
+          width: 200,
+          height: 150,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          src: '/api/assets/abc/content',
+          objectFit: 'cover',
+        },
+        {
+          id: 'arrow-1',
+          type: 'arrow',
+          x: 540,
+          y: 355,
+          width: 200,
+          height: 10,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          stroke: '#111827',
+          strokeWidth: 2,
+          arrowHead: 'end',
+        },
+        makeTableElement({ id: 'tbl-1', y: 500 }),
+      ];
+
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-all', name: 'Design', updated_at: new Date() }]);
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-all',
+        payload: { canvas: { elements } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const canvasArg = extractCanvasFromPatchCall();
+      expect(canvasArg?.elements).toHaveLength(4);
+      expect(canvasArg?.elements[0]).toMatchObject({ type: 'text' });
+      expect(canvasArg?.elements[1]).toMatchObject({ type: 'image' });
+      expect(canvasArg?.elements[2]).toMatchObject({ type: 'arrow' });
+      expect(canvasArg?.elements[3]).toMatchObject({ type: 'table' });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // PATCH → GET round-trip (feat11, AC21)
+  // -------------------------------------------------------------------------
+
+  describe('PATCH → GET round-trip restores table exactly as saved (feat11, AC21)', () => {
+    it('a table element saved via PATCH is returned verbatim by the subsequent GET', async () => {
+      const tbl = makeTableElement({
+        columnWidths: [250, 150],
+        rows: [
+          { isHeader: true, height: 50, cells: ['Name', 'Value'] },
+          { isHeader: false, height: 35, cells: ['Alpha', '42'] },
+          { isHeader: false, height: 35, cells: ['Beta', '17'] },
+        ],
+      });
+
+      // Simulate PATCH — backend stores the canvas
+      mockSql
+        .mockResolvedValueOnce([{ name: 'Design', canvas: { elements: [] } }])
+        .mockResolvedValueOnce([{ id: 'proj-rt', name: 'Design', updated_at: new Date() }]);
+
+      const patchResp = await app.inject({
+        method: 'PATCH',
+        url: '/api/projects/proj-rt',
+        payload: { canvas: { elements: [tbl] } },
+      });
+      expect(patchResp.statusCode).toBe(200);
+
+      // Simulate GET — backend returns what was stored (mock returns the same table)
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'proj-rt',
+          name: 'Design',
+          canvas: { elements: [tbl] }, // mirrors what was saved
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+
+      const getResp = await app.inject({ method: 'GET', url: '/api/projects/proj-rt' });
+      expect(getResp.statusCode).toBe(200);
+
+      const body = getResp.json<{
+        data: { canvas: { elements: TableElementShape[] } };
+      }>();
+      // The full element structure must be identical to what was PATCHed
+      expect(body.data.canvas.elements[0]).toEqual(tbl);
+    });
+
+    it('two projects each holding a different table are retrieved independently (feat11, AC22)', async () => {
+      const tblA = makeTableElement({
+        id: 'tbl-a',
+        rows: [
+          { isHeader: true, height: 40, cells: ['City', 'Population'] },
+          { isHeader: false, height: 40, cells: ['Dublin', '1 400 000'] },
+          { isHeader: false, height: 40, cells: ['Cork', '220 000'] },
+        ],
+      });
+      const tblB = makeTableElement({
+        id: 'tbl-b',
+        columns: 3,
+        columnWidths: [130, 130, 140],
+        width: 400,
+        rows: [
+          { isHeader: true, height: 40, cells: ['Jan', 'Feb', 'Mar'] },
+          { isHeader: false, height: 40, cells: ['10', '20', '30'] },
+          { isHeader: false, height: 40, cells: ['11', '22', '33'] },
+        ],
+      });
+
+      // GET project A
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'projA',
+          name: 'Cities',
+          canvas: { elements: [tblA] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      const respA = await app.inject({ method: 'GET', url: '/api/projects/projA' });
+      const bodyA = respA.json<{ data: { canvas: { elements: TableElementShape[] } } }>();
+
+      // GET project B
+      mockSql.mockResolvedValueOnce([
+        {
+          id: 'projB',
+          name: 'Monthly',
+          canvas: { elements: [tblB] },
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      const respB = await app.inject({ method: 'GET', url: '/api/projects/projB' });
+      const bodyB = respB.json<{ data: { canvas: { elements: TableElementShape[] } } }>();
+
+      // Each project returns its own independent table configuration
+      expect(bodyA.data.canvas.elements[0]).toMatchObject({ id: 'tbl-a', columns: 2 });
+      expect(bodyA.data.canvas.elements[0]?.rows[1]?.cells[0]).toBe('Dublin');
+
+      expect(bodyB.data.canvas.elements[0]).toMatchObject({ id: 'tbl-b', columns: 3 });
+      expect(bodyB.data.canvas.elements[0]?.rows[1]?.cells[0]).toBe('10');
+
+      // Canvases are independent
+      expect(bodyA.data.canvas).not.toEqual(bodyB.data.canvas);
+    });
+  });
 });

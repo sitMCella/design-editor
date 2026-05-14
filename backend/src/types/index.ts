@@ -48,7 +48,26 @@ type GroupElement = BaseElement & {
   children: CanvasElement[];
 };
 
-export type CanvasElement = ShapeElement | TextElement | ImageElement | ArrowElement | GroupElement;
+export type TableRow = {
+  isHeader: boolean;
+  cells: string[];
+  height: number; // px; default 40
+};
+
+type TableElement = BaseElement & {
+  type: 'table';
+  columns: number;
+  columnWidths: number[]; // one entry per column; must sum to element.width
+  rows: TableRow[];
+};
+
+export type CanvasElement =
+  | ShapeElement
+  | TextElement
+  | ImageElement
+  | ArrowElement
+  | GroupElement
+  | TableElement;
 
 // Project
 
