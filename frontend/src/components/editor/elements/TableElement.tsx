@@ -345,6 +345,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
   }
 
   const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (isDraggingRef.current) return
     onSelect(e)
   }
