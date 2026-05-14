@@ -117,10 +117,13 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
 
     const onMouseUp = () => {
       dragStartRef.current = null
-      isDraggingRef.current = false
       document.body.style.cursor = ''
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
+      // Defer the flag reset so the synchronous click that follows mouseup is suppressed
+      setTimeout(() => {
+        isDraggingRef.current = false
+      }, 0)
     }
 
     window.addEventListener('mousemove', onMouseMove)
@@ -309,7 +312,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
   }
 
   const handleCellBlur = (e: React.FocusEvent<HTMLDivElement>, rowIndex: number, colIndex: number) => {
-    commitEdit(rowIndex, colIndex, e.currentTarget.innerText.trim())
+    commitEdit(rowIndex, colIndex, (e.currentTarget.textContent ?? '').trim())
   }
 
   const handleCellKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -318,7 +321,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
       e.currentTarget.blur()
     } else if (e.key === 'Escape') {
       // Revert content then blur — blur handler commits the original value (no-op)
-      e.currentTarget.innerText = valueAtEntryRef.current
+      e.currentTarget.textContent = valueAtEntryRef.current
       e.currentTarget.blur()
     }
   }
@@ -341,6 +344,11 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
     rowBoundaries.push(accY)
   }
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (isDraggingRef.current) return
+    onSelect(e)
+  }
+
   const isEditing = editingCell !== null
   const cursor = isEditing ? 'text' : isSelected ? 'grab' : 'default'
 
@@ -361,7 +369,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
         boxSizing: 'border-box',
       }}
       onMouseDown={handleBodyMouseDown}
-      onClick={onSelect}
+      onClick={handleClick}
     >
       {/* Table content */}
       <div
@@ -474,6 +482,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
         (['tl', 'tr', 'bl', 'br'] as Handle[]).map((handle) => (
           <div
             key={handle}
+            data-testid={`resize-handle-${handle}`}
             style={{
               position: 'absolute',
               width: 10,
@@ -491,6 +500,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
         colBoundaries.map((bx, i) => (
           <div
             key={`col-div-${i}`}
+            data-testid={`col-divider-${i}`}
             style={{
               position: 'absolute',
               top: 0,
@@ -516,6 +526,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
         rowBoundaries.map((by, j) => (
           <div
             key={`row-div-${j}`}
+            data-testid={`row-divider-${j}`}
             style={{
               position: 'absolute',
               left: 0,

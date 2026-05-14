@@ -8,6 +8,7 @@ import type {
   TextElement,
   ImageElement as ImageElementType,
   ArrowElement as ArrowElementType,
+  TableElement as TableElementType,
   CanvasElement,
 } from '../../types/canvas'
 
@@ -928,5 +929,335 @@ describe('AC18: arrow session persistence', () => {
     fireEvent.click(screen.getByLabelText('Arrowheads at both ends'))
     unmount()
     expect(asArrow(useCanvasStore.getState().elements[0]).arrowHead).toBe('both')
+  })
+})
+
+// ===========================================================================
+// Table element toolbar — feature 11 ACs 10–14
+// ===========================================================================
+
+const asTable = (el: CanvasElement) => el as TableElementType
+
+const makeTableElement = (
+  id: string,
+  overrides: Partial<TableElementType> = {},
+): TableElementType => ({
+  id,
+  type: 'table',
+  x: 440,
+  y: 300,
+  width: 400,
+  height: 120,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  columns: 2,
+  columnWidths: [200, 200],
+  rows: [
+    { isHeader: true, height: 40, cells: ['Header 1', 'Header 2'] },
+    { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2'] },
+    { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4'] },
+  ],
+  ...overrides,
+})
+
+// ---------------------------------------------------------------------------
+// AC10 — toolbar shows table controls when a table element is selected
+// ---------------------------------------------------------------------------
+
+describe('AC10: table toolbar visibility', () => {
+  it('renders the contextual toolbar when a table element is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    expect(screen.getByTestId('contextual-toolbar')).toBeInTheDocument()
+  })
+
+  it('renders Add/Remove row and Add/Remove column buttons', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Add row')).toBeInTheDocument()
+    expect(screen.getByLabelText('Remove row')).toBeInTheDocument()
+    expect(screen.getByLabelText('Add column')).toBeInTheDocument()
+    expect(screen.getByLabelText('Remove column')).toBeInTheDocument()
+  })
+
+  it('renders nothing when no element is selected', () => {
+    useCanvasStore.setState({ elements: [makeTableElement('tbl-1')], selectedIds: [] })
+    renderToolbar()
+    expect(screen.queryByTestId('contextual-toolbar')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC11 — "Add row" appends an empty data row with height 40 px
+// ---------------------------------------------------------------------------
+
+describe('AC11: add row', () => {
+  it('appends a new data row to the element', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add row'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.rows).toHaveLength(4)
+    expect(el.rows[3].isHeader).toBe(false)
+  })
+
+  it('new row has height 40 px', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add row'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.rows[3].height).toBe(40)
+  })
+
+  it('new row cells are empty strings (one per column)', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add row'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.rows[3].cells).toEqual(['', ''])
+  })
+
+  it('increases element height by 40 px', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add row'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.height).toBe(160) // 120 + 40
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC12 — "Remove row" removes the last data row; disabled when only one remains
+// ---------------------------------------------------------------------------
+
+describe('AC12: remove row', () => {
+  it('removes the last data row from the element', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Remove row'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.rows).toHaveLength(2) // header + 1 data row
+    expect(el.rows[1].cells).toEqual(['Cell 1', 'Cell 2'])
+  })
+
+  it('decreases element height by the removed row height', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Remove row'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.height).toBe(80) // 120 - 40
+  })
+
+  it('Remove row button is disabled when only one data row remains', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeTableElement('tbl-1', {
+          rows: [
+            { isHeader: true, height: 40, cells: ['H1', 'H2'] },
+            { isHeader: false, height: 40, cells: ['A', 'B'] },
+          ],
+          height: 80,
+        }),
+      ],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Remove row')).toBeDisabled()
+  })
+
+  it('Remove row button is enabled when more than one data row exists', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Remove row')).not.toBeDisabled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC13 — "Add column" appends an empty 120 px column to every row
+// ---------------------------------------------------------------------------
+
+describe('AC13: add column', () => {
+  it('increments the column count by 1', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add column'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.columns).toBe(3)
+  })
+
+  it('adds a 120 px entry to columnWidths', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add column'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.columnWidths).toEqual([200, 200, 120])
+  })
+
+  it('increases element width by 120 px', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add column'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.width).toBe(520)
+  })
+
+  it('appends an empty string cell to every row', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add column'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    el.rows.forEach((row) => {
+      expect(row.cells).toHaveLength(3)
+      expect(row.cells[2]).toBe('')
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC14 — "Remove column" removes the last column; disabled when only one remains
+// ---------------------------------------------------------------------------
+
+describe('AC14: remove column', () => {
+  it('decrements the column count by 1', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Remove column'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.columns).toBe(1)
+  })
+
+  it('removes the last entry from columnWidths', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Remove column'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.columnWidths).toEqual([200])
+  })
+
+  it('decreases element width by the removed column width', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Remove column'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    expect(el.width).toBe(200) // 400 - 200
+  })
+
+  it('removes the last cell from every row', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Remove column'))
+    const el = asTable(useCanvasStore.getState().elements[0])
+    el.rows.forEach((row) => {
+      expect(row.cells).toHaveLength(1)
+    })
+  })
+
+  it('Remove column button is disabled when only one column remains', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeTableElement('tbl-1', {
+          columns: 1,
+          columnWidths: [400],
+          rows: [
+            { isHeader: true, height: 40, cells: ['H1'] },
+            { isHeader: false, height: 40, cells: ['A'] },
+          ],
+        }),
+      ],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Remove column')).toBeDisabled()
+  })
+
+  it('Remove column button is enabled when more than one column exists', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Remove column')).not.toBeDisabled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC22 — multiple table elements retain independent configurations
+// ---------------------------------------------------------------------------
+
+describe('AC22: multiple table elements are independent', () => {
+  it('adding a row to one table does not affect another', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1'), makeTableElement('tbl-2')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add row'))
+    const elements = useCanvasStore.getState().elements
+    expect(asTable(elements.find((e) => e.id === 'tbl-1')!).rows).toHaveLength(4)
+    expect(asTable(elements.find((e) => e.id === 'tbl-2')!).rows).toHaveLength(3)
+  })
+
+  it('adding a column to one table does not affect another', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1'), makeTableElement('tbl-2')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Add column'))
+    const elements = useCanvasStore.getState().elements
+    expect(asTable(elements.find((e) => e.id === 'tbl-1')!).columns).toBe(3)
+    expect(asTable(elements.find((e) => e.id === 'tbl-2')!).columns).toBe(2)
   })
 })
