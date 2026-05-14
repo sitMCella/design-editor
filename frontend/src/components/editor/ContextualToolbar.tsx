@@ -2,8 +2,11 @@ import { useRef, useState, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useCanvasStore } from '../../stores/canvasStore'
-import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
+import type { TextElement, ImageElement, ArrowElement, TableElement } from '../../types/canvas'
 import { fetchAssetFromUrl } from '../../api/assets'
+
+const DEFAULT_ROW_HEIGHT = 40
+const DEFAULT_COL_WIDTH = 120
 
 const FONT_FAMILIES = [
   { label: 'Inter', value: 'Inter, sans-serif' },
@@ -388,6 +391,106 @@ function ArrowToolbar({
 }
 
 // ---------------------------------------------------------------------------
+// Table toolbar
+// ---------------------------------------------------------------------------
+
+function TableToolbar({
+  element,
+  update,
+}: {
+  element: TableElement
+  update: (patch: Partial<TableElement>) => void
+}) {
+  const columnWidths: number[] =
+    element.columnWidths ?? Array(element.columns).fill(Math.round(element.width / element.columns))
+
+  const effectiveRows = element.rows.map((r) => ({
+    ...r,
+    height: r.height ?? Math.round(element.height / element.rows.length),
+  }))
+
+  const dataRowCount = effectiveRows.filter((r) => !r.isHeader).length
+
+  const addRow = () => {
+    const newRow = {
+      isHeader: false,
+      height: DEFAULT_ROW_HEIGHT,
+      cells: Array(element.columns).fill(''),
+    }
+    update({
+      rows: [...effectiveRows, newRow],
+      height: element.height + DEFAULT_ROW_HEIGHT,
+    })
+  }
+
+  const removeRow = () => {
+    const lastRow = effectiveRows[effectiveRows.length - 1]
+    update({
+      rows: effectiveRows.slice(0, -1),
+      height: element.height - lastRow.height,
+    })
+  }
+
+  const addColumn = () => {
+    const newRows = effectiveRows.map((r) => ({ ...r, cells: [...r.cells, ''] }))
+    update({
+      columns: element.columns + 1,
+      columnWidths: [...columnWidths, DEFAULT_COL_WIDTH],
+      rows: newRows,
+      width: element.width + DEFAULT_COL_WIDTH,
+    })
+  }
+
+  const removeColumn = () => {
+    const removedWidth = columnWidths[columnWidths.length - 1]
+    update({
+      columns: element.columns - 1,
+      columnWidths: columnWidths.slice(0, -1),
+      rows: effectiveRows.map((r) => ({ ...r, cells: r.cells.slice(0, -1) })),
+      width: element.width - removedWidth,
+    })
+  }
+
+  return (
+    <>
+      <button
+        aria-label="Add row"
+        onClick={addRow}
+        className="flex h-6 items-center gap-1 rounded border border-gray-200 px-2 text-xs hover:bg-gray-100"
+      >
+        + Row
+      </button>
+      <button
+        aria-label="Remove row"
+        onClick={removeRow}
+        disabled={dataRowCount <= 1}
+        className="flex h-6 items-center gap-1 rounded border border-gray-200 px-2 text-xs hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        − Row
+      </button>
+
+      <div className="mx-1 h-4 w-px bg-gray-200" />
+
+      <button
+        aria-label="Add column"
+        onClick={addColumn}
+        className="flex h-6 items-center gap-1 rounded border border-gray-200 px-2 text-xs hover:bg-gray-100"
+      >
+        + Col
+      </button>
+      <button
+        aria-label="Remove column"
+        onClick={removeColumn}
+        disabled={element.columns <= 1}
+        className="flex h-6 items-center gap-1 rounded border border-gray-200 px-2 text-xs hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        − Col
+      </button>
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Shell
 // ---------------------------------------------------------------------------
 
@@ -433,6 +536,18 @@ export function ContextualToolbar() {
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
         <ArrowToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
+      </div>
+    )
+  }
+
+  if (found.type === 'table') {
+    const element = found as TableElement
+    return (
+      <div
+        data-testid="contextual-toolbar"
+        className="flex h-10 items-center gap-2 border-b bg-white px-3"
+      >
+        <TableToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
       </div>
     )
   }
