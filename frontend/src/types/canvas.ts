@@ -53,11 +53,13 @@ export type ArrowElement = BaseElement & {
 export type TableRow = {
   isHeader: boolean
   cells: string[]
+  height: number
 }
 
 export type TableElement = BaseElement & {
   type: 'table'
   columns: number
+  columnWidths: number[]
   rows: TableRow[]
 }
 

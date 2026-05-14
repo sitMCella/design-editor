@@ -14,10 +14,11 @@ const baseElement: TableElementType = {
   opacity: 1,
   locked: false,
   columns: 2,
+  columnWidths: [200, 200],
   rows: [
-    { isHeader: true, cells: ['Header 1', 'Header 2'] },
-    { isHeader: false, cells: ['Cell 1', 'Cell 2'] },
-    { isHeader: false, cells: ['Cell 3', 'Cell 4'] },
+    { isHeader: true, height: 40, cells: ['Header 1', 'Header 2'] },
+    { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2'] },
+    { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4'] },
   ],
 }
 
@@ -26,14 +27,16 @@ const renderElement = (
   props: { isSelected?: boolean } = {}
 ) => {
   const onSelect = vi.fn()
+  const onUpdate = vi.fn()
   const result = render(
     <TableElement
       element={{ ...baseElement, ...overrides }}
       isSelected={props.isSelected ?? false}
       onSelect={onSelect}
+      onUpdate={onUpdate}
     />
   )
-  return { ...result, onSelect }
+  return { ...result, onSelect, onUpdate }
 }
 
 // ---------------------------------------------------------------------------
@@ -177,19 +180,20 @@ describe('AC5: cell content', () => {
 // ---------------------------------------------------------------------------
 
 describe('AC6: equal cell dimensions', () => {
-  it('each column has width equal to element width divided by column count', () => {
+  it('renders a <col> for each column with the correct width', () => {
     const { container } = renderElement()
-    const expectedCellWidth = baseElement.width / baseElement.columns
-    container.querySelectorAll('th, td').forEach((cell) => {
-      expect((cell as HTMLElement).style.width).toBe(`${expectedCellWidth}px`)
+    const cols = container.querySelectorAll('col')
+    expect(cols).toHaveLength(baseElement.columns)
+    cols.forEach((col, i) => {
+      expect((col as HTMLElement).style.width).toBe(`${baseElement.columnWidths[i]}px`)
     })
   })
 
-  it('each row has height equal to element height divided by row count', () => {
+  it('each row has height matching the row height', () => {
     const { container } = renderElement()
-    const expectedCellHeight = baseElement.height / baseElement.rows.length
-    container.querySelectorAll('th, td').forEach((cell) => {
-      expect((cell as HTMLElement).style.height).toBe(`${expectedCellHeight}px`)
+    const rows = container.querySelectorAll('tr')
+    rows.forEach((tr, i) => {
+      expect((tr as HTMLElement).style.height).toBe(`${baseElement.rows[i].height}px`)
     })
   })
 })
@@ -226,7 +230,7 @@ describe('AC8: click interaction', () => {
   it('does not call onSelect when clicking without a handler', () => {
     // Ensures the handler is wired through the element and not a parent
     const onSelect = vi.fn()
-    render(<TableElement element={baseElement} isSelected={false} onSelect={onSelect} />)
+    render(<TableElement element={baseElement} isSelected={false} onSelect={onSelect} onUpdate={vi.fn()} />)
     fireEvent.click(screen.getByTestId('table-element'))
     expect(onSelect).toHaveBeenCalledTimes(1)
   })
