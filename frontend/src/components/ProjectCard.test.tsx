@@ -72,6 +72,67 @@ describe('AC6 — spinner overlay during load', () => {
 })
 
 // ---------------------------------------------------------------------------
+// AC 5 (feature 12) — no thumbnail: grey placeholder, no <img>
+// ---------------------------------------------------------------------------
+
+describe('AC5 — no thumbnail placeholder', () => {
+  it('does not render an img when thumbnailUrl is null', () => {
+    const project = { ...baseProject, thumbnailUrl: null }
+    render(<ProjectCard project={project} isLoading={false} onClick={vi.fn()} />)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('does not render an img when thumbnailUrl is absent', () => {
+    render(<ProjectCard project={baseProject} isLoading={false} onClick={vi.fn()} />)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 2 / AC 12 (feature 12) — thumbnail image rendering
+// ---------------------------------------------------------------------------
+
+describe('AC2 & AC12 — thumbnail image', () => {
+  it('renders an img with thumbnailUrl as src when thumbnailUrl is present', () => {
+    const project = { ...baseProject, thumbnailUrl: '/api/projects/proj-1/thumbnail' }
+    render(<ProjectCard project={project} isLoading={false} onClick={vi.fn()} />)
+    expect(screen.getByRole('img')).toHaveAttribute('src', '/api/projects/proj-1/thumbnail')
+  })
+
+  it('sets alt text to the project name on the thumbnail img', () => {
+    const project = { ...baseProject, thumbnailUrl: '/api/projects/proj-1/thumbnail' }
+    render(<ProjectCard project={project} isLoading={false} onClick={vi.fn()} />)
+    expect(screen.getByRole('img')).toHaveAttribute('alt', 'My Design')
+  })
+
+  it('applies object-cover class to the thumbnail img', () => {
+    const project = { ...baseProject, thumbnailUrl: '/api/projects/proj-1/thumbnail' }
+    render(<ProjectCard project={project} isLoading={false} onClick={vi.fn()} />)
+    expect(screen.getByRole('img')).toHaveClass('object-cover')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 13 (feature 12) — spinner visible alongside thumbnail when loading
+// ---------------------------------------------------------------------------
+
+describe('AC13 — spinner with thumbnail', () => {
+  it('shows spinner over the thumbnail when isLoading is true', () => {
+    const project = { ...baseProject, thumbnailUrl: '/api/projects/proj-1/thumbnail' }
+    render(<ProjectCard project={project} isLoading={true} onClick={vi.fn()} />)
+    expect(screen.getByRole('img')).toBeInTheDocument()
+    expect(document.querySelector('.animate-spin')).toBeInTheDocument()
+  })
+
+  it('shows thumbnail without spinner when isLoading is false', () => {
+    const project = { ...baseProject, thumbnailUrl: '/api/projects/proj-1/thumbnail' }
+    render(<ProjectCard project={project} isLoading={false} onClick={vi.fn()} />)
+    expect(screen.getByRole('img')).toBeInTheDocument()
+    expect(document.querySelector('.animate-spin')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
 // AC 6 / AC 10 — card interactivity
 // ---------------------------------------------------------------------------
 

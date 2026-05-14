@@ -1,6 +1,16 @@
+import { createReadStream } from 'node:fs';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import fastifyMultipart from '@fastify/multipart';
 import type { FastifyInstance } from 'fastify';
 import { sql } from '../lib/db.js';
 import type { Project, ProjectSummary, CanvasElement } from '../types/index.js';
+
+const MAX_THUMBNAIL_BYTES = 512 * 1024; // 512 KB
+
+function assetDir(): string {
+  return process.env.ASSET_DIR ?? './assets';
+}
 
 type ProjectRow = {
   id: string;
@@ -28,17 +38,31 @@ function toProject(row: ProjectRow): Project {
   };
 }
 
-function toProjectSummary(row: ProjectSummaryRow): ProjectSummary {
+async function thumbnailUrl(id: string): Promise<string | null> {
+  const dir = assetDir();
+  const filePath = join(dir, `thumb_${id}.jpg`);
+  try {
+    await stat(filePath);
+    return `/api/projects/${id}/thumbnail`;
+  } catch {
+    return null;
+  }
+}
+
+async function toProjectSummary(row: ProjectSummaryRow): Promise<ProjectSummary> {
   return {
     id: row.id,
     name: row.name,
     elementCount: row.element_count ?? 0,
+    thumbnailUrl: await thumbnailUrl(row.id),
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
 }
 
-export function projectRoutes(app: FastifyInstance): void {
+export async function projectRoutes(app: FastifyInstance): Promise<void> {
+  await app.register(fastifyMultipart, { limits: { fileSize: MAX_THUMBNAIL_BYTES } });
+
   // GET /projects — list all projects ordered by most recently updated
   app.get('/projects', async (_request, reply) => {
     const rows = await sql<ProjectSummaryRow[]>`
@@ -48,7 +72,8 @@ export function projectRoutes(app: FastifyInstance): void {
       FROM project
       ORDER BY updated_at DESC
     `;
-    return reply.status(200).send({ ok: true, data: rows.map(toProjectSummary) });
+    const data = await Promise.all(rows.map(toProjectSummary));
+    return reply.status(200).send({ ok: true, data });
   });
 
   // POST /projects — create a new project
@@ -116,7 +141,6 @@ export function projectRoutes(app: FastifyInstance): void {
       });
     }
 
-    // Fetch current row first so we can fall back to existing values
     const [current] = await sql<{ name: string; canvas: unknown }[]>`
       SELECT name, canvas FROM project WHERE id = ${id}
     `;
@@ -141,5 +165,101 @@ export function projectRoutes(app: FastifyInstance): void {
       ok: true,
       data: { id: row.id, name: row.name, updatedAt: row.updated_at.toISOString() },
     });
+  });
+
+  // POST /projects/:id/thumbnail — upload or replace the thumbnail
+  app.post<{ Params: { id: string } }>('/projects/:id/thumbnail', async (request, reply) => {
+    const { id } = request.params;
+
+    const [project] = await sql<{ id: string }[]>`SELECT id FROM project WHERE id = ${id}`;
+    if (!project) {
+      return reply
+        .status(404)
+        .send({ ok: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
+    }
+
+    let data: Awaited<ReturnType<typeof request.file>>;
+    try {
+      data = await request.file();
+    } catch (err: unknown) {
+      const fsErr = err as { code?: string };
+      if (fsErr.code === 'FST_REQ_FILE_TOO_LARGE') {
+        return reply
+          .status(400)
+          .send({ ok: false, error: { code: 'TOO_LARGE', message: 'File exceeds 512 KB limit' } });
+      }
+      throw err;
+    }
+
+    if (!data) {
+      return reply
+        .status(400)
+        .send({ ok: false, error: { code: 'INVALID_FILE', message: 'No file uploaded' } });
+    }
+
+    if (data.mimetype !== 'image/jpeg') {
+      await data.toBuffer();
+      return reply
+        .status(400)
+        .send({ ok: false, error: { code: 'INVALID_FILE', message: 'File must be image/jpeg' } });
+    }
+
+    let buffer: Buffer;
+    try {
+      buffer = await data.toBuffer();
+    } catch (err: unknown) {
+      const fsErr = err as { code?: string };
+      if (fsErr.code === 'FST_REQ_FILE_TOO_LARGE') {
+        return reply
+          .status(400)
+          .send({ ok: false, error: { code: 'TOO_LARGE', message: 'File exceeds 512 KB limit' } });
+      }
+      throw err;
+    }
+
+    if (buffer.length > MAX_THUMBNAIL_BYTES) {
+      return reply
+        .status(400)
+        .send({ ok: false, error: { code: 'TOO_LARGE', message: 'File exceeds 512 KB limit' } });
+    }
+
+    const dir = assetDir();
+    await mkdir(dir, { recursive: true });
+    const filePath = join(dir, `thumb_${id}.jpg`);
+    await writeFile(filePath, buffer);
+
+    await sql`
+      UPDATE project
+      SET thumbnail_url = ${`/api/projects/${id}/thumbnail`},
+          updated_at = now()
+      WHERE id = ${id}
+    `;
+
+    return reply.status(204).send();
+  });
+
+  // GET /projects/:id/thumbnail — stream the thumbnail file
+  app.get<{ Params: { id: string } }>('/projects/:id/thumbnail', async (request, reply) => {
+    const { id } = request.params;
+
+    const [project] = await sql<{ id: string }[]>`SELECT id FROM project WHERE id = ${id}`;
+    if (!project) {
+      return reply
+        .status(404)
+        .send({ ok: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
+    }
+
+    const filePath = join(assetDir(), `thumb_${id}.jpg`);
+    try {
+      await stat(filePath);
+    } catch {
+      return reply
+        .status(404)
+        .send({ ok: false, error: { code: 'NOT_FOUND', message: 'Thumbnail not found' } });
+    }
+
+    void reply.header('Content-Type', 'image/jpeg');
+    void reply.header('Cache-Control', 'no-cache');
+    return reply.send(createReadStream(filePath));
   });
 }

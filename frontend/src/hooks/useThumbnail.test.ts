@@ -1,0 +1,287 @@
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { RefObject } from 'react'
+import { useThumbnail } from './useThumbnail'
+import { useCanvasStore } from '../stores/canvasStore'
+import html2canvas from 'html2canvas'
+
+vi.mock('html2canvas', () => ({ default: vi.fn() }))
+
+const mockHtml2canvas = vi.mocked(html2canvas)
+
+function makeRef(el: HTMLDivElement | null): RefObject<HTMLDivElement | null> {
+  return { current: el }
+}
+
+const fakeDiv = document.createElement('div')
+
+function makeCanvas(blob: Blob | null = new Blob(['x'], { type: 'image/jpeg' })) {
+  return { toBlob: vi.fn((cb: (b: Blob | null) => void) => cb(blob)) }
+}
+
+beforeEach(() => {
+  useCanvasStore.setState({
+    designId: '',
+    name: 'Test',
+    elements: [],
+    selectedIds: [],
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+    isDirty: false,
+  })
+  mockHtml2canvas.mockResolvedValue(makeCanvas() as unknown as HTMLCanvasElement)
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.clearAllMocks()
+})
+
+// ---------------------------------------------------------------------------
+// AC 1 — thumbnail generation triggered by isDirty true→false
+// ---------------------------------------------------------------------------
+
+describe('AC1 — trigger on auto-save completion', () => {
+  it('calls html2canvas when isDirty transitions from true to false', async () => {
+    useCanvasStore.setState({ isDirty: true })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalledTimes(1))
+  })
+
+  it('calls html2canvas with scale 0.25, useCORS true, logging false', async () => {
+    useCanvasStore.setState({ isDirty: true })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
+    expect(mockHtml2canvas).toHaveBeenCalledWith(fakeDiv, {
+      scale: 0.25,
+      useCORS: true,
+      logging: false,
+    })
+  })
+
+  it('POSTs to /api/projects/:id/thumbnail', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', mockFetch)
+    useCanvasStore.setState({ isDirty: true })
+    renderHook(() => useThumbnail('design-abc', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('/api/projects/design-abc/thumbnail')
+    expect(init.method).toBe('POST')
+  })
+
+  it('sends a FormData body containing the blob', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', mockFetch)
+    useCanvasStore.setState({ isDirty: true })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(init.body).toBeInstanceOf(FormData)
+  })
+
+  it('does not trigger when isDirty stays false', async () => {
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(mockHtml2canvas).not.toHaveBeenCalled()
+  })
+
+  it('does not trigger when isDirty transitions from false to true', async () => {
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: true })
+    })
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(mockHtml2canvas).not.toHaveBeenCalled()
+  })
+
+  it('does not call html2canvas when surfaceRef.current is null', async () => {
+    useCanvasStore.setState({ isDirty: true })
+    renderHook(() => useThumbnail('design-1', makeRef(null)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(mockHtml2canvas).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 4 — subsequent saves overwrite the previous thumbnail
+// ---------------------------------------------------------------------------
+
+describe('AC4 — re-triggers on subsequent saves', () => {
+  it('calls html2canvas again on each successive true→false transition', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', mockFetch)
+    useCanvasStore.setState({ isDirty: true })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: true })
+    })
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 6 — thumbnail generation and upload failures are silent
+// ---------------------------------------------------------------------------
+
+describe('AC6 — errors are swallowed silently', () => {
+  it('does not throw when html2canvas rejects', async () => {
+    mockHtml2canvas.mockRejectedValue(new Error('canvas capture failed'))
+    useCanvasStore.setState({ isDirty: true })
+
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50))
+    })
+
+    expect(mockHtml2canvas).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not throw when fetch rejects', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')))
+    useCanvasStore.setState({ isDirty: true })
+
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50))
+    })
+
+    expect(mockHtml2canvas).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not call fetch when html2canvas resolves with a null blob', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', mockFetch)
+    mockHtml2canvas.mockResolvedValue(makeCanvas(null) as unknown as HTMLCanvasElement)
+    useCanvasStore.setState({ isDirty: true })
+
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50))
+    })
+
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Concurrent guard — only one generation at a time
+// ---------------------------------------------------------------------------
+
+describe('concurrent generation guard', () => {
+  it('skips a second generation started while the first is still in flight', async () => {
+    let resolveCanvas!: (c: HTMLCanvasElement) => void
+    const pendingCanvas = new Promise<HTMLCanvasElement>((res) => {
+      resolveCanvas = res
+    })
+    mockHtml2canvas.mockReturnValueOnce(pendingCanvas)
+
+    useCanvasStore.setState({ isDirty: true })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(mockHtml2canvas).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: true })
+    })
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(mockHtml2canvas).toHaveBeenCalledTimes(1)
+
+    resolveCanvas({} as HTMLCanvasElement)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 14 — each design uses its own upload URL
+// ---------------------------------------------------------------------------
+
+describe('AC14 — independent per design', () => {
+  it('uses the provided designId in the upload URL', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', mockFetch)
+    useCanvasStore.setState({ isDirty: true })
+    renderHook(() => useThumbnail('unique-design-xyz', makeRef(fakeDiv)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+    expect(mockFetch.mock.calls[0][0]).toBe('/api/projects/unique-design-xyz/thumbnail')
+  })
+})
