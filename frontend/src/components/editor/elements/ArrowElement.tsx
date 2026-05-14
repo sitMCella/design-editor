@@ -5,7 +5,7 @@ import type {
   CanvasElement,
 } from '../../../types/canvas'
 import { getAllAnchorPoints, deriveBBox } from '../../../utils/anchorCoord'
-import { SURFACE_WIDTH, SURFACE_HEIGHT } from '../DesignSurface'
+import { useCanvasStore } from '../../../stores/canvasStore'
 
 const DRAG_THRESHOLD = 4
 const SNAP_RADIUS = 12
@@ -121,10 +121,11 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
       isDraggingRef.current = true
       document.body.style.cursor = 'grabbing'
 
-      const newX1 = Math.max(0, Math.min(SURFACE_WIDTH, startX1 + dx))
-      const newY1 = Math.max(0, Math.min(SURFACE_HEIGHT, startY1 + dy))
-      const newX2 = Math.max(0, Math.min(SURFACE_WIDTH, startX2 + dx))
-      const newY2 = Math.max(0, Math.min(SURFACE_HEIGHT, startY2 + dy))
+      const zoom = useCanvasStore.getState().zoom
+      const newX1 = startX1 + dx / zoom
+      const newY1 = startY1 + dy / zoom
+      const newX2 = startX2 + dx / zoom
+      const newY2 = startY2 + dy / zoom
 
       // Breaking connections on body drag is handled: clear anchors and move freely
       onUpdate({
@@ -175,8 +176,9 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
     const onMouseMove = (me: MouseEvent) => {
       const dx = me.clientX - startMouseX
       const dy = me.clientY - startMouseY
-      let ptX = Math.max(0, Math.min(SURFACE_WIDTH, startPtX + dx))
-      let ptY = Math.max(0, Math.min(SURFACE_HEIGHT, startPtY + dy))
+      const zoom = useCanvasStore.getState().zoom
+      let ptX = startPtX + dx / zoom
+      let ptY = startPtY + dy / zoom
 
       // Snap detection
       currentSnap = null

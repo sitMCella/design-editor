@@ -345,30 +345,30 @@ describe('body drag', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  it('AC3: clamps x2 to the right surface boundary', () => {
+  it('AC3: allows body drag past the right surface boundary on infinite canvas', () => {
     const { container, onUpdate } = renderElement({ x2: 1270, y2: 360 }, { isSelected: true })
     const wrapper = container.firstChild as HTMLElement
 
-    // Try to drag 200px right; x2 would exceed 1280
+    // Drag 200px right; on infinite canvas x2 can exceed previous 1280 limit
     fireEvent.mouseDown(wrapper, { clientX: 0, clientY: 0 })
     fireEvent.mouseMove(window, { clientX: 200, clientY: 0 })
     fireEvent.mouseUp(window)
 
     const patch = onUpdate.mock.calls[0][0]
-    expect(patch.x2).toBeLessThanOrEqual(1280)
+    expect(patch.x2).toBeGreaterThan(1280)
   })
 
-  it('AC3: clamps x1 to the left surface boundary (0)', () => {
+  it('AC3: allows body drag past the left surface boundary on infinite canvas', () => {
     const { container, onUpdate } = renderElement({ x1: 10, y1: 360 }, { isSelected: true })
     const wrapper = container.firstChild as HTMLElement
 
-    // Try to drag 200px left; x1 would go below 0
+    // Drag 200px left; on infinite canvas x1 can go below 0
     fireEvent.mouseDown(wrapper, { clientX: 0, clientY: 0 })
     fireEvent.mouseMove(window, { clientX: -200, clientY: 0 })
     fireEvent.mouseUp(window)
 
     const patch = onUpdate.mock.calls[0][0]
-    expect(patch.x1).toBeGreaterThanOrEqual(0)
+    expect(patch.x1).toBeLessThan(0)
   })
 
   it('AC4: clears startAnchor and endAnchor when body drag begins', () => {
@@ -474,7 +474,7 @@ describe('endpoint drag', () => {
     expect(posCall[0].x1).toBeUndefined()
   })
 
-  it('AC8: end handle clamps to right surface boundary', () => {
+  it('AC8: end handle can move past right surface boundary on infinite canvas', () => {
     const onUpdate = vi.fn()
     render(
       <ArrowElement
@@ -487,16 +487,16 @@ describe('endpoint drag', () => {
     )
     const endHandle = screen.getByTestId('endpoint-end')
 
-    // Try to drag 200px right — would put x2 at 1470 without clamping
+    // Drag 200px right — x2 becomes 1270 + 200 = 1470 (no clamping on infinite canvas)
     fireEvent.mouseDown(endHandle, { clientX: 0, clientY: 0 })
     fireEvent.mouseMove(window, { clientX: 200, clientY: 0 })
     fireEvent.mouseUp(window)
 
     const posCall = onUpdate.mock.calls.find((c) => 'x2' in c[0])!
-    expect(posCall[0].x2).toBeLessThanOrEqual(1280)
+    expect(posCall[0].x2).toBeGreaterThan(1280)
   })
 
-  it('AC8: start handle clamps to left surface boundary (0)', () => {
+  it('AC8: start handle can move past left surface boundary on infinite canvas', () => {
     const onUpdate = vi.fn()
     render(
       <ArrowElement
@@ -514,7 +514,7 @@ describe('endpoint drag', () => {
     fireEvent.mouseUp(window)
 
     const posCall = onUpdate.mock.calls.find((c) => 'x1' in c[0])!
-    expect(posCall[0].x1).toBeGreaterThanOrEqual(0)
+    expect(posCall[0].x1).toBeLessThan(0)
   })
 })
 

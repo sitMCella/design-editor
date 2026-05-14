@@ -23,6 +23,8 @@ type Actions = {
   selectElements: (ids: string[]) => void
   clearSelection: () => void
   markSaved: () => void
+  setZoom: (zoom: number) => void
+  setPan: (x: number, y: number) => void
 }
 
 export const useCanvasStore = create<State & Actions>()(
@@ -125,6 +127,17 @@ export const useCanvasStore = create<State & Actions>()(
     markSaved: () =>
       set((state) => {
         state.isDirty = false
+      }),
+
+    setZoom: (zoom) =>
+      set((state) => {
+        state.zoom = Math.max(0.1, Math.min(5, zoom))
+      }),
+
+    setPan: (x, y) =>
+      set((state) => {
+        state.panX = x
+        state.panY = y
       }),
   }))
 )

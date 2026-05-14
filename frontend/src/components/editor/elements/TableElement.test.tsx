@@ -3,9 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { TableElement } from './TableElement'
 import type { TableElement as TableElementType } from '../../../types/canvas'
 
-const SURFACE_WIDTH = 1280
-const SURFACE_HEIGHT = 720
-
 const baseElement: TableElementType = {
   id: 'table-1',
   type: 'table',
@@ -328,29 +325,29 @@ describe('AC1: drag repositions a selected table element', () => {
   })
 })
 
-describe('AC2: drag is clamped to the design surface', () => {
-  it('clamps x to 0 when dragged past the left edge', () => {
+describe('AC2: drag allows free movement on infinite canvas', () => {
+  it('allows movement to negative x when dragged past the left edge', () => {
     const { container, onUpdate } = renderElement({ x: 10, y: 300 }, { isSelected: true })
     drag(container.firstChild as HTMLElement, { x: 200, y: 200 }, { x: 100, y: 200 })
-    expect(onUpdate.mock.calls.at(-1)![0].x).toBe(0)
+    expect(onUpdate.mock.calls.at(-1)![0].x).toBe(-90)
   })
 
-  it('clamps x to SURFACE_WIDTH − width when dragged past the right edge', () => {
+  it('allows movement beyond right surface bounds', () => {
     const { container, onUpdate } = renderElement({ x: 100, y: 300 }, { isSelected: true })
     drag(container.firstChild as HTMLElement, { x: 0, y: 0 }, { x: 2000, y: 0 })
-    expect(onUpdate.mock.calls.at(-1)![0].x).toBe(SURFACE_WIDTH - baseElement.width)
+    expect(onUpdate.mock.calls.at(-1)![0].x).toBe(2100)
   })
 
-  it('clamps y to 0 when dragged past the top edge', () => {
+  it('allows movement to negative y when dragged past the top edge', () => {
     const { container, onUpdate } = renderElement({ x: 440, y: 10 }, { isSelected: true })
     drag(container.firstChild as HTMLElement, { x: 200, y: 200 }, { x: 200, y: 100 })
-    expect(onUpdate.mock.calls.at(-1)![0].y).toBe(0)
+    expect(onUpdate.mock.calls.at(-1)![0].y).toBe(-90)
   })
 
-  it('clamps y to SURFACE_HEIGHT − height when dragged past the bottom edge', () => {
+  it('allows movement beyond bottom surface bounds', () => {
     const { container, onUpdate } = renderElement({ x: 440, y: 100 }, { isSelected: true })
     drag(container.firstChild as HTMLElement, { x: 0, y: 0 }, { x: 0, y: 2000 })
-    expect(onUpdate.mock.calls.at(-1)![0].y).toBe(SURFACE_HEIGHT - baseElement.height)
+    expect(onUpdate.mock.calls.at(-1)![0].y).toBe(2100)
   })
 })
 
@@ -406,22 +403,22 @@ describe('AC4: corner resize behaviour', () => {
     expect(onUpdate.mock.calls.at(-1)![0].height).toBe(40)
   })
 
-  it('element cannot extend past the right edge of the design surface', () => {
+  it('element can extend past the right edge on infinite canvas', () => {
     const { onUpdate } = renderElement(
       { x: 1100, y: 300, width: 100, height: 120 },
       { isSelected: true }
     )
     resizeHandle(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 500, y: 0 })
-    expect(onUpdate.mock.calls.at(-1)![0].width).toBe(SURFACE_WIDTH - 1100)
+    expect(onUpdate.mock.calls.at(-1)![0].width).toBe(600)
   })
 
-  it('element cannot extend past the bottom edge of the design surface', () => {
+  it('element can extend past the bottom edge on infinite canvas', () => {
     const { onUpdate } = renderElement(
       { x: 440, y: 650, width: 400, height: 50 },
       { isSelected: true }
     )
     resizeHandle(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 0, y: 500 })
-    expect(onUpdate.mock.calls.at(-1)![0].height).toBe(SURFACE_HEIGHT - 650)
+    expect(onUpdate.mock.calls.at(-1)![0].height).toBe(550)
   })
 })
 

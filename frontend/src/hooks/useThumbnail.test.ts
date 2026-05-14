@@ -4,6 +4,7 @@ import type { RefObject } from 'react'
 import { useThumbnail } from './useThumbnail'
 import { useCanvasStore } from '../stores/canvasStore'
 import html2canvas from 'html2canvas'
+import type { TextElement } from '../types/canvas'
 
 vi.mock('html2canvas', () => ({ default: vi.fn() }))
 
@@ -19,11 +20,30 @@ function makeCanvas(blob: Blob | null = new Blob(['x'], { type: 'image/jpeg' }))
   return { toBlob: vi.fn((cb: (b: Blob | null) => void) => cb(blob)) }
 }
 
+const fakeElement: TextElement = {
+  id: 'el-1',
+  type: 'text',
+  x: 100,
+  y: 100,
+  width: 200,
+  height: 50,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  content: 'Hello',
+  fontSize: 16,
+  fontFamily: 'Inter, sans-serif',
+  fontWeight: 'normal',
+  fontStyle: 'normal',
+  color: '#111827',
+  align: 'left',
+}
+
 beforeEach(() => {
   useCanvasStore.setState({
     designId: '',
     name: 'Test',
-    elements: [],
+    elements: [fakeElement],
     selectedIds: [],
     zoom: 1,
     panX: 0,
@@ -32,6 +52,8 @@ beforeEach(() => {
   })
   mockHtml2canvas.mockResolvedValue(makeCanvas() as unknown as HTMLCanvasElement)
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+  // Make requestAnimationFrame run synchronously in tests
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0 })
 })
 
 afterEach(() => {
@@ -55,7 +77,7 @@ describe('AC1 — trigger on auto-save completion', () => {
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalledTimes(1))
   })
 
-  it('calls html2canvas with scale 0.25, useCORS true, logging false', async () => {
+  it('calls html2canvas with useCORS true, logging false', async () => {
     useCanvasStore.setState({ isDirty: true })
     renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
 
@@ -64,11 +86,13 @@ describe('AC1 — trigger on auto-save completion', () => {
     })
 
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
-    expect(mockHtml2canvas).toHaveBeenCalledWith(fakeDiv, {
-      scale: 0.25,
-      useCORS: true,
-      logging: false,
-    })
+    expect(mockHtml2canvas).toHaveBeenCalledWith(
+      fakeDiv,
+      expect.objectContaining({
+        useCORS: true,
+        logging: false,
+      })
+    )
   })
 
   it('POSTs to /api/projects/:id/thumbnail', async () => {
@@ -129,6 +153,21 @@ describe('AC1 — trigger on auto-save completion', () => {
   it('does not call html2canvas when surfaceRef.current is null', async () => {
     useCanvasStore.setState({ isDirty: true })
     renderHook(() => useThumbnail('design-1', makeRef(null)))
+
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(mockHtml2canvas).not.toHaveBeenCalled()
+  })
+
+  it('does not call html2canvas when there are no elements', async () => {
+    useCanvasStore.setState({ isDirty: true, elements: [] })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
 
     act(() => {
       useCanvasStore.setState({ isDirty: false })
