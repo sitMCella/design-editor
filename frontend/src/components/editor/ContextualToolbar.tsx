@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useId } from 'react'
+import { flushSync } from 'react-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useCanvasStore } from '../../stores/canvasStore'
 import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
@@ -303,6 +304,28 @@ function ArrowToolbar({
   element: ArrowElement
   update: (patch: Partial<ArrowElement>) => void
 }) {
+  const uid = useId()
+  const colorRef = useRef<HTMLInputElement>(null)
+
+  // Use a native event listener with flushSync so that programmatically
+  // dispatched 'change' events (e.g. from Playwright evaluate()) cause a
+  // synchronous React commit before control returns to the caller.
+  useEffect(() => {
+    const el = colorRef.current
+    if (!el) return
+    const handler = (e: Event) => {
+      flushSync(() => {
+        update({ stroke: (e.target as HTMLInputElement).value })
+      })
+    }
+    el.addEventListener('input', handler)
+    el.addEventListener('change', handler)
+    return () => {
+      el.removeEventListener('input', handler)
+      el.removeEventListener('change', handler)
+    }
+  }, [update])
+
   return (
     <>
       <div className="flex items-center gap-0.5">
@@ -324,15 +347,19 @@ function ArrowToolbar({
       <div className="mx-1 h-4 w-px bg-gray-200" />
 
       <div className="flex items-center gap-0.5">
+        {/* Visually-hidden <label for> lets Playwright's getByLabel resolve each
+            control by exact label text, avoiding aria-label substring collisions. */}
+        <label htmlFor={`${uid}-sw-dec`} className="sr-only">Decrease stroke width</label>
         <button
-          aria-label="Decrease stroke width"
+          id={`${uid}-sw-dec`}
           onClick={() => update({ strokeWidth: Math.max(1, element.strokeWidth - 1) })}
           className="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-gray-100"
         >
           −
         </button>
+        <label htmlFor={`${uid}-sw`} className="sr-only">Stroke width</label>
         <input
-          aria-label="Stroke width"
+          id={`${uid}-sw`}
           type="number"
           min={1}
           max={20}
@@ -342,8 +369,9 @@ function ArrowToolbar({
           }
           className="w-10 rounded border border-gray-200 px-1 py-0.5 text-center text-sm"
         />
+        <label htmlFor={`${uid}-sw-inc`} className="sr-only">Increase stroke width</label>
         <button
-          aria-label="Increase stroke width"
+          id={`${uid}-sw-inc`}
           onClick={() => update({ strokeWidth: Math.min(20, element.strokeWidth + 1) })}
           className="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-gray-100"
         >
@@ -354,10 +382,10 @@ function ArrowToolbar({
       <div className="mx-1 h-4 w-px bg-gray-200" />
 
       <input
+        ref={colorRef}
         aria-label="Stroke color"
         type="color"
         value={element.stroke}
-        onChange={(e) => update({ stroke: e.target.value })}
         className="h-6 w-6 cursor-pointer rounded border border-gray-200 p-0.5"
       />
     </>

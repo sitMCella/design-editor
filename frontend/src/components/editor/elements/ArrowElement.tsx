@@ -214,11 +214,9 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
         opacity,
         outline,
         outlineOffset: '2px',
-        cursor,
+        pointerEvents: 'none',
         overflow: 'visible',
       }}
-      onClick={handleClick}
-      onMouseDown={handleBodyMouseDown}
     >
       <svg
         width={width}
@@ -229,8 +227,19 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
       >
         <ArrowMarkers id={id} stroke={stroke} arrowHead={arrowHead} />
 
-        {/* Transparent hit area — in absolute design-surface coordinates */}
-        <rect x={x} y={y} width={width} height={height} fill="transparent" />
+        {/* Wide transparent stroke used as the click/drag target — avoids
+            blocking pointer events on elements that overlap the bounding box */}
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          stroke="transparent"
+          strokeWidth={Math.max(10, strokeWidth + 8)}
+          style={{ cursor, pointerEvents: 'stroke' }}
+          onClick={handleClick}
+          onMouseDown={handleBodyMouseDown}
+        />
 
         <line
           x1={x1}
