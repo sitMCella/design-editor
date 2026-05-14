@@ -35,7 +35,7 @@ async function dragBy(
   from: ReturnType<Page['locator']>,
   dx: number,
   dy: number,
-  steps = 20,
+  steps = 20
 ) {
   const { x, y } = await centre(from)
   await page.mouse.move(x, y)
@@ -52,7 +52,7 @@ async function dragHandle(
   handleLocator: ReturnType<Page['locator']>,
   dx: number,
   dy: number,
-  steps = 20,
+  steps = 20
 ) {
   const box = await handleLocator.boundingBox()
   const cx = box!.x + box!.width / 2
@@ -251,7 +251,9 @@ test.describe('11 – Table Element Customisation', () => {
     expect(after!.x + after!.width).toBeLessThanOrEqual(surface!.x + surface!.width + 2)
   })
 
-  test('AC4: element cannot extend past the bottom edge of the design surface', async ({ page }) => {
+  test('AC4: element cannot extend past the bottom edge of the design surface', async ({
+    page,
+  }) => {
     await addTableElement(page)
     const el = await getTableElement(page)
     const surface = await page.locator('.bg-gray-100 > div').first().boundingBox()
@@ -274,12 +276,8 @@ test.describe('11 – Table Element Customisation', () => {
 
     // Both columns in the 2-column default table should remain equal-width
     const cols = el.locator('col')
-    const col0Width = await cols.nth(0).evaluate((el: HTMLElement) =>
-      parseFloat(el.style.width),
-    )
-    const col1Width = await cols.nth(1).evaluate((el: HTMLElement) =>
-      parseFloat(el.style.width),
-    )
+    const col0Width = await cols.nth(0).evaluate((el: HTMLElement) => parseFloat(el.style.width))
+    const col1Width = await cols.nth(1).evaluate((el: HTMLElement) => parseFloat(el.style.width))
     expect(col0Width).toBeCloseTo(col1Width, 0)
   })
 
@@ -328,7 +326,9 @@ test.describe('11 – Table Element Customisation', () => {
     await expect(page.getByTestId('col-divider-1')).not.toBeAttached()
   })
 
-  test('AC6: column-divider handles are hidden when the element is deselected', async ({ page }) => {
+  test('AC6: column-divider handles are hidden when the element is deselected', async ({
+    page,
+  }) => {
     await addTableElement(page)
     await clickCanvasBackground(page)
     await expect(page.getByTestId('col-divider-0')).not.toBeAttached()
@@ -370,7 +370,9 @@ test.describe('11 – Table Element Customisation', () => {
     expect(col1After!.width).toBeGreaterThan(col1Before!.width + 30)
   })
 
-  test('AC7: column widths still sum to total element width after divider drag', async ({ page }) => {
+  test('AC7: column widths still sum to total element width after divider drag', async ({
+    page,
+  }) => {
     await addTableElement(page)
     const el = await getTableElement(page)
 
@@ -385,7 +387,9 @@ test.describe('11 – Table Element Customisation', () => {
     expect(sum).toBeCloseTo(elBox!.width, 0)
   })
 
-  test('AC7: minimum column width of 40 px is enforced when dragging far left', async ({ page }) => {
+  test('AC7: minimum column width of 40 px is enforced when dragging far left', async ({
+    page,
+  }) => {
     await addTableElement(page)
     const el = await getTableElement(page)
 
@@ -400,7 +404,9 @@ test.describe('11 – Table Element Customisation', () => {
   // AC8 — row-divider handles appear when selected, hidden when not
   // =========================================================================
 
-  test('AC8: m−1 row-divider handles are visible when the element is selected', async ({ page }) => {
+  test('AC8: m−1 row-divider handles are visible when the element is selected', async ({
+    page,
+  }) => {
     await addTableElement(page)
     // Default 3-row table → 2 dividers
     await expect(page.getByTestId('row-divider-0')).toBeVisible()
@@ -452,7 +458,9 @@ test.describe('11 – Table Element Customisation', () => {
     expect(row0!.height).toBeGreaterThanOrEqual(24)
   })
 
-  test('AC9: row heights still sum to total element height after divider drag', async ({ page }) => {
+  test('AC9: row heights still sum to total element height after divider drag', async ({
+    page,
+  }) => {
     await addTableElement(page)
     const el = await getTableElement(page)
 
@@ -641,7 +649,9 @@ test.describe('11 – Table Element Customisation', () => {
   // AC14 — "Remove column" removes the last column; disabled when only one remains
   // =========================================================================
 
-  test('AC14: clicking "Remove column" removes the last column from every row', async ({ page }) => {
+  test('AC14: clicking "Remove column" removes the last column from every row', async ({
+    page,
+  }) => {
     await addTableElement(page)
     const el = await getTableElement(page)
 
@@ -662,7 +672,9 @@ test.describe('11 – Table Element Customisation', () => {
     expect(after!.width).toBeLessThan(before!.width - 80)
   })
 
-  test('AC14: "Remove column" button is disabled when only one column remains', async ({ page }) => {
+  test('AC14: "Remove column" button is disabled when only one column remains', async ({
+    page,
+  }) => {
     await addTableElement(page)
     // Remove one column → one column remains
     await page.getByLabel('Remove column').click()
@@ -746,7 +758,9 @@ test.describe('11 – Table Element Customisation', () => {
     await expect(el.locator('td').nth(0)).toContainText('Committed value')
   })
 
-  test('AC17: clicking outside the table commits the value and exits edit mode', async ({ page }) => {
+  test('AC17: clicking outside the table commits the value and exits edit mode', async ({
+    page,
+  }) => {
     await addTableElement(page)
     const el = await getTableElement(page)
 
@@ -902,9 +916,9 @@ test.describe('11 – Table Element Customisation', () => {
     // Wait for the PATCH to fire and capture updated elements
     await expect.poll(() => savedElements.length, { timeout: 6000 }).toBeGreaterThan(0)
 
-    const tableEl = savedElements.find(
-      (e) => (e as { type?: string }).type === 'table',
-    ) as { columns?: number } | undefined
+    const tableEl = savedElements.find((e) => (e as { type?: string }).type === 'table') as
+      | { columns?: number }
+      | undefined
     expect(tableEl).toBeDefined()
     expect(tableEl!.columns).toBe(3)
   })
@@ -927,12 +941,17 @@ test.describe('11 – Table Element Customisation', () => {
         {
           id: 'tbl-saved',
           type: 'table',
-          x: 440, y: 300, width: 520, height: 160,
-          rotation: 0, opacity: 1, locked: false,
+          x: 440,
+          y: 300,
+          width: 520,
+          height: 160,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
           columns: 3,
           columnWidths: [200, 200, 120],
           rows: [
-            { isHeader: true,  height: 40, cells: ['H1', 'H2', 'H3'] },
+            { isHeader: true, height: 40, cells: ['H1', 'H2', 'H3'] },
             { isHeader: false, height: 60, cells: ['A1', 'A2', 'A3'] },
             { isHeader: false, height: 60, cells: ['B1', 'B2', 'B3'] },
           ],
@@ -944,15 +963,19 @@ test.describe('11 – Table Element Customisation', () => {
     await page.route(/\/api\/projects$/, async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
             ok: true,
-            data: [{
-              id: 'saved-design', name: 'Restored Design',
-              elementCount: 1,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            }],
+            data: [
+              {
+                id: 'saved-design',
+                name: 'Restored Design',
+                elementCount: 1,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+            ],
           }),
         })
         return
@@ -964,11 +987,13 @@ test.describe('11 – Table Element Customisation', () => {
     await page.route(/\/api\/projects\/[^/]+$/, async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
             ok: true,
             data: {
-              id: 'saved-design', name: 'Restored Design',
+              id: 'saved-design',
+              name: 'Restored Design',
               canvas: savedCanvas,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -978,8 +1003,11 @@ test.describe('11 – Table Element Customisation', () => {
         return
       }
       if (route.request().method() === 'PATCH') {
-        await route.fulfill({ status: 200, contentType: 'application/json',
-          body: JSON.stringify({ ok: true, data: {} }) })
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true, data: {} }),
+        })
         return
       }
       await route.continue()
@@ -1008,12 +1036,17 @@ test.describe('11 – Table Element Customisation', () => {
         {
           id: 'tbl-saved',
           type: 'table',
-          x: 440, y: 300, width: 520, height: 160,
-          rotation: 0, opacity: 1, locked: false,
+          x: 440,
+          y: 300,
+          width: 520,
+          height: 160,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
           columns: 3,
           columnWidths: [200, 200, 120],
           rows: [
-            { isHeader: true,  height: 40, cells: ['H1', 'H2', 'H3'] },
+            { isHeader: true, height: 40, cells: ['H1', 'H2', 'H3'] },
             { isHeader: false, height: 60, cells: ['A1', 'A2', 'A3'] },
             { isHeader: false, height: 60, cells: ['B1', 'B2', 'B3'] },
           ],
@@ -1024,15 +1057,19 @@ test.describe('11 – Table Element Customisation', () => {
     await page.route(/\/api\/projects$/, async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
             ok: true,
-            data: [{
-              id: 'saved-design', name: 'Restored Design',
-              elementCount: 1,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            }],
+            data: [
+              {
+                id: 'saved-design',
+                name: 'Restored Design',
+                elementCount: 1,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+            ],
           }),
         })
         return
@@ -1043,11 +1080,13 @@ test.describe('11 – Table Element Customisation', () => {
     await page.route(/\/api\/projects\/[^/]+$/, async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
-          status: 200, contentType: 'application/json',
+          status: 200,
+          contentType: 'application/json',
           body: JSON.stringify({
             ok: true,
             data: {
-              id: 'saved-design', name: 'Restored Design',
+              id: 'saved-design',
+              name: 'Restored Design',
               canvas: savedCanvas,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -1057,8 +1096,11 @@ test.describe('11 – Table Element Customisation', () => {
         return
       }
       if (route.request().method() === 'PATCH') {
-        await route.fulfill({ status: 200, contentType: 'application/json',
-          body: JSON.stringify({ ok: true, data: {} }) })
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true, data: {} }),
+        })
         return
       }
       await route.continue()

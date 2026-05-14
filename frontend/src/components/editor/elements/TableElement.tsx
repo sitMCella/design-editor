@@ -36,7 +36,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
   }))
 
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; colIndex: number } | null>(
-    null,
+    null
   )
   const valueAtEntryRef = useRef('')
   const editableRef = useRef<HTMLDivElement | null>(null)
@@ -183,11 +183,13 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
 
       // Scale column widths proportionally; ensure they sum to newW
       const wRatio = newW / s.elementW
-      const newColWidths = columnWidths.map((cw) => Math.max(MIN_COL_WIDTH, Math.round(cw * wRatio)))
+      const newColWidths = columnWidths.map((cw) =>
+        Math.max(MIN_COL_WIDTH, Math.round(cw * wRatio))
+      )
       const wSum = newColWidths.reduce((a, b) => a + b, 0)
       newColWidths[newColWidths.length - 1] = Math.max(
         MIN_COL_WIDTH,
-        newColWidths[newColWidths.length - 1] + (newW - wSum),
+        newColWidths[newColWidths.length - 1] + (newW - wSum)
       )
 
       // Scale row heights proportionally; ensure they sum to newH
@@ -202,7 +204,14 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
         height: Math.max(MIN_ROW_HEIGHT, newRows[newRows.length - 1].height + (newH - hSum)),
       }
 
-      onUpdate({ x: newX, y: newY, width: newW, height: newH, columnWidths: newColWidths, rows: newRows })
+      onUpdate({
+        x: newX,
+        y: newY,
+        width: newW,
+        height: newH,
+        columnWidths: newColWidths,
+        rows: newRows,
+      })
     }
 
     const onMouseUp = () => {
@@ -311,7 +320,11 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
     setEditingCell(null)
   }
 
-  const handleCellBlur = (e: React.FocusEvent<HTMLDivElement>, rowIndex: number, colIndex: number) => {
+  const handleCellBlur = (
+    e: React.FocusEvent<HTMLDivElement>,
+    rowIndex: number,
+    colIndex: number
+  ) => {
     commitEdit(rowIndex, colIndex, (e.currentTarget.textContent ?? '').trim())
   }
 

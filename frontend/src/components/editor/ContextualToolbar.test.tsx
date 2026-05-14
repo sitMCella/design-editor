@@ -940,7 +940,7 @@ const asTable = (el: CanvasElement) => el as TableElementType
 
 const makeTableElement = (
   id: string,
-  overrides: Partial<TableElementType> = {},
+  overrides: Partial<TableElementType> = {}
 ): TableElementType => ({
   id,
   type: 'table',

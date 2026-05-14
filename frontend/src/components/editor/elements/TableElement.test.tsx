@@ -233,7 +233,14 @@ describe('AC8: click interaction', () => {
   it('does not call onSelect when clicking without a handler', () => {
     // Ensures the handler is wired through the element and not a parent
     const onSelect = vi.fn()
-    render(<TableElement element={baseElement} isSelected={false} onSelect={onSelect} onUpdate={vi.fn()} />)
+    render(
+      <TableElement
+        element={baseElement}
+        isSelected={false}
+        onSelect={onSelect}
+        onUpdate={vi.fn()}
+      />
+    )
     fireEvent.click(screen.getByTestId('table-element'))
     expect(onSelect).toHaveBeenCalledTimes(1)
   })
@@ -279,7 +286,7 @@ const drag = (el: HTMLElement, from: { x: number; y: number }, to: { x: number; 
 const resizeHandle = (
   handle: HTMLElement,
   from: { x: number; y: number },
-  to: { x: number; y: number },
+  to: { x: number; y: number }
 ) => {
   fireEvent.mouseDown(handle, { clientX: from.x, clientY: from.y })
   fireEvent.mouseMove(window, { clientX: to.x, clientY: to.y })
@@ -383,7 +390,7 @@ describe('AC4: corner resize behaviour', () => {
     // baseElement x=440, y=300, w=400, h=120; drag tl right 20, down 10
     resizeHandle(screen.getByTestId('resize-handle-tl'), { x: 0, y: 0 }, { x: 20, y: 10 })
     expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ x: 460, y: 310, width: 380, height: 110 }),
+      expect.objectContaining({ x: 460, y: 310, width: 380, height: 110 })
     )
   })
 
@@ -402,7 +409,7 @@ describe('AC4: corner resize behaviour', () => {
   it('element cannot extend past the right edge of the design surface', () => {
     const { onUpdate } = renderElement(
       { x: 1100, y: 300, width: 100, height: 120 },
-      { isSelected: true },
+      { isSelected: true }
     )
     resizeHandle(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 500, y: 0 })
     expect(onUpdate.mock.calls.at(-1)![0].width).toBe(SURFACE_WIDTH - 1100)
@@ -411,7 +418,7 @@ describe('AC4: corner resize behaviour', () => {
   it('element cannot extend past the bottom edge of the design surface', () => {
     const { onUpdate } = renderElement(
       { x: 440, y: 650, width: 400, height: 50 },
-      { isSelected: true },
+      { isSelected: true }
     )
     resizeHandle(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 0, y: 500 })
     expect(onUpdate.mock.calls.at(-1)![0].height).toBe(SURFACE_HEIGHT - 650)
@@ -438,7 +445,7 @@ describe('AC5: proportional scaling after resize', () => {
     const patch = onUpdate.mock.calls.at(-1)![0]
     const heightSum = (patch.rows as Array<{ height: number }>).reduce(
       (a: number, r: { height: number }) => a + r.height,
-      0,
+      0
     )
     expect(heightSum).toBe(patch.height)
   })
@@ -465,7 +472,7 @@ describe('AC6: column-divider handle visibility', () => {
           { isHeader: false, height: 40, cells: ['A', 'B', 'C'] },
         ],
       },
-      { isSelected: true },
+      { isSelected: true }
     )
     expect(screen.getByTestId('col-divider-0')).toBeInTheDocument()
     expect(screen.getByTestId('col-divider-1')).toBeInTheDocument()
@@ -491,9 +498,7 @@ describe('AC7: column-divider drag', () => {
     fireEvent.mouseDown(divider, { clientX: 0, clientY: 0 })
     fireEvent.mouseMove(window, { clientX: 50, clientY: 0 })
     fireEvent.mouseUp(window)
-    expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ columnWidths: [250, 150] }),
-    )
+    expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({ columnWidths: [250, 150] }))
   })
 
   it('enforces a minimum column width of 40 px', () => {
