@@ -303,3 +303,107 @@ describe('AC10 — auto-save', () => {
     expect(useCanvasStore.getState().isDirty).toBe(true)
   })
 })
+
+// ---------------------------------------------------------------------------
+// AC5 — zoom percentage readout
+// ---------------------------------------------------------------------------
+
+describe('AC5 — zoom percentage display', () => {
+  it('shows 100% when zoom is 1', () => {
+    useCanvasStore.setState({ zoom: 1 })
+    renderEditor()
+    expect(screen.getByRole('button', { name: /reset zoom/i })).toHaveTextContent('100%')
+  })
+
+  it('shows 50% when zoom is 0.5', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    renderEditor()
+    expect(screen.getByRole('button', { name: /reset zoom/i })).toHaveTextContent('50%')
+  })
+
+  it('shows 200% when zoom is 2', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    renderEditor()
+    expect(screen.getByRole('button', { name: /reset zoom/i })).toHaveTextContent('200%')
+  })
+
+  it('shows 500% when zoom is 5 (MAX_ZOOM)', () => {
+    useCanvasStore.setState({ zoom: 5 })
+    renderEditor()
+    expect(screen.getByRole('button', { name: /reset zoom/i })).toHaveTextContent('500%')
+  })
+
+  it('shows 10% when zoom is 0.1 (MIN_ZOOM)', () => {
+    useCanvasStore.setState({ zoom: 0.1 })
+    renderEditor()
+    expect(screen.getByRole('button', { name: /reset zoom/i })).toHaveTextContent('10%')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC6 — zoom in / zoom out buttons
+// ---------------------------------------------------------------------------
+
+describe('AC6 — zoom in and zoom out buttons', () => {
+  it('zoom in button increases zoom by ZOOM_STEP factor', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    renderEditor()
+    fireEvent.click(screen.getByRole('button', { name: /zoom in/i }))
+    expect(useCanvasStore.getState().zoom).toBeCloseTo(1.25, 5)
+  })
+
+  it('zoom out button decreases zoom by ZOOM_STEP factor', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    renderEditor()
+    fireEvent.click(screen.getByRole('button', { name: /zoom out/i }))
+    expect(useCanvasStore.getState().zoom).toBeCloseTo(1 / 1.25, 5)
+  })
+
+  it('reset button sets zoom back to 1', () => {
+    useCanvasStore.setState({ zoom: 2, panX: 100, panY: 50 })
+    renderEditor()
+    fireEvent.click(screen.getByRole('button', { name: /reset zoom/i }))
+    expect(useCanvasStore.getState().zoom).toBe(1)
+  })
+
+  it('reset button sets pan back to (0, 0)', () => {
+    useCanvasStore.setState({ zoom: 2, panX: 100, panY: 50 })
+    renderEditor()
+    fireEvent.click(screen.getByRole('button', { name: /reset zoom/i }))
+    expect(useCanvasStore.getState().panX).toBe(0)
+    expect(useCanvasStore.getState().panY).toBe(0)
+  })
+
+  it('zoom in button is disabled at MAX_ZOOM (500%)', () => {
+    useCanvasStore.setState({ zoom: 5 })
+    renderEditor()
+    expect(screen.getByRole('button', { name: /zoom in/i })).toBeDisabled()
+  })
+
+  it('zoom out button is disabled at MIN_ZOOM (10%)', () => {
+    useCanvasStore.setState({ zoom: 0.1 })
+    renderEditor()
+    expect(screen.getByRole('button', { name: /zoom out/i })).toBeDisabled()
+  })
+
+  it('zoom in button is enabled below MAX_ZOOM', () => {
+    useCanvasStore.setState({ zoom: 4 })
+    renderEditor()
+    expect(screen.getByRole('button', { name: /zoom in/i })).not.toBeDisabled()
+  })
+
+  it('zoom out button is enabled above MIN_ZOOM', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    renderEditor()
+    expect(screen.getByRole('button', { name: /zoom out/i })).not.toBeDisabled()
+  })
+
+  it('zoom controls are visible inside the header', () => {
+    useCanvasStore.setState({ zoom: 1 })
+    renderEditor()
+    const header = screen.getByRole('banner')
+    expect(header).toContainElement(screen.getByRole('button', { name: /zoom in/i }))
+    expect(header).toContainElement(screen.getByRole('button', { name: /zoom out/i }))
+    expect(header).toContainElement(screen.getByRole('button', { name: /reset zoom/i }))
+  })
+})

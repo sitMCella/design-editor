@@ -449,3 +449,105 @@ describe('markSaved', () => {
     expect(useCanvasStore.getState().isDirty).toBe(false)
   })
 })
+
+// ---------------------------------------------------------------------------
+// setZoom — AC 2/3/4/6 (feat 13)
+// ---------------------------------------------------------------------------
+
+describe('setZoom', () => {
+  it('sets the zoom value', () => {
+    useCanvasStore.getState().setZoom(2)
+    expect(useCanvasStore.getState().zoom).toBe(2)
+  })
+
+  it('accepts fractional zoom values', () => {
+    useCanvasStore.getState().setZoom(0.5)
+    expect(useCanvasStore.getState().zoom).toBe(0.5)
+  })
+
+  it('clamps zoom to the minimum of 0.1', () => {
+    useCanvasStore.getState().setZoom(0.01)
+    expect(useCanvasStore.getState().zoom).toBe(0.1)
+  })
+
+  it('clamps zoom to the maximum of 5', () => {
+    useCanvasStore.getState().setZoom(99)
+    expect(useCanvasStore.getState().zoom).toBe(5)
+  })
+
+  it('accepts the exact minimum boundary (0.1)', () => {
+    useCanvasStore.getState().setZoom(0.1)
+    expect(useCanvasStore.getState().zoom).toBe(0.1)
+  })
+
+  it('accepts the exact maximum boundary (5)', () => {
+    useCanvasStore.getState().setZoom(5)
+    expect(useCanvasStore.getState().zoom).toBe(5)
+  })
+
+  it('does not mark the store as dirty', () => {
+    useCanvasStore.getState().setZoom(2)
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('does not affect elements', () => {
+    useCanvasStore.getState().addElement(makeElement())
+    useCanvasStore.setState({ isDirty: false })
+    useCanvasStore.getState().setZoom(3)
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('does not affect selection', () => {
+    useCanvasStore.getState().selectElements(['a', 'b'])
+    useCanvasStore.getState().setZoom(2)
+    expect(useCanvasStore.getState().selectedIds).toEqual(['a', 'b'])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// setPan — AC 7/8 (feat 13)
+// ---------------------------------------------------------------------------
+
+describe('setPan', () => {
+  it('sets panX and panY', () => {
+    useCanvasStore.getState().setPan(150, 75)
+    const { panX, panY } = useCanvasStore.getState()
+    expect(panX).toBe(150)
+    expect(panY).toBe(75)
+  })
+
+  it('allows negative pan values (infinite canvas has no boundary)', () => {
+    useCanvasStore.getState().setPan(-500, -300)
+    const { panX, panY } = useCanvasStore.getState()
+    expect(panX).toBe(-500)
+    expect(panY).toBe(-300)
+  })
+
+  it('allows large positive pan values', () => {
+    useCanvasStore.getState().setPan(10000, 8000)
+    const { panX, panY } = useCanvasStore.getState()
+    expect(panX).toBe(10000)
+    expect(panY).toBe(8000)
+  })
+
+  it('does not mark the store as dirty', () => {
+    useCanvasStore.getState().setPan(100, 200)
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('does not affect elements', () => {
+    useCanvasStore.getState().addElement(makeElement())
+    useCanvasStore.setState({ isDirty: false })
+    useCanvasStore.getState().setPan(100, 200)
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('setPan(0, 0) resets pan to origin', () => {
+    useCanvasStore.getState().setPan(300, 400)
+    useCanvasStore.getState().setPan(0, 0)
+    expect(useCanvasStore.getState().panX).toBe(0)
+    expect(useCanvasStore.getState().panY).toBe(0)
+  })
+})

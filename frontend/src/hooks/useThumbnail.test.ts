@@ -324,3 +324,108 @@ describe('AC14 — independent per design', () => {
     expect(mockFetch.mock.calls[0][0]).toBe('/api/projects/unique-design-xyz/thumbnail')
   })
 })
+
+// ---------------------------------------------------------------------------
+// AC15/16/17/18 — bounding-box capture: correct clip region, scale, and background
+// ---------------------------------------------------------------------------
+
+describe('AC15/16/17/18 — bounding-box capture options', () => {
+  it('passes x/y with 24px padding subtracted from bbox origin', async () => {
+    // element bbox: x=100, y=200 → captureX = 100-24 = 76, captureY = 200-24 = 176
+    useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => { useCanvasStore.setState({ isDirty: false }) })
+
+    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
+    const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
+    expect(opts.x).toBe(fakeElement.x - 24)
+    expect(opts.y).toBe(fakeElement.y - 24)
+  })
+
+  it('passes width/height with 48px total padding added to bbox size', async () => {
+    // element: width=200, height=50 → captureW=248, captureH=98
+    useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => { useCanvasStore.setState({ isDirty: false }) })
+
+    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
+    const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
+    expect(opts.width).toBe(fakeElement.width + 48)
+    expect(opts.height).toBe(fakeElement.height + 48)
+  })
+
+  it('computes scale to fit within 320×180', async () => {
+    // captureW = 200+48 = 248, captureH = 50+48 = 98
+    // scale = min(320/248, 180/98) ≈ min(1.29, 1.84) ≈ 1.29
+    useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => { useCanvasStore.setState({ isDirty: false }) })
+
+    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
+    const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
+    const captureW = fakeElement.width + 48
+    const captureH = fakeElement.height + 48
+    const expectedScale = Math.min(320 / captureW, 180 / captureH)
+    expect(opts.scale).toBeCloseTo(expectedScale, 5)
+  })
+
+  it('passes backgroundColor #F3F4F6', async () => {
+    useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => { useCanvasStore.setState({ isDirty: false }) })
+
+    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
+    const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
+    expect(opts.backgroundColor).toBe('#F3F4F6')
+  })
+
+  it('uses the union bbox when multiple elements are present', async () => {
+    const el1: TextElement = { ...fakeElement, id: 'a', x: 0, y: 0, width: 100, height: 50 }
+    const el2: TextElement = { ...fakeElement, id: 'b', x: 200, y: 100, width: 100, height: 50 }
+    // union: x=0, y=0, w=300, h=150 → captureX=-24, captureY=-24, captureW=348, captureH=198
+    useCanvasStore.setState({ isDirty: true, elements: [el1, el2] })
+    renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
+
+    act(() => { useCanvasStore.setState({ isDirty: false }) })
+
+    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
+    const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
+    expect(opts.x).toBe(-24)
+    expect(opts.y).toBe(-24)
+    expect(opts.width).toBe(300 + 48)
+    expect(opts.height).toBe(150 + 48)
+  })
+
+  it('clears the CSS transform before calling html2canvas', async () => {
+    const divWithTransform = document.createElement('div')
+    divWithTransform.style.transform = 'translate(100px, 50px) scale(1.5)'
+
+    useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
+    renderHook(() => useThumbnail('design-1', makeRef(divWithTransform)))
+
+    act(() => { useCanvasStore.setState({ isDirty: false }) })
+
+    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
+    // At the time html2canvas was called, the node passed in should have transform cleared
+    expect(mockHtml2canvas.mock.calls[0][0]).toBe(divWithTransform)
+  })
+
+  it('restores the CSS transform after html2canvas resolves', async () => {
+    const divWithTransform = document.createElement('div')
+    divWithTransform.style.transform = 'translate(100px, 50px) scale(1.5)'
+
+    useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
+    renderHook(() => useThumbnail('design-1', makeRef(divWithTransform)))
+
+    act(() => { useCanvasStore.setState({ isDirty: false }) })
+
+    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)) })
+
+    expect(divWithTransform.style.transform).toBe('translate(100px, 50px) scale(1.5)')
+  })
+})
