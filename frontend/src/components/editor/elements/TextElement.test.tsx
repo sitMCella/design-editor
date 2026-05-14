@@ -511,3 +511,229 @@ describe('drag behaviour', () => {
     expect(onUpdate).not.toHaveBeenCalled()
   })
 })
+
+// ---------------------------------------------------------------------------
+// AC 4 — selected element shows resize handles at four corners;
+//         handles are hidden in editing mode
+// ---------------------------------------------------------------------------
+
+describe('AC4: resize handles visibility', () => {
+  it('renders all four corner handles when selected and not editing', () => {
+    renderElement({}, { isSelected: true })
+    expect(screen.getByTestId('resize-handle-tl')).toBeInTheDocument()
+    expect(screen.getByTestId('resize-handle-tr')).toBeInTheDocument()
+    expect(screen.getByTestId('resize-handle-bl')).toBeInTheDocument()
+    expect(screen.getByTestId('resize-handle-br')).toBeInTheDocument()
+  })
+
+  it('does not render resize handles when not selected', () => {
+    renderElement({}, { isSelected: false })
+    expect(screen.queryByTestId('resize-handle-tl')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('resize-handle-tr')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('resize-handle-bl')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('resize-handle-br')).not.toBeInTheDocument()
+  })
+
+  it('hides resize handles when editing mode is entered via double-click', () => {
+    renderElement({}, { isSelected: true })
+    expect(screen.getByTestId('resize-handle-tl')).toBeInTheDocument()
+    fireEvent.dblClick(screen.getByTestId('text-element'))
+    expect(screen.queryByTestId('resize-handle-tl')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('resize-handle-tr')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('resize-handle-bl')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('resize-handle-br')).not.toBeInTheDocument()
+  })
+
+  it('restores resize handles when editing mode is exited via Escape', () => {
+    renderElement({}, { isSelected: true })
+    fireEvent.dblClick(screen.getByTestId('text-element'))
+    expect(screen.queryByTestId('resize-handle-tl')).not.toBeInTheDocument()
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    fireEvent.keyDown(editable, { key: 'Escape' })
+    expect(screen.getByTestId('resize-handle-tl')).toBeInTheDocument()
+    expect(screen.getByTestId('resize-handle-tr')).toBeInTheDocument()
+    expect(screen.getByTestId('resize-handle-bl')).toBeInTheDocument()
+    expect(screen.getByTestId('resize-handle-br')).toBeInTheDocument()
+  })
+
+  it('restores resize handles when editing mode is exited via blur', () => {
+    renderElement({}, { isSelected: true })
+    fireEvent.dblClick(screen.getByTestId('text-element'))
+    const editable = document.querySelector('[contenteditable="true"]') as HTMLDivElement
+    editable.textContent = 'some text'
+    fireEvent.blur(editable)
+    expect(screen.getByTestId('resize-handle-tl')).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 5 — corner handles resize the element; min 40 × 20 px; bounded to surface
+// ---------------------------------------------------------------------------
+
+describe('AC5: resize behaviour', () => {
+  const resize = (
+    handle: HTMLElement,
+    from: { x: number; y: number },
+    to: { x: number; y: number }
+  ) => {
+    fireEvent.mouseDown(handle, { clientX: from.x, clientY: from.y })
+    fireEvent.mouseMove(window, { clientX: to.x, clientY: to.y })
+    fireEvent.mouseUp(window)
+  }
+
+  it('br handle grows width and height', () => {
+    // baseElement: x:100, y:100, w:160, h:40 — drag br right 50, down 30
+    const { onUpdate } = renderElement({}, { isSelected: true })
+    resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 50, y: 30 })
+    expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({ width: 210, height: 70 }))
+  })
+
+  it('tl handle moves the origin and shrinks both dimensions', () => {
+    // drag tl right 20, down 10 → x+20, y+10, w-20, h-10
+    const { onUpdate } = renderElement({}, { isSelected: true })
+    resize(screen.getByTestId('resize-handle-tl'), { x: 0, y: 0 }, { x: 20, y: 10 })
+    expect(onUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ x: 120, y: 110, width: 140, height: 30 })
+    )
+  })
+
+  it('tr handle grows width and moves the top edge', () => {
+    // drag tr right 30, down 10 → y+10, w+30, h-10; x is unchanged
+    const { onUpdate } = renderElement({}, { isSelected: true })
+    resize(screen.getByTestId('resize-handle-tr'), { x: 0, y: 0 }, { x: 30, y: 10 })
+    expect(onUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ y: 110, width: 190, height: 30 })
+    )
+  })
+
+  it('bl handle moves the left edge and grows height', () => {
+    // drag bl right 20, down 20 → x+20, w-20, h+20; y is unchanged
+    const { onUpdate } = renderElement({}, { isSelected: true })
+    resize(screen.getByTestId('resize-handle-bl'), { x: 0, y: 0 }, { x: 20, y: 20 })
+    expect(onUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ x: 120, width: 140, height: 60 })
+    )
+  })
+
+  it('enforces minimum width of 40px when shrinking via br handle', () => {
+    // w=60, drag br left 30 → w=30 < 40 → clamped to 40
+    const { onUpdate } = renderElement({ width: 60, height: 60 }, { isSelected: true })
+    resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: -30, y: 0 })
+    const last = onUpdate.mock.calls.at(-1)![0]
+    expect(last.width).toBe(40)
+  })
+
+  it('enforces minimum height of 20px when shrinking via br handle', () => {
+    // h=40, drag br up 30 → h=10 < 20 → clamped to 20
+    const { onUpdate } = renderElement({ width: 160, height: 40 }, { isSelected: true })
+    resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 0, y: -30 })
+    const last = onUpdate.mock.calls.at(-1)![0]
+    expect(last.height).toBe(20)
+  })
+
+  it('adjusts anchor x when tl handle would push width below minimum', () => {
+    // x=100, w=60; drag tl right 30 → w=30 < 40 → w clamped to 40, x = 100+60-40 = 120
+    const { onUpdate } = renderElement(
+      { x: 100, y: 100, width: 60, height: 60 },
+      { isSelected: true }
+    )
+    resize(screen.getByTestId('resize-handle-tl'), { x: 0, y: 0 }, { x: 30, y: 0 })
+    const last = onUpdate.mock.calls.at(-1)![0]
+    expect(last.width).toBe(40)
+    expect(last.x).toBe(120)
+  })
+
+  it('adjusts anchor y when tl handle would push height below minimum', () => {
+    // y=100, h=30; drag tl down 20 → h=10 < 20 → h clamped to 20, y = 100+30-20 = 110
+    const { onUpdate } = renderElement(
+      { x: 100, y: 100, width: 160, height: 30 },
+      { isSelected: true }
+    )
+    resize(screen.getByTestId('resize-handle-tl'), { x: 0, y: 0 }, { x: 0, y: 20 })
+    const last = onUpdate.mock.calls.at(-1)![0]
+    expect(last.height).toBe(20)
+    expect(last.y).toBe(110)
+  })
+
+  it('element cannot extend past the right edge of the design surface', () => {
+    // x=1100, drag br far right → max width = 1280 - 1100 = 180
+    const { onUpdate } = renderElement(
+      { x: 1100, y: 100, width: 100, height: 40 },
+      { isSelected: true }
+    )
+    resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 500, y: 0 })
+    const last = onUpdate.mock.calls.at(-1)![0]
+    expect(last.width).toBe(180)
+  })
+
+  it('element cannot extend past the bottom edge of the design surface', () => {
+    // y=700, drag br far down → max height = 720 - 700 = 20
+    const { onUpdate } = renderElement(
+      { x: 100, y: 700, width: 100, height: 10 },
+      { isSelected: true }
+    )
+    resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 0, y: 200 })
+    const last = onUpdate.mock.calls.at(-1)![0]
+    expect(last.height).toBe(20)
+  })
+
+  it('clamps x to 0 when tl handle is dragged past the left surface edge', () => {
+    // x=50; drag tl far left (dx=-200) → x = 50-200 = -150 → clamped to 0
+    const { onUpdate } = renderElement(
+      { x: 50, y: 100, width: 160, height: 40 },
+      { isSelected: true }
+    )
+    resize(screen.getByTestId('resize-handle-tl'), { x: 200, y: 0 }, { x: 0, y: 0 })
+    const last = onUpdate.mock.calls.at(-1)![0]
+    expect(last.x).toBe(0)
+  })
+
+  it('clamps y to 0 when tl handle is dragged past the top surface edge', () => {
+    // y=50; drag tl far up (dy=-200) → y = 50-200 = -150 → clamped to 0
+    const { onUpdate } = renderElement(
+      { x: 100, y: 50, width: 160, height: 40 },
+      { isSelected: true }
+    )
+    resize(screen.getByTestId('resize-handle-tl'), { x: 0, y: 200 }, { x: 0, y: 0 })
+    const last = onUpdate.mock.calls.at(-1)![0]
+    expect(last.y).toBe(0)
+  })
+
+  it('does not call onSelect when a resize handle is dragged', () => {
+    const { onSelect } = renderElement({}, { isSelected: true })
+    resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 50, y: 30 })
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('does not enter editing mode when a resize handle is dragged', () => {
+    renderElement({}, { isSelected: true })
+    resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 50, y: 30 })
+    expect(document.querySelector('[contenteditable="true"]')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 6 — text content reflows naturally as the element width is resized
+// ---------------------------------------------------------------------------
+
+describe('AC6: text reflow styles', () => {
+  it('applies word-break: break-word so text reflows when width changes', () => {
+    const { container } = renderElement()
+    const el = container.firstChild as HTMLElement
+    expect(el.style.wordBreak).toBe('break-word')
+  })
+
+  it('applies overflow: hidden to contain text within the element bounds', () => {
+    const { container } = renderElement()
+    const el = container.firstChild as HTMLElement
+    expect(el.style.overflow).toBe('hidden')
+  })
+
+  it('uses a fixed height (not minHeight) so the resize handle fully controls height', () => {
+    const { container } = renderElement({ height: 40 })
+    const el = container.firstChild as HTMLElement
+    // jsdom reports height from the style attribute, not computed layout
+    expect(el.style.height).toBe('40px')
+    expect(el.style.minHeight).toBe('')
+  })
+})
