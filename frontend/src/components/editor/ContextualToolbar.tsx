@@ -311,7 +311,6 @@ function ArrowToolbar({
             key={value}
             aria-label={title}
             aria-pressed={element.arrowHead === value}
-            title={title}
             onClick={() => update({ arrowHead: value })}
             className={`flex h-6 w-6 items-center justify-center rounded text-sm ${
               element.arrowHead === value ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
