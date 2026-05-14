@@ -244,7 +244,6 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
         userSelect: isEditing ? 'text' : 'none',
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-word',
-        overflow: 'hidden',
       }}
       data-testid="text-element"
       onClick={handleClick}
@@ -259,7 +258,12 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
           onBlur={handleBlur}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
-          style={{ outline: 'none', whiteSpace: 'pre-wrap', wordBreak: 'break-word', height: '100%' }}
+          style={{
+            outline: 'none',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            height: '100%',
+          }}
         />
       ) : (
         <div dangerouslySetInnerHTML={{ __html: element.content }} />

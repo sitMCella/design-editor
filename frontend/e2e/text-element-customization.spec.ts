@@ -300,7 +300,6 @@ test.describe('02 – Text Element Customisation', () => {
     const el = await getTextElement(page)
 
     await expect(el).toHaveCSS('word-break', 'break-word')
-    await expect(el).toHaveCSS('overflow', 'hidden')
   })
 
   // =========================================================================
@@ -314,7 +313,7 @@ test.describe('02 – Text Element Customisation', () => {
 
     await expect(page.getByTestId('contextual-toolbar')).toBeVisible()
     await expect(page.getByLabel('Font family')).toBeVisible()
-    await expect(page.getByLabel('Font size')).toBeVisible()
+    await expect(page.getByLabel('Font size', { exact: true })).toBeVisible()
     await expect(page.getByLabel('Bold')).toBeVisible()
     await expect(page.getByLabel('Italic')).toBeVisible()
     await expect(page.getByLabel('Text color')).toBeVisible()
@@ -396,7 +395,9 @@ test.describe('02 – Text Element Customisation', () => {
   // AC 11 — italic
   // =========================================================================
 
-  test('AC11: clicking Italic applies italic style and marks the button active', async ({ page }) => {
+  test('AC11: clicking Italic applies italic style and marks the button active', async ({
+    page,
+  }) => {
     await addTextElement(page)
     const el = await getTextElement(page)
     const italicBtn = page.getByLabel('Italic')

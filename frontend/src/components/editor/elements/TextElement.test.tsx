@@ -723,12 +723,6 @@ describe('AC6: text reflow styles', () => {
     expect(el.style.wordBreak).toBe('break-word')
   })
 
-  it('applies overflow: hidden to contain text within the element bounds', () => {
-    const { container } = renderElement()
-    const el = container.firstChild as HTMLElement
-    expect(el.style.overflow).toBe('hidden')
-  })
-
   it('uses a fixed height (not minHeight) so the resize handle fully controls height', () => {
     const { container } = renderElement({ height: 40 })
     const el = container.firstChild as HTMLElement
