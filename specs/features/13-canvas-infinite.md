@@ -2,7 +2,7 @@
 
 ## Summary
 
-Replace the fixed `1280 × 720` design surface with an unbounded infinite canvas. Elements are placed anywhere in a two-dimensional world-space coordinate system. The viewport renders whatever region of that space is currently in view, controlled by pan (`panX`, `panY`) and zoom. Keyboard shortcuts, scroll-wheel gestures, and header controls let the user zoom in and out. When a project is loaded the viewport always resets to the default zoom (`1×`) and pan origin (`0, 0`). Thumbnail generation is updated to capture the tight bounding box of all elements on the canvas rather than a fixed surface rectangle.
+Replace the fixed `1280 × 720` design surface with an unbounded infinite canvas. Elements are placed anywhere in a two-dimensional world-space coordinate system. The viewport renders whatever region of that space is currently in view, controlled by pan (`panX`, `panY`) and zoom. The canvas has an initial virtual size (`4000 × 3000` world-space pixels) that expands automatically as elements approach any edge. Custom scrollbars overlaid on the canvas allow the user to navigate within the virtual bounds by dragging. Keyboard shortcuts, scroll-wheel gestures, and header controls let the user zoom in and out. When a project is loaded the viewport always resets to the default zoom (`1×`) and pan origin (`0, 0`). Thumbnail generation is updated to capture the tight bounding box of all elements on the canvas rather than a fixed surface rectangle.
 
 ## Scope
 
@@ -13,6 +13,8 @@ Replace the fixed `1280 × 720` design surface with an unbounded infinite canvas
 - Zoom range: `0.1×` – `5×` (clamped)
 - Zoom controls in the editor header: `−` button, zoom-level readout (e.g. `"100%"`), `+` button
 - Pan by dragging the canvas background (middle-mouse or `Space` + `mousedown`)
+- Custom horizontal and vertical scrollbars overlaid on the canvas area; dragging a scrollbar thumb pans the viewport
+- Initial virtual canvas size: `4000 × 3000` world-space pixels; auto-expands when elements approach any edge
 - `setZoom` and `setPan` canvas-store actions (defined in the state-management spec but not yet implemented)
 - On `initDesign` and `loadDesign`: always reset `zoom = 1`, `panX = 0`, `panY = 0`
 - Thumbnail generation rewritten: captures the union bounding box of all elements (plus `24 px` padding on each side), scales to fit within `320 × 180 px` preserving aspect ratio
@@ -20,6 +22,7 @@ Replace the fixed `1280 × 720` design surface with an unbounded infinite canvas
 - Backward compatibility: existing designs load correctly because element positions are world-space values already stored in the database
 
 **Out of scope (future iterations)**
+- Native browser scrollbars (custom scrollbars are used instead to maintain zoom-toward-cursor arithmetic)
 - "Fit to content" automatic zoom on project open
 - Grid or ruler overlays
 - Minimap / overview panel
@@ -46,6 +49,74 @@ screenY = worldY * zoom + panY
 
 ---
 
+## Virtual Canvas
+
+### Initial dimensions
+
+The virtual canvas defines the navigable world-space area tracked by the scrollbars. It starts at:
+
+```
+INITIAL_CANVAS_WIDTH  = 4000   // world-space pixels
+INITIAL_CANVAS_HEIGHT = 3000   // world-space pixels
+```
+
+The virtual canvas always starts at world origin `(0, 0)` and extends to `(right, bottom)`. It may also grow in the negative direction if elements are placed at negative coordinates.
+
+### Auto-expansion
+
+The virtual canvas bounds are recomputed after every `addElement` and `updateElement` call. The bounds are the union of:
+
+1. The minimum size (`0 → INITIAL_CANVAS_WIDTH`, `0 → INITIAL_CANVAS_HEIGHT`)
+2. The bounding box of all elements, padded by `EXPAND_PADDING = 200` px on each side
+
+```ts
+function computeVirtualBounds(
+  elements: CanvasElement[],
+): VirtualBounds {
+  const bbox = elementsBBox(elements)
+
+  const left   = Math.min(0, bbox ? bbox.x - EXPAND_PADDING : 0)
+  const top    = Math.min(0, bbox ? bbox.y - EXPAND_PADDING : 0)
+  const right  = Math.max(INITIAL_CANVAS_WIDTH,  bbox ? bbox.x + bbox.width  + EXPAND_PADDING : INITIAL_CANVAS_WIDTH)
+  const bottom = Math.max(INITIAL_CANVAS_HEIGHT, bbox ? bbox.y + bbox.height + EXPAND_PADDING : INITIAL_CANVAS_HEIGHT)
+
+  return { left, top, right, bottom }
+}
+```
+
+This means as soon as an element's edge comes within `200 px` of any virtual canvas boundary, the boundary expands outward to maintain at least `200 px` of empty space beyond the element. Bounds only grow — they never shrink.
+
+When the canvas is empty the virtual bounds are the initial `4000 × 3000` rectangle.
+
+### Viewport inclusion
+
+The virtual bounds also always encompass the current viewport in world space, so the scrollbar never shows the user as being "outside" the canvas after a free pan:
+
+```ts
+const vpLeft   = -panX / zoom
+const vpTop    = -panY / zoom
+const vpRight  = vpLeft  + viewportWidth  / zoom
+const vpBottom = vpTop   + viewportHeight / zoom
+
+bounds.left   = Math.min(bounds.left,   vpLeft)
+bounds.top    = Math.min(bounds.top,    vpTop)
+bounds.right  = Math.max(bounds.right,  vpRight)
+bounds.bottom = Math.max(bounds.bottom, vpBottom)
+```
+
+`VirtualBounds` is derived state computed each render — it is not stored in the canvas store.
+
+```ts
+type VirtualBounds = {
+  left: number    // world-space x of the left edge
+  top: number     // world-space y of the top edge
+  right: number   // world-space x of the right edge
+  bottom: number  // world-space y of the bottom edge
+}
+```
+
+---
+
 ## Canvas Viewport
 
 ### Layout
@@ -56,19 +127,22 @@ screenY = worldY * zoom + panY
 ├─────────────────────────────────────────────────────────────────┤
 │  Contextual Toolbar (element selected)                          │
 ├──────┬──────────────────────────────────────────────────────────┤
-│      │                                                          │
-│  T   │  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  │
-│  ⬚   │  ·  ┌──────────┐  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  │
-│  →   │  ·  │ element  │  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  │
-│  ⊞   │  ·  └──────────┘  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  │
-│      │  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  │
+│      │                                                       ▲  │
+│  T   │  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  │  │
+│  ⬚   │  ·  ┌──────────┐  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  │  │
+│  →   │  ·  │ element  │  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  │▓▓│
+│  ⊞   │  ·  └──────────┘  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  │  │
+│      │  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ▼  │
+│      ├─────────────◄──▓▓▓──►────────────────────────────┼──┤
 └──────┴──────────────────────────────────────────────────────────┘
+                                                            ↑ corner fill
 ```
 
 - The canvas area (right of the toolbar) is an `overflow: hidden` container that fills the remaining editor space.
 - The canvas background remains `bg-gray-100`.
 - There is no white rectangle frame. The "design surface" is the infinite world space.
 - Elements appear as floating objects against the gray background.
+- Custom scrollbars are overlaid at the right edge (vertical) and bottom edge (horizontal) of the canvas area. They are always rendered, but the thumb is hidden when the entire virtual canvas already fits within the viewport.
 
 ### World layer
 
@@ -140,6 +214,87 @@ During pan drag:
 - `mouseup` listener attached to `window`; restores cursor and removes listeners.
 
 Pan has no boundary clamp — the user may pan freely.
+
+---
+
+## Scrollbars
+
+Custom scrollbars replace the browser's native scroll mechanism, which cannot easily be combined with the CSS-transform zoom approach. They are always rendered (never `display: none`) but become invisible when the entire virtual canvas fits within the viewport.
+
+### Appearance
+
+| Property | Value |
+|---|---|
+| Track width (vertical) / height (horizontal) | `12 px` |
+| Track background | `transparent` (invisible; only the thumb is visible) |
+| Thumb background | `rgba(0,0,0,0.25)` |
+| Thumb background (hover) | `rgba(0,0,0,0.40)` |
+| Thumb border-radius | `6 px` |
+| Minimum thumb length | `32 px` |
+| Corner fill (`12 × 12 px`) | `bg-gray-200` at the bottom-right intersection of the two tracks |
+
+The scrollbars are positioned `absolute` within the canvas container, inset from the right and bottom edges. They sit above the world layer (`z-index` higher than the world layer) but below any modals.
+
+### Thumb geometry
+
+All calculations are in screen pixels.
+
+```
+// Virtual canvas extent in screen pixels at current zoom
+totalScreenW = (bounds.right  - bounds.left) * zoom
+totalScreenH = (bounds.bottom - bounds.top)  * zoom
+
+// Viewport size (subtract scrollbar thickness so tracks don't obscure content)
+vpW = canvasContainerWidth  - SCROLLBAR_SIZE   // SCROLLBAR_SIZE = 12
+vpH = canvasContainerHeight - SCROLLBAR_SIZE
+
+// Thumb size — proportional to viewport / total, clamped to minimum
+thumbW = max(MIN_THUMB = 32, vpW * vpW / totalScreenW)
+thumbH = max(MIN_THUMB = 32, vpH * vpH / totalScreenH)
+
+// Current scroll offset in screen pixels (distance from virtual-canvas left/top to viewport left/top)
+scrollX = (-panX) - bounds.left * zoom
+scrollY = (-panY) - bounds.top  * zoom
+
+// Maximum scroll range in screen pixels
+maxScrollX = totalScreenW - vpW
+maxScrollY = totalScreenH - vpH
+
+// Thumb position along track
+thumbX = (scrollX / maxScrollX) * (vpW - thumbW)   // horizontal track: length = vpW
+thumbY = (scrollY / maxScrollY) * (vpH - thumbH)   // vertical track:   length = vpH
+```
+
+When `totalScreenW ≤ vpW` the horizontal thumb is hidden (`opacity: 0`). Same for vertical.
+
+### Scrollbar drag
+
+On `mousedown` on a thumb:
+
+1. Record `dragStart = { mouseX/Y, thumbX/Y }`.
+2. Attach `mousemove` and `mouseup` to `window`.
+3. On `mousemove`:
+   ```
+   delta = currentMouseX - dragStart.mouseX               // horizontal example
+   newThumbX = clamp(dragStart.thumbX + delta, 0, vpW - thumbW)
+   newScrollX = (newThumbX / (vpW - thumbW)) * maxScrollX
+   newPanX = -(newScrollX + bounds.left * zoom)
+   ```
+   Call `setPan(newPanX, panY)`.
+4. On `mouseup`: remove listeners.
+
+Clicking on the track (not the thumb) jumps the viewport by one "page" (`vpW` or `vpH` in screen pixels) in the clicked direction:
+
+```
+newScrollX = clamp(scrollX ± vpW, 0, maxScrollX)
+newPanX = -(newScrollX + bounds.left * zoom)
+```
+
+### Scrollbar and pan interaction
+
+Dragging a scrollbar thumb and free panning (Space+drag, middle-mouse) both call `setPan`. The `VirtualBounds` are recomputed after each pan update to keep the thumb position accurate. Because the virtual bounds always encompass the current viewport, the scrollbar never shows the thumb at an impossible position after a free pan.
+
+The scrollbars do **not** clamp the free-pan gesture — `Space`+drag still pans freely, and the virtual bounds expand to include the new viewport position on the next render.
 
 ---
 
@@ -230,12 +385,14 @@ The `worldRef` is the ref attached to the world layer div. It is created in `Can
 
 | Component | Location | Change |
 |---|---|---|
-| `Canvas` | `src/components/editor/Canvas.tsx` | Replaces flex-center layout with `overflow: hidden` absolute container; attaches scroll-wheel zoom handler; attaches `Space`+drag pan handler; reads `zoom`/`panX`/`panY` from store; renders world layer with CSS transform |
+| `Canvas` | `src/components/editor/Canvas.tsx` | Replaces flex-center layout with `overflow: hidden` absolute container; attaches scroll-wheel zoom handler; attaches `Space`+drag pan handler; reads `zoom`/`panX`/`panY` from store; renders world layer with CSS transform; computes `VirtualBounds` each render; renders `<CanvasScrollbar>` for both axes |
+| `CanvasScrollbar` | `src/components/editor/CanvasScrollbar.tsx` | New component — renders one scrollbar axis (horizontal or vertical); accepts `thumbRatio`, `thumbOffset`, `visible`, and `onDrag`/`onClick` callbacks; handles `mousedown` on thumb and track |
 | `DesignSurface` | `src/components/editor/DesignSurface.tsx` | Removes fixed `width`/`height` and `boxShadow`; removes `SURFACE_WIDTH` / `SURFACE_HEIGHT` constants (or re-exports them as deprecated for elements that still clamp to their bounds); forwards `worldRef` instead of `surfaceRef` |
 | `EditorPage` | `src/pages/EditorPage.tsx` | Adds `worldRef`; wires header zoom control (`−`, readout, `+`); passes `worldRef` to `useThumbnail` |
 | `canvasStore` | `src/stores/canvasStore.ts` | Adds `setZoom` and `setPan` actions |
 | `useThumbnail` | `src/hooks/useThumbnail.ts` | Accepts `worldRef`; implements bounding-box capture procedure described above |
 | `elementsBBox` | `src/utils/elementsBBox.ts` | New pure utility: computes union bounding box of all elements; returns `null` for empty array |
+| `computeVirtualBounds` | `src/utils/virtualBounds.ts` | New pure utility: computes `VirtualBounds` from elements, panX/panY, zoom, and viewport dimensions |
 
 `Toolbar`, `ContextualToolbar`, and all element components (`TextElement`, `ImageElement`, `ArrowElement`, `TableElement`) require no changes.
 
@@ -282,7 +439,8 @@ frontend/
   src/
     components/
       editor/
-        Canvas.tsx            (rewritten — zoom/pan transform, event handlers)
+        Canvas.tsx            (rewritten — zoom/pan transform, event handlers, VirtualBounds, scrollbars)
+        CanvasScrollbar.tsx   (new — custom scrollbar component for one axis)
         DesignSurface.tsx     (updated — removes fixed dimensions, worldRef)
     hooks/
       useThumbnail.ts         (updated — bounding-box capture, worldRef)
@@ -290,6 +448,7 @@ frontend/
       canvasStore.ts          (updated — setZoom, setPan actions)
     utils/
       elementsBBox.ts         (new — union bounding box utility)
+      virtualBounds.ts        (new — VirtualBounds type + computeVirtualBounds utility)
     pages/
       EditorPage.tsx          (updated — worldRef, header zoom control)
 ```
@@ -318,3 +477,12 @@ frontend/
 18. The thumbnail is visually accurate regardless of the current viewport zoom or pan at the time of the auto-save.
 19. Thumbnail generation does not produce any visible flicker or disruption in the editor.
 20. All existing element interactions (select, drag, resize, edit, contextual toolbar) continue to work correctly on the infinite canvas.
+21. A horizontal and a vertical custom scrollbar are rendered at the bottom and right edges of the canvas area respectively.
+22. On a fresh design the virtual canvas is `4000 × 3000` world-space pixels; the scrollbar thumbs are sized and positioned to reflect this initial area at the current zoom.
+23. Dragging the horizontal scrollbar thumb pans the viewport left/right; dragging the vertical thumb pans up/down. The world-layer transform updates in real time as the thumb is dragged.
+24. Clicking on the scrollbar track (not on the thumb) advances the viewport by one viewport-width (or viewport-height) in the clicked direction.
+25. The scrollbar thumb size shrinks as zoom increases (the viewport covers a smaller fraction of the virtual canvas) and grows as zoom decreases.
+26. When the entire virtual canvas fits within the viewport (e.g. heavily zoomed out), the scrollbar thumb is hidden.
+27. When an element is placed within `200 px` of any virtual canvas boundary, the boundary extends outward and the scrollbar thumbs update to reflect the enlarged canvas.
+28. After a free pan via `Space`+drag or middle-mouse that moves the viewport beyond the current virtual bounds, the virtual bounds expand to encompass the new viewport position, and the scrollbar thumb position updates accordingly without any jump or visual glitch.
+29. The scrollbar corner fill (`12 × 12 px`) occupies the intersection of the horizontal and vertical tracks at the bottom-right of the canvas area.
