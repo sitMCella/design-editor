@@ -13,6 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @specs/features/07-load-design-project.md
 @specs/features/08-toolbar-arrow-element.md
 @specs/features/09-arrow-element-customization.md
+@specs/features/10-toolbar-table-element.md
 
 ## Project Overview
 

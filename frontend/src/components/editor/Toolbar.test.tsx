@@ -229,6 +229,106 @@ describe('multiple arrow elements', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// Table tool — ACs from 10-toolbar-table-element.md
+// ---------------------------------------------------------------------------
+
+// AC 1 — toolbar shows a table button with tooltip "Table"
+describe('table tool button appearance', () => {
+  it('renders a button with title "Table"', () => {
+    render(<Toolbar />)
+    expect(screen.getByTitle('Table')).toBeInTheDocument()
+  })
+
+  it('the table button contains an SVG icon', () => {
+    render(<Toolbar />)
+    expect(screen.getByTitle('Table').querySelector('svg')).toBeInTheDocument()
+  })
+
+  it('the table button is inside the aside', () => {
+    const { container } = render(<Toolbar />)
+    expect(container.querySelector('aside')).toContainElement(screen.getByTitle('Table'))
+  })
+})
+
+// AC 2 — clicking the table button inserts a table element centred on the design surface
+describe('table tool insertion', () => {
+  it('adds exactly one table element to the canvas store', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+
+  it('adds an element of type table', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    expect(useCanvasStore.getState().elements[0].type).toBe('table')
+  })
+
+  it('places the element at x:440 (horizontally centred on 1280px surface)', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    expect(useCanvasStore.getState().elements[0].x).toBe((SURFACE_WIDTH - 400) / 2)
+  })
+
+  it('places the element at y:300 (vertically centred on 720px surface)', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    expect(useCanvasStore.getState().elements[0].y).toBe((SURFACE_HEIGHT - 120) / 2)
+  })
+
+  it('selects the newly added table element', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    const el = useCanvasStore.getState().elements[0]
+    expect(useCanvasStore.getState().selectedIds).toContain(el.id)
+  })
+
+  // AC 9 — active tool reverts to select after insertion
+  it('resets the active tool to select after insertion', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    expect(useUIStore.getState().activeTool).toBe('select')
+  })
+
+  it('inserts a table with 1 header row and 2 data rows', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    const el = useCanvasStore.getState().elements[0] as import('../../types/canvas').TableElement
+    expect(el.rows).toHaveLength(3)
+    expect(el.rows[0].isHeader).toBe(true)
+    expect(el.rows[1].isHeader).toBe(false)
+    expect(el.rows[2].isHeader).toBe(false)
+  })
+
+  it('inserts a table with 2 columns', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    const el = useCanvasStore.getState().elements[0] as import('../../types/canvas').TableElement
+    expect(el.columns).toBe(2)
+    el.rows.forEach((row) => expect(row.cells).toHaveLength(2))
+  })
+})
+
+// AC 10 — multiple table elements can be added independently
+describe('multiple table elements', () => {
+  it('adds a new independent element on each click', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    fireEvent.click(screen.getByTitle('Table'))
+    fireEvent.click(screen.getByTitle('Table'))
+    expect(useCanvasStore.getState().elements).toHaveLength(3)
+  })
+
+  it('assigns a unique id to each table element', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Table'))
+    fireEvent.click(screen.getByTitle('Table'))
+    const [a, b] = useCanvasStore.getState().elements
+    expect(a.id).not.toBe(b.id)
+  })
+})
+
 // AC 9 — multiple text elements can be added independently
 describe('multiple elements', () => {
   it('adds a new independent element on each click', () => {

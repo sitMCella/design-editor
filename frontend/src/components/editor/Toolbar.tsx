@@ -1,6 +1,6 @@
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
-import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
+import type { TextElement, ImageElement, ArrowElement, TableElement } from '../../types/canvas'
 import { SURFACE_WIDTH, SURFACE_HEIGHT } from './DesignSurface'
 
 export function Toolbar() {
@@ -93,6 +93,35 @@ export function Toolbar() {
     setActiveTool('select')
   }
 
+  const handleTableTool = () => {
+    setActiveTool('table')
+
+    const width = 400
+    const height = 120
+
+    const element: TableElement = {
+      id: crypto.randomUUID(),
+      type: 'table',
+      x: (SURFACE_WIDTH - width) / 2,
+      y: (SURFACE_HEIGHT - height) / 2,
+      width,
+      height,
+      rotation: 0,
+      opacity: 1,
+      locked: false,
+      columns: 2,
+      rows: [
+        { isHeader: true, cells: ['Header 1', 'Header 2'] },
+        { isHeader: false, cells: ['Cell 1', 'Cell 2'] },
+        { isHeader: false, cells: ['Cell 3', 'Cell 4'] },
+      ],
+    }
+
+    addElement(element)
+    selectElements([element.id])
+    setActiveTool('select')
+  }
+
   return (
     <aside className="flex w-14 flex-col items-center gap-2 border-r bg-white py-3">
       <button
@@ -135,6 +164,30 @@ export function Toolbar() {
         }`}
       >
         →
+      </button>
+      <button
+        onClick={handleTableTool}
+        title="Table"
+        className={`flex h-10 w-10 items-center justify-center rounded transition-colors ${
+          activeTool === 'table' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'
+        }`}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="2" y="2" width="16" height="16" rx="1" />
+          <line x1="2" y1="7" x2="18" y2="7" />
+          <line x1="2" y1="13" x2="18" y2="13" />
+          <line x1="10" y1="2" x2="10" y2="18" />
+        </svg>
       </button>
     </aside>
   )

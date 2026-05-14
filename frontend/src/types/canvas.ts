@@ -50,4 +50,15 @@ export type ArrowElement = BaseElement & {
   endAnchor?: ArrowAnchor
 }
 
-export type CanvasElement = TextElement | ImageElement | ArrowElement
+export type TableRow = {
+  isHeader: boolean
+  cells: string[]
+}
+
+export type TableElement = BaseElement & {
+  type: 'table'
+  columns: number
+  rows: TableRow[]
+}
+
+export type CanvasElement = TextElement | ImageElement | ArrowElement | TableElement
