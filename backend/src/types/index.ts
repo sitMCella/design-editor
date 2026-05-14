@@ -83,6 +83,7 @@ export type ProjectSummary = {
   id: string;
   name: string;
   elementCount: number;
+  thumbnailUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
