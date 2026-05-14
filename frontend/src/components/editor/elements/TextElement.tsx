@@ -17,13 +17,33 @@ type DragStart = {
   elementY: number
 }
 
+type Handle = 'tl' | 'tr' | 'bl' | 'br'
+
 const DRAG_THRESHOLD = 4
+const MIN_WIDTH = 40
+const MIN_HEIGHT = 20
+
+const handleStyles: Record<Handle, React.CSSProperties> = {
+  tl: { top: -5, left: -5, cursor: 'nwse-resize' },
+  tr: { top: -5, right: -5, cursor: 'nesw-resize' },
+  bl: { bottom: -5, left: -5, cursor: 'nesw-resize' },
+  br: { bottom: -5, right: -5, cursor: 'nwse-resize' },
+}
 
 export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove }: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const editRef = useRef<HTMLDivElement>(null)
   const dragStartRef = useRef<DragStart | null>(null)
   const isDraggingRef = useRef(false)
+  const resizeStartRef = useRef<{
+    mouseX: number
+    mouseY: number
+    elementX: number
+    elementY: number
+    elementW: number
+    elementH: number
+    handle: Handle
+  } | null>(null)
 
   useEffect(() => {
     if (!isEditing || !editRef.current) return
@@ -93,6 +113,80 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
     window.addEventListener('mouseup', handleMouseUp)
   }
 
+  const handleResizeMouseDown = (e: React.MouseEvent, handle: Handle) => {
+    e.preventDefault()
+    e.stopPropagation()
+    resizeStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      elementX: element.x,
+      elementY: element.y,
+      elementW: element.width,
+      elementH: element.height,
+      handle,
+    }
+
+    const onMouseMove = (me: MouseEvent) => {
+      const s = resizeStartRef.current
+      if (!s) return
+      const dx = me.clientX - s.mouseX
+      const dy = me.clientY - s.mouseY
+
+      let x = s.elementX,
+        y = s.elementY
+      let w = s.elementW,
+        h = s.elementH
+
+      if (handle === 'tl') {
+        x = s.elementX + dx
+        y = s.elementY + dy
+        w = s.elementW - dx
+        h = s.elementH - dy
+      }
+      if (handle === 'tr') {
+        y = s.elementY + dy
+        w = s.elementW + dx
+        h = s.elementH - dy
+      }
+      if (handle === 'bl') {
+        x = s.elementX + dx
+        w = s.elementW - dx
+        h = s.elementH + dy
+      }
+      if (handle === 'br') {
+        w = s.elementW + dx
+        h = s.elementH + dy
+      }
+
+      // Enforce minimum size
+      if (w < MIN_WIDTH) {
+        w = MIN_WIDTH
+        if (handle === 'tl' || handle === 'bl') x = s.elementX + s.elementW - MIN_WIDTH
+      }
+      if (h < MIN_HEIGHT) {
+        h = MIN_HEIGHT
+        if (handle === 'tl' || handle === 'tr') y = s.elementY + s.elementH - MIN_HEIGHT
+      }
+
+      // Clamp to surface bounds
+      x = Math.max(0, x)
+      y = Math.max(0, y)
+      w = Math.min(w, SURFACE_WIDTH - x)
+      h = Math.min(h, SURFACE_HEIGHT - y)
+
+      onUpdate({ x, y, width: w, height: h })
+    }
+
+    const onMouseUp = () => {
+      resizeStartRef.current = null
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+  }
+
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     // Don't exit edit mode when focus moves to the contextual toolbar (e.g. colour picker).
     // The toolbar will re-focus the contentEditable after applying the command.
@@ -133,7 +227,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
         left: element.x,
         top: element.y,
         width: element.width,
-        minHeight: element.height,
+        height: element.height,
         transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
         opacity: element.opacity,
         fontSize: element.fontSize,
@@ -149,6 +243,7 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
         cursor,
         userSelect: isEditing ? 'text' : 'none',
         whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
       }}
       data-testid="text-element"
       onClick={handleClick}
@@ -163,11 +258,35 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
           onBlur={handleBlur}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
-          style={{ outline: 'none', whiteSpace: 'pre-wrap', minHeight: element.height }}
+          style={{
+            outline: 'none',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            height: '100%',
+          }}
         />
       ) : (
         <div dangerouslySetInnerHTML={{ __html: element.content }} />
       )}
+
+      {/* Corner resize handles — hidden in editing mode */}
+      {isSelected &&
+        !isEditing &&
+        (['tl', 'tr', 'bl', 'br'] as Handle[]).map((h) => (
+          <div
+            key={h}
+            data-testid={`resize-handle-${h}`}
+            style={{
+              position: 'absolute',
+              width: 10,
+              height: 10,
+              background: '#3B82F6',
+              borderRadius: 2,
+              ...handleStyles[h],
+            }}
+            onMouseDown={(e) => handleResizeMouseDown(e, h)}
+          />
+        ))}
     </div>
   )
 }
