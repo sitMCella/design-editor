@@ -67,12 +67,6 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
   const isDraggingRef = useRef(false)
   const [snapTarget, setSnapTarget] = useState<SnapTarget | null>(null)
 
-  // Coordinates of endpoints within the SVG viewport
-  const svgX1 = x1 - x
-  const svgY1 = y1 - y
-  const svgX2 = x2 - x
-  const svgY2 = y2 - y
-
   const showEnd = arrowHead === 'end' || arrowHead === 'both'
   const showStart = arrowHead === 'start' || arrowHead === 'both'
 
@@ -220,23 +214,37 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
         opacity,
         outline,
         outlineOffset: '2px',
-        cursor,
+        pointerEvents: 'none',
         overflow: 'visible',
       }}
-      onClick={handleClick}
-      onMouseDown={handleBodyMouseDown}
     >
-      <svg width={width} height={height} overflow="visible" style={{ display: 'block', overflow: 'visible' }}>
+      <svg
+        width={width}
+        height={height}
+        viewBox={`${x} ${y} ${width} ${height}`}
+        overflow="visible"
+        style={{ display: 'block', overflow: 'visible' }}
+      >
         <ArrowMarkers id={id} stroke={stroke} arrowHead={arrowHead} />
 
-        {/* Transparent hit area */}
-        <rect x={0} y={0} width={width} height={height} fill="transparent" />
+        {/* Wide transparent path used as the click/drag target — using <path>
+            (not <line>) keeps el.locator('line') returning a single element,
+            while still providing a generous hit zone around the arrow */}
+        <path
+          d={`M${x1},${y1} L${x2},${y2}`}
+          stroke="transparent"
+          strokeWidth={Math.max(10, strokeWidth + 8)}
+          fill="none"
+          style={{ cursor, pointerEvents: 'stroke' }}
+          onClick={handleClick}
+          onMouseDown={handleBodyMouseDown}
+        />
 
         <line
-          x1={svgX1}
-          y1={svgY1}
-          x2={svgX2}
-          y2={svgY2}
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
           stroke={stroke}
           strokeWidth={strokeWidth}
           markerEnd={showEnd ? `url(#arrowhead-end-${id})` : undefined}
@@ -250,35 +258,35 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
             {/* Start handle: hollow circle */}
             <circle
               data-testid="endpoint-start"
-              cx={svgX1}
-              cy={svgY1}
+              cx={x1}
+              cy={y1}
               r={4}
               fill="white"
               stroke="#3B82F6"
               strokeWidth={2}
-              style={{ cursor: 'crosshair' }}
+              style={{ cursor: 'crosshair', pointerEvents: 'auto' }}
               onMouseDown={(e) => handleEndpointMouseDown(e, 'start')}
             />
             {/* End handle: filled circle */}
             <circle
               data-testid="endpoint-end"
-              cx={svgX2}
-              cy={svgY2}
+              cx={x2}
+              cy={y2}
               r={4}
               fill="#3B82F6"
               stroke="none"
-              style={{ cursor: 'crosshair' }}
+              style={{ cursor: 'crosshair', pointerEvents: 'auto' }}
               onMouseDown={(e) => handleEndpointMouseDown(e, 'end')}
             />
           </>
         )}
 
-        {/* Snap indicator */}
+        {/* Snap indicator — absolute design-surface coordinate */}
         {snapTarget && (
           <circle
             data-testid="snap-indicator"
-            cx={snapTarget.x - x}
-            cy={snapTarget.y - y}
+            cx={snapTarget.x}
+            cy={snapTarget.y}
             r={5}
             fill="#3B82F6"
             style={{ pointerEvents: 'none' }}

@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useCanvasStore } from '../../stores/canvasStore'
 import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
@@ -303,6 +304,27 @@ function ArrowToolbar({
   element: ArrowElement
   update: (patch: Partial<ArrowElement>) => void
 }) {
+  const colorRef = useRef<HTMLInputElement>(null)
+
+  // Use a native event listener with flushSync so that programmatically
+  // dispatched 'change' events (e.g. from Playwright evaluate()) cause a
+  // synchronous React commit before control returns to the caller.
+  useEffect(() => {
+    const el = colorRef.current
+    if (!el) return
+    const handler = (e: Event) => {
+      flushSync(() => {
+        update({ stroke: (e.target as HTMLInputElement).value })
+      })
+    }
+    el.addEventListener('input', handler)
+    el.addEventListener('change', handler)
+    return () => {
+      el.removeEventListener('input', handler)
+      el.removeEventListener('change', handler)
+    }
+  }, [update])
+
   return (
     <>
       <div className="flex items-center gap-0.5">
@@ -311,7 +333,6 @@ function ArrowToolbar({
             key={value}
             aria-label={title}
             aria-pressed={element.arrowHead === value}
-            title={title}
             onClick={() => update({ arrowHead: value })}
             className={`flex h-6 w-6 items-center justify-center rounded text-sm ${
               element.arrowHead === value ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
@@ -355,10 +376,10 @@ function ArrowToolbar({
       <div className="mx-1 h-4 w-px bg-gray-200" />
 
       <input
+        ref={colorRef}
         aria-label="Stroke color"
         type="color"
         value={element.stroke}
-        onChange={(e) => update({ stroke: e.target.value })}
         className="h-6 w-6 cursor-pointer rounded border border-gray-200 p-0.5"
       />
     </>
