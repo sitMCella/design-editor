@@ -1324,9 +1324,7 @@ describe('Project routes', () => {
         columnWidths: [200, 200],
       });
       // Rows must be persisted verbatim
-      expect(
-        (canvasArg?.elements[0] as { rows?: unknown[] })?.rows,
-      ).toHaveLength(3);
+      expect((canvasArg?.elements[0] as { rows?: unknown[] }).rows).toHaveLength(3);
     });
 
     it('saves custom non-equal column widths to the JSONB column (feat11, AC20)', async () => {
@@ -1369,7 +1367,7 @@ describe('Project routes', () => {
       });
 
       const canvasArg = extractCanvasFromPatchCall();
-      const rows = (canvasArg?.elements[0] as { rows?: { height: number }[] })?.rows;
+      const rows = (canvasArg?.elements[0] as { rows?: { height: number }[] }).rows;
       expect(rows?.[0]?.height).toBe(80);
       expect(rows?.[1]?.height).toBe(40);
     });
@@ -1398,9 +1396,7 @@ describe('Project routes', () => {
 
       expect(response.statusCode).toBe(200);
       const canvasArg = extractCanvasFromPatchCall();
-      expect(
-        (canvasArg?.elements[0] as { rows?: unknown[] })?.rows,
-      ).toHaveLength(4);
+      expect((canvasArg?.elements[0] as { rows?: unknown[] }).rows).toHaveLength(4);
     });
 
     it('saves a table with a newly added column (feat11, AC20)', async () => {
@@ -1455,9 +1451,7 @@ describe('Project routes', () => {
       });
 
       const canvasArg = extractCanvasFromPatchCall();
-      const rows = (
-        canvasArg?.elements[0] as { rows?: { cells: string[] }[] }
-      )?.rows;
+      const rows = (canvasArg?.elements[0] as { rows?: { cells: string[] }[] }).rows;
       expect(rows?.[0]?.cells).toEqual(['Product', 'Price']);
       expect(rows?.[1]?.cells).toEqual(['Widget A', '€ 9.99']);
       expect(rows?.[2]?.cells).toEqual(['Widget B', '€ 14.99']);
