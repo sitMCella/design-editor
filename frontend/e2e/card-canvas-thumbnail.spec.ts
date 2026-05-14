@@ -75,7 +75,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
   test('AC1: thumbnail POST is made after a successful auto-save', async ({ page }) => {
     const thumbnailRequest = page.waitForRequest(
       (req) => THUMBNAIL_ROUTE.test(req.url()) && req.method() === 'POST',
-      { timeout: 10_000 },
+      { timeout: 10_000 }
     )
 
     await createDesignAndOpenEditor(page)
@@ -89,7 +89,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
   test('AC1: thumbnail upload is sent as a multipart/form-data request', async ({ page }) => {
     const thumbnailRequest = page.waitForRequest(
       (req) => THUMBNAIL_ROUTE.test(req.url()) && req.method() === 'POST',
-      { timeout: 10_000 },
+      { timeout: 10_000 }
     )
 
     await createDesignAndOpenEditor(page)
@@ -102,7 +102,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
   test('AC1: thumbnail upload URL includes the correct design id', async ({ page }) => {
     const thumbnailRequest = page.waitForRequest(
       (req) => THUMBNAIL_ROUTE.test(req.url()) && req.method() === 'POST',
-      { timeout: 10_000 },
+      { timeout: 10_000 }
     )
 
     await page.goto('/')
@@ -222,7 +222,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     const thumbnailResponse = page.waitForResponse(
       (res) => THUMBNAIL_ROUTE.test(res.url()) && res.request().method() === 'POST',
-      { timeout: 10_000 },
+      { timeout: 10_000 }
     )
 
     await createDesignAndOpenEditor(page)
@@ -245,7 +245,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     const thumbnailResponse = page.waitForResponse(
       (res) => THUMBNAIL_ROUTE.test(res.url()) && res.request().method() === 'POST',
-      { timeout: 10_000 },
+      { timeout: 10_000 }
     )
 
     await createDesignAndOpenEditor(page)
@@ -280,9 +280,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
     await expect(img).toHaveClass(/object-cover/)
   })
 
-  test('AC12: thumbnail container uses overflow-hidden to prevent distortion', async ({
-    page,
-  }) => {
+  test('AC12: thumbnail container uses overflow-hidden to prevent distortion', async ({ page }) => {
     await mockThumbnailServe(page)
     await mockProjectsList(page, [
       {
@@ -395,7 +393,13 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             ok: true,
-            data: { id: 'proj-slow', name: 'Slow Design', canvas: { elements: [] }, createdAt: '', updatedAt: '' },
+            data: {
+              id: 'proj-slow',
+              name: 'Slow Design',
+              canvas: { elements: [] },
+              createdAt: '',
+              updatedAt: '',
+            },
           }),
         })
         return
@@ -481,7 +485,11 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    await expect(page.locator('button').filter({ hasText: 'Design Alpha' }).locator('img')).toBeVisible()
-    await expect(page.locator('button').filter({ hasText: 'Design Beta' }).locator('img')).not.toBeAttached()
+    await expect(
+      page.locator('button').filter({ hasText: 'Design Alpha' }).locator('img')
+    ).toBeVisible()
+    await expect(
+      page.locator('button').filter({ hasText: 'Design Beta' }).locator('img')
+    ).not.toBeAttached()
   })
 })

@@ -210,9 +210,7 @@ describe('AC6 — errors are swallowed silently', () => {
   it('does not call fetch when html2canvas resolves with a null blob', async () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal('fetch', mockFetch)
-    mockHtml2canvas.mockResolvedValue(
-      makeCanvas(null) as unknown as HTMLCanvasElement,
-    )
+    mockHtml2canvas.mockResolvedValue(makeCanvas(null) as unknown as HTMLCanvasElement)
     useCanvasStore.setState({ isDirty: true })
 
     renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
