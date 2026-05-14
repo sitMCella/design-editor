@@ -110,10 +110,11 @@ export function Toolbar() {
       opacity: 1,
       locked: false,
       columns: 2,
+      columnWidths: [200, 200],
       rows: [
-        { isHeader: true, cells: ['Header 1', 'Header 2'] },
-        { isHeader: false, cells: ['Cell 1', 'Cell 2'] },
-        { isHeader: false, cells: ['Cell 3', 'Cell 4'] },
+        { isHeader: true, height: 40, cells: ['Header 1', 'Header 2'] },
+        { isHeader: false, height: 40, cells: ['Cell 1', 'Cell 2'] },
+        { isHeader: false, height: 40, cells: ['Cell 3', 'Cell 4'] },
       ],
     }
 
