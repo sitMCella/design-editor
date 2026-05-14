@@ -295,21 +295,21 @@ test.describe('09 – Arrow Element Customisation', () => {
     const el = await getArrowElement(page)
     const line = el.locator('line')
 
-    const x2Before = await line.getAttribute('x2')
-    const y2Before = await line.getAttribute('y2')
+    // Record the end handle's absolute viewport position — this is unaffected by
+    // bounding-box recalculation and correctly represents whether x2/y2 moved.
+    const endHandleBefore = await page.getByTestId('endpoint-end').boundingBox()
 
     // Drag start handle 80px to the right — start point moves, end stays
     await dragBy(page, page.getByTestId('endpoint-start'), 80, 0)
 
     const x1After = await line.getAttribute('x1')
-    const x2After = await line.getAttribute('x2')
-    const y2After = await line.getAttribute('y2')
 
-    // x1 (start) should have increased by ~80
-    expect(Number(x1After)).toBeGreaterThan(0) // sanity check: it moved
-    // x2, y2 (end) should be unchanged
-    expect(Number(x2After)).toBeCloseTo(Number(x2Before!), 0)
-    expect(Number(y2After)).toBeCloseTo(Number(y2Before!), 0)
+    // x1 (start) should have moved (sanity check)
+    expect(Number(x1After)).toBeGreaterThan(0)
+    // End handle absolute screen position should be unchanged
+    const endHandleAfter = await page.getByTestId('endpoint-end').boundingBox()
+    expect(endHandleAfter!.x).toBeCloseTo(endHandleBefore!.x, 0)
+    expect(endHandleAfter!.y).toBeCloseTo(endHandleBefore!.y, 0)
   })
 
   test('AC7: dragging the end handle changes x2/y2 while x1/y1 stay fixed', async ({ page }) => {
