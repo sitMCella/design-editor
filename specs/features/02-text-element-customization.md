@@ -2,12 +2,13 @@
 
 ## Summary
 
-Extend the text element with two capabilities: free-form dragging on the canvas using mouse interaction, and a contextual formatting toolbar that appears whenever a text element is selected, allowing the user to change font family, size, weight, style, colour, and alignment.
+Extend the text element with three capabilities: free-form dragging on the canvas using mouse interaction, corner resize handles to change its dimensions, and a contextual formatting toolbar that appears whenever a text element is selected, allowing the user to change font family, size, weight, style, colour, and alignment.
 
 ## Scope
 
 **In scope**
 - Drag-to-reposition a selected text element on the canvas
+- Four corner resize handles that appear on a selected text element
 - Contextual toolbar rendered between the editor header and the canvas when a text element is selected
 - Font family picker (curated list of system fonts)
 - Font size input (numeric, with increment/decrement buttons)
@@ -19,7 +20,6 @@ Extend the text element with two capabilities: free-form dragging on the canvas 
 
 **Out of scope (future iterations)**
 - Google Fonts or custom font loading
-- Resize handles
 - Rotation handles
 - Multi-element selection and bulk formatting
 - Undo / redo
@@ -38,13 +38,16 @@ Extend the text element with two capabilities: free-form dragging on the canvas 
 │  [Font family ▾] [14 - +] [B] [I] [■ colour] [≡ ≡≡ ≡]         │
 ├──────┬──────────────────────────────────────────────────────────┤
 │      │                                                          │
-│  T   │                  Canvas                                  │
-│ bar  │                                                          │
+│  T   │   ◆──────────────────◆  ← corner handles (selected)    │
+│ bar  │   │   text element   │                                  │
+│      │   ◆──────────────────◆                                  │
 │      │                                                          │
 └──────┴──────────────────────────────────────────────────────────┘
 ```
 
 The contextual toolbar is a full-width strip between the header and the content area. It is hidden (`display: none` equivalent) when no element is selected, so the canvas expands to fill the vacated space without layout shift — use a fixed pixel height (`40px`) and conditionally render it, letting the flex column absorb the change.
+
+Corner handles are `10 × 10 px` squares with a blue fill (`#3B82F6`), positioned at the four outer corners of the element's bounding box. They appear only in **Selected** state, not in editing mode.
 
 ---
 
@@ -80,9 +83,50 @@ The 4px movement threshold prevents accidental drags during clicks.
 | Element state | Cursor |
 |---|---|
 | Default (not selected) | `default` |
-| Selected (not dragging) | `grab` |
+| Selected (not dragging, not resizing) | `grab` |
 | Dragging | `grabbing` (set on `<body>` during drag to prevent cursor flicker) |
 | Editing | `text` |
+
+---
+
+## Resize Handles
+
+### Placement
+
+Four `10 × 10 px` square handles, absolutely positioned relative to the element wrapper, at each corner:
+
+| Handle | Position |
+|---|---|
+| Top-left | `top: -5px; left: -5px` |
+| Top-right | `top: -5px; right: -5px` |
+| Bottom-left | `bottom: -5px; left: -5px` |
+| Bottom-right | `bottom: -5px; right: -5px` |
+
+`cursor: nwse-resize` for the top-left and bottom-right handles; `cursor: nesw-resize` for the top-right and bottom-left handles.
+
+Handles are hidden in editing mode to avoid interference with text selection.
+
+### Interaction model
+
+| Handle dragged | Width changes | Height changes | Anchor point |
+|---|---|---|---|
+| Top-left | Yes (left edge moves) | Yes (top edge moves) | Bottom-right corner |
+| Top-right | Yes (right edge grows) | Yes (top edge moves) | Bottom-left corner |
+| Bottom-left | Yes (left edge moves) | Yes (bottom edge grows) | Top-right corner |
+| Bottom-right | Yes (right edge grows) | Yes (bottom edge grows) | Top-left corner |
+
+When a top or left edge moves, both `x`/`y` and `width`/`height` update together to keep the anchor corner stationary.
+
+### Implementation
+
+- On `mousedown` on a handle: record `resizeStart = { mouseX, mouseY, elementX, elementY, elementW, elementH, handle }` and attach `mousemove` / `mouseup` listeners to `window`.
+- On `mousemove`: compute delta from `resizeStart`, apply to the appropriate dimensions. Enforce:
+  - Minimum element size: `40 × 20 px`
+  - Element must not extend outside the design surface (`0 ≤ x`, `x + width ≤ SURFACE_WIDTH`, same for y)
+- On `mouseup`: call `updateElement` with final geometry; clear resize state.
+- Remove window listeners on `mouseup` and on component unmount.
+
+Text wrapping naturally reflows as `width` changes because the element renders with `word-wrap: break-word`. The `height` is not auto-calculated from content — the user controls it via the resize handle.
 
 ---
 
@@ -162,7 +206,7 @@ Update the default element created by the Toolbar to include `fontStyle: 'normal
 | Component | Location | Responsibility |
 |---|---|---|
 | `ContextualToolbar` | `src/components/editor/ContextualToolbar.tsx` | Reads selected element from store; renders all formatting controls |
-| `TextElement` | `src/components/editor/elements/TextElement.tsx` | Extended with drag logic (`mousedown`, window `mousemove`/`mouseup`) |
+| `TextElement` | `src/components/editor/elements/TextElement.tsx` | Extended with drag logic, corner resize handles, and editing mode; handles `mousedown` on body and handles, with window `mousemove`/`mouseup` listeners |
 | `EditorPage` | `src/pages/EditorPage.tsx` | Adds `<ContextualToolbar />` between header and content area |
 
 No new stores are needed. All formatting changes go through the existing `updateElement` action.
@@ -174,12 +218,15 @@ No new stores are needed. All formatting changes go through the existing `update
 1. A selected text element can be dragged freely within the design surface bounds.
 2. Dragging does not trigger deselection or edit mode.
 3. The element cannot be dragged outside the design surface (`1280 × 720`).
-4. The contextual toolbar is hidden when no element is selected and visible when one is.
-5. Changing the font family updates the text element immediately.
-6. Changing the font size (via input or `+`/`−` buttons) updates the element immediately.
-7. The Bold button toggles `fontWeight` between `normal` and `bold`; the button appears active when bold is applied.
-8. The Italic button toggles `fontStyle` between `normal` and `italic`; the button appears active when italic is applied.
-9. The colour picker updates the element's text colour in real time as the user drags the picker.
-10. The alignment buttons update `align` and the active button is highlighted.
-11. All customisations persist for the lifetime of the session (no backend persistence).
-12. Multiple text elements retain their individual formatting independently.
+4. A selected text element shows resize handles at its four corners; the handles are hidden in editing mode.
+5. Dragging a corner handle resizes the element; minimum size is `40 × 20 px` and the element cannot extend outside the design surface.
+6. Text content reflows naturally as the element width is resized.
+7. The contextual toolbar is hidden when no element is selected and visible when one is.
+8. Changing the font family updates the text element immediately.
+9. Changing the font size (via input or `+`/`−` buttons) updates the element immediately.
+10. The Bold button toggles `fontWeight` between `normal` and `bold`; the button appears active when bold is applied.
+11. The Italic button toggles `fontStyle` between `normal` and `italic`; the button appears active when italic is applied.
+12. The colour picker updates the element's text colour in real time as the user drags the picker.
+13. The alignment buttons update `align` and the active button is highlighted.
+14. All customisations persist for the lifetime of the session (no backend persistence).
+15. Multiple text elements retain their individual formatting and dimensions independently.
