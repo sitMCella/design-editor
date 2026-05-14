@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ArrowElement } from './ArrowElement'
-import type { ArrowElement as ArrowElementType, CanvasElement, TextElement } from '../../../types/canvas'
+import type {
+  ArrowElement as ArrowElementType,
+  CanvasElement,
+  TextElement,
+} from '../../../types/canvas'
 
 // Default element: horizontal arrow from (540,360) to (740,360), strokeWidth=2
 // Derived bbox: x=539, y=359, width=202, height=2

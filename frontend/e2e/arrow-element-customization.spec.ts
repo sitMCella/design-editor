@@ -121,7 +121,10 @@ test.describe('09 – Arrow Element Customisation', () => {
     await expect(page.getByLabel('No arrowheads')).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByLabel('Arrowhead at end')).toHaveAttribute('aria-pressed', 'false')
     await expect(page.getByLabel('Arrowhead at start')).toHaveAttribute('aria-pressed', 'false')
-    await expect(page.getByLabel('Arrowheads at both ends')).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.getByLabel('Arrowheads at both ends')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
   })
 
   test('AC14: clicking "Arrowhead at start" adds a start marker to the line', async ({ page }) => {
@@ -436,7 +439,9 @@ test.describe('09 – Arrow Element Customisation', () => {
   // same screen point and always select whichever arrow is topmost in z-order.
   // The test needs the arrows to be at distinct positions, or the click strategy
   // needs to target a specific element via JS rather than screen coordinates.
-  test.skip('AC17: changing stroke colour of one arrow does not affect another', async ({ page }) => {
+  test.skip('AC17: changing stroke colour of one arrow does not affect another', async ({
+    page,
+  }) => {
     await addArrowElement(page)
     await addArrowElement(page)
     await clickCanvasBackground(page)
@@ -457,7 +462,9 @@ test.describe('09 – Arrow Element Customisation', () => {
   })
 
   // TODO: fix test — same overlapping arrows issue as the colour test above.
-  test.skip('AC17: changing the arrowhead of one arrow does not affect another', async ({ page }) => {
+  test.skip('AC17: changing the arrowhead of one arrow does not affect another', async ({
+    page,
+  }) => {
     await addArrowElement(page)
     await addArrowElement(page)
     await clickCanvasBackground(page)
@@ -475,7 +482,9 @@ test.describe('09 – Arrow Element Customisation', () => {
   })
 
   // TODO: fix test — same overlapping arrows issue as the colour test above.
-  test.skip('AC17: changing stroke width of one arrow does not affect another', async ({ page }) => {
+  test.skip('AC17: changing stroke width of one arrow does not affect another', async ({
+    page,
+  }) => {
     await addArrowElement(page)
     await addArrowElement(page)
     await clickCanvasBackground(page)

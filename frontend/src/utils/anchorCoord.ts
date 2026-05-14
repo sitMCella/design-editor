@@ -28,8 +28,6 @@ export function deriveBBox(x1: number, y1: number, x2: number, y2: number, strok
 
 const ANCHOR_SIDES: AnchorSide[] = ['top', 'right', 'bottom', 'left', 'center']
 
-export function getAllAnchorPoints(
-  el: Bbox
-): Array<{ side: AnchorSide; x: number; y: number }> {
+export function getAllAnchorPoints(el: Bbox): Array<{ side: AnchorSide; x: number; y: number }> {
   return ANCHOR_SIDES.map((side) => ({ side, ...anchorCoord(el, side) }))
 }

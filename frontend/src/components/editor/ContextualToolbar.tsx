@@ -290,12 +290,13 @@ function ImageToolbar({
 // Arrow toolbar
 // ---------------------------------------------------------------------------
 
-const ARROWHEAD_OPTIONS: Array<{ value: ArrowElement['arrowHead']; label: string; title: string }> = [
-  { value: 'none', label: '—', title: 'No arrowheads' },
-  { value: 'end', label: '→', title: 'Arrowhead at end' },
-  { value: 'start', label: '←', title: 'Arrowhead at start' },
-  { value: 'both', label: '↔', title: 'Arrowheads at both ends' },
-]
+const ARROWHEAD_OPTIONS: Array<{ value: ArrowElement['arrowHead']; label: string; title: string }> =
+  [
+    { value: 'none', label: '—', title: 'No arrowheads' },
+    { value: 'end', label: '→', title: 'Arrowhead at end' },
+    { value: 'start', label: '←', title: 'Arrowhead at start' },
+    { value: 'both', label: '↔', title: 'Arrowheads at both ends' },
+  ]
 
 function ArrowToolbar({
   element,

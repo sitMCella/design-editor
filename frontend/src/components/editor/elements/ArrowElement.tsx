@@ -1,5 +1,9 @@
 import { useRef, useState } from 'react'
-import type { ArrowElement as ArrowElementType, AnchorSide, CanvasElement } from '../../../types/canvas'
+import type {
+  ArrowElement as ArrowElementType,
+  AnchorSide,
+  CanvasElement,
+} from '../../../types/canvas'
 import { getAllAnchorPoints, deriveBBox } from '../../../utils/anchorCoord'
 import { SURFACE_WIDTH, SURFACE_HEIGHT } from '../DesignSurface'
 
@@ -25,7 +29,15 @@ type SnapTarget = {
 // Arrowhead markers
 // ---------------------------------------------------------------------------
 
-function ArrowMarkers({ id, stroke, arrowHead }: { id: string; stroke: string; arrowHead: ArrowElementType['arrowHead'] }) {
+function ArrowMarkers({
+  id,
+  stroke,
+  arrowHead,
+}: {
+  id: string
+  stroke: string
+  arrowHead: ArrowElementType['arrowHead']
+}) {
   const showEnd = arrowHead === 'end' || arrowHead === 'both'
   const showStart = arrowHead === 'start' || arrowHead === 'both'
   return (
@@ -63,7 +75,22 @@ function ArrowMarkers({ id, stroke, arrowHead }: { id: string; stroke: string; a
 // ---------------------------------------------------------------------------
 
 export function ArrowElement({ element, isSelected, onSelect, onUpdate, allElements }: Props) {
-  const { id, x, y, width, height, x1, y1, x2, y2, stroke, strokeWidth, arrowHead, opacity, rotation } = element
+  const {
+    id,
+    x,
+    y,
+    width,
+    height,
+    x1,
+    y1,
+    x2,
+    y2,
+    stroke,
+    strokeWidth,
+    arrowHead,
+    opacity,
+    rotation,
+  } = element
   const isDraggingRef = useRef(false)
   const [snapTarget, setSnapTarget] = useState<SnapTarget | null>(null)
 
@@ -101,8 +128,10 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
 
       // Breaking connections on body drag is handled: clear anchors and move freely
       onUpdate({
-        x1: newX1, y1: newY1,
-        x2: newX2, y2: newY2,
+        x1: newX1,
+        y1: newY1,
+        x2: newX2,
+        y2: newY2,
         startAnchor: undefined,
         endAnchor: undefined,
         ...deriveBBox(newX1, newY1, newX2, newY2, element.strokeWidth),
@@ -113,7 +142,9 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
       document.body.style.cursor = ''
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
-      setTimeout(() => { isDraggingRef.current = false }, 0)
+      setTimeout(() => {
+        isDraggingRef.current = false
+      }, 0)
     }
 
     window.addEventListener('mousemove', onMouseMove)
@@ -164,9 +195,8 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
       }
       setSnapTarget(currentSnap)
 
-      const patch: Partial<ArrowElementType> = which === 'start'
-        ? { x1: ptX, y1: ptY }
-        : { x2: ptX, y2: ptY }
+      const patch: Partial<ArrowElementType> =
+        which === 'start' ? { x1: ptX, y1: ptY } : { x2: ptX, y2: ptY }
       const newX1 = which === 'start' ? ptX : element.x1
       const newY1 = which === 'start' ? ptY : element.y1
       const newX2 = which === 'end' ? ptX : element.x2
@@ -182,9 +212,10 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
       setSnapTarget(null)
       if (currentSnap) {
         // Store the connection
-        const anchorPatch: Partial<ArrowElementType> = which === 'start'
-          ? { startAnchor: { elementId: currentSnap.elementId, side: currentSnap.side } }
-          : { endAnchor: { elementId: currentSnap.elementId, side: currentSnap.side } }
+        const anchorPatch: Partial<ArrowElementType> =
+          which === 'start'
+            ? { startAnchor: { elementId: currentSnap.elementId, side: currentSnap.side } }
+            : { endAnchor: { elementId: currentSnap.elementId, side: currentSnap.side } }
         onUpdate(anchorPatch)
       }
       window.removeEventListener('mousemove', onMouseMove)
