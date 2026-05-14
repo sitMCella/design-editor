@@ -226,9 +226,7 @@ describe('AC8: click interaction', () => {
   it('does not call onSelect when clicking without a handler', () => {
     // Ensures the handler is wired through the element and not a parent
     const onSelect = vi.fn()
-    render(
-      <TableElement element={baseElement} isSelected={false} onSelect={onSelect} />
-    )
+    render(<TableElement element={baseElement} isSelected={false} onSelect={onSelect} />)
     fireEvent.click(screen.getByTestId('table-element'))
     expect(onSelect).toHaveBeenCalledTimes(1)
   })

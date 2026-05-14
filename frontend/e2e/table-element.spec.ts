@@ -174,10 +174,7 @@ test.describe('10 – Toolbar & Table Element', () => {
     await addTableElement(page)
     const el = await getTableElement(page)
     const headers = el.locator('th')
-    const boxes = await Promise.all([
-      headers.nth(0).boundingBox(),
-      headers.nth(1).boundingBox(),
-    ])
+    const boxes = await Promise.all([headers.nth(0).boundingBox(), headers.nth(1).boundingBox()])
     expect(boxes[0]!.width).toBeCloseTo(boxes[1]!.width, 0)
   })
 
