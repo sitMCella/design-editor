@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { ArrowElement } from './elements/ArrowElement'
 import { ImageElement } from './elements/ImageElement'
@@ -13,7 +14,7 @@ import type {
 export const SURFACE_WIDTH = 1280
 export const SURFACE_HEIGHT = 720
 
-export function DesignSurface() {
+export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_props, ref) {
   const elements = useCanvasStore((s) => s.elements)
   const selectedIds = useCanvasStore((s) => s.selectedIds)
   const selectElements = useCanvasStore((s) => s.selectElements)
@@ -22,6 +23,7 @@ export function DesignSurface() {
 
   return (
     <div
+      ref={ref}
       style={{
         position: 'relative',
         width: SURFACE_WIDTH,
@@ -94,4 +96,4 @@ export function DesignSurface() {
       })}
     </div>
   )
-}
+})

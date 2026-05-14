@@ -14,9 +14,16 @@ export function ProjectCard({ project, isLoading, onClick }: Props) {
       disabled={isLoading}
       className="group w-full cursor-pointer rounded-lg border border-gray-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70"
     >
-      <div className="relative h-36 w-full rounded-t-lg bg-gray-100">
+      <div className="relative h-36 w-full overflow-hidden rounded-t-lg bg-gray-100">
+        {project.thumbnailUrl ? (
+          <img
+            src={project.thumbnailUrl}
+            alt={project.name}
+            className="h-full w-full object-cover"
+          />
+        ) : null}
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-t-lg bg-white/70">
+          <div className="absolute inset-0 flex items-center justify-center bg-white/70">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
           </div>
         )}

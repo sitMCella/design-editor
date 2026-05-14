@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
 import { Canvas } from '../components/editor/Canvas'
 import { ContextualToolbar } from '../components/editor/ContextualToolbar'
 import { Toolbar } from '../components/editor/Toolbar'
 import { useCanvasStore } from '../stores/canvasStore'
 import { patchProject } from '../api/projects'
+import { useThumbnail } from '../hooks/useThumbnail'
 
 const AUTOSAVE_DEBOUNCE_MS = 2000
 const AUTOSAVE_RETRY_MS = 10000
@@ -17,6 +18,9 @@ export function EditorPage() {
   const elements = useCanvasStore((s) => s.elements)
   const markSaved = useCanvasStore((s) => s.markSaved)
   const navigate = useNavigate()
+  const { designId: routeDesignId = '' } = useParams<{ designId: string }>()
+  const surfaceRef = useRef<HTMLDivElement>(null)
+  useThumbnail(routeDesignId, surfaceRef)
 
   // Always-current refs so the mutationFn never closes over stale values
   const nameRef = useRef(name)
@@ -111,7 +115,7 @@ export function EditorPage() {
       <ContextualToolbar />
       <div className="flex flex-1 overflow-hidden">
         <Toolbar />
-        <Canvas />
+        <Canvas surfaceRef={surfaceRef} />
       </div>
     </div>
   )
