@@ -77,6 +77,7 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
   const handleBodyMouseDown = (e: React.MouseEvent) => {
     if (!isSelected) return
     e.preventDefault()
+    e.stopPropagation()
     isDraggingRef.current = false
 
     const startMouseX = e.clientX
@@ -201,6 +202,12 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
   const outline = isSelected ? '2px solid #3B82F6' : 'none'
   const cursor = isSelected ? 'grab' : 'default'
 
+  // Coordinates relative to the bounding box origin for SVG rendering
+  const svgX1 = x1 - x
+  const svgY1 = y1 - y
+  const svgX2 = x2 - x
+  const svgY2 = y2 - y
+
   return (
     <div
       data-testid="arrow-element"
@@ -214,14 +221,16 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
         opacity,
         outline,
         outlineOffset: '2px',
+        cursor,
         pointerEvents: 'none',
         overflow: 'visible',
       }}
+      onClick={handleClick}
+      onMouseDown={handleBodyMouseDown}
     >
       <svg
         width={width}
         height={height}
-        viewBox={`${x} ${y} ${width} ${height}`}
         overflow="visible"
         style={{ display: 'block', overflow: 'visible' }}
       >
@@ -231,7 +240,7 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
             (not <line>) keeps el.locator('line') returning a single element,
             while still providing a generous hit zone around the arrow */}
         <path
-          d={`M${x1},${y1} L${x2},${y2}`}
+          d={`M${svgX1},${svgY1} L${svgX2},${svgY2}`}
           stroke="transparent"
           strokeWidth={Math.max(10, strokeWidth + 8)}
           fill="none"
@@ -241,10 +250,10 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
         />
 
         <line
-          x1={x1}
-          y1={y1}
-          x2={x2}
-          y2={y2}
+          x1={svgX1}
+          y1={svgY1}
+          x2={svgX2}
+          y2={svgY2}
           stroke={stroke}
           strokeWidth={strokeWidth}
           markerEnd={showEnd ? `url(#arrowhead-end-${id})` : undefined}
@@ -258,8 +267,8 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
             {/* Start handle: hollow circle */}
             <circle
               data-testid="endpoint-start"
-              cx={x1}
-              cy={y1}
+              cx={svgX1}
+              cy={svgY1}
               r={4}
               fill="white"
               stroke="#3B82F6"
@@ -270,8 +279,8 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
             {/* End handle: filled circle */}
             <circle
               data-testid="endpoint-end"
-              cx={x2}
-              cy={y2}
+              cx={svgX2}
+              cy={svgY2}
               r={4}
               fill="#3B82F6"
               stroke="none"
@@ -281,12 +290,12 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
           </>
         )}
 
-        {/* Snap indicator — absolute design-surface coordinate */}
+        {/* Snap indicator — relative to bounding box origin */}
         {snapTarget && (
           <circle
             data-testid="snap-indicator"
-            cx={snapTarget.x}
-            cy={snapTarget.y}
+            cx={snapTarget.x - x}
+            cy={snapTarget.y - y}
             r={5}
             fill="#3B82F6"
             style={{ pointerEvents: 'none' }}
