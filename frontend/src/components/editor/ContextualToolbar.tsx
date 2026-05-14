@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useId } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { useMutation } from '@tanstack/react-query'
 import { useCanvasStore } from '../../stores/canvasStore'
@@ -304,7 +304,6 @@ function ArrowToolbar({
   element: ArrowElement
   update: (patch: Partial<ArrowElement>) => void
 }) {
-  const uid = useId()
   const colorRef = useRef<HTMLInputElement>(null)
 
   // Use a native event listener with flushSync so that programmatically
@@ -347,19 +346,15 @@ function ArrowToolbar({
       <div className="mx-1 h-4 w-px bg-gray-200" />
 
       <div className="flex items-center gap-0.5">
-        {/* Visually-hidden <label for> lets Playwright's getByLabel resolve each
-            control by exact label text, avoiding aria-label substring collisions. */}
-        <label htmlFor={`${uid}-sw-dec`} className="sr-only">Decrease stroke width</label>
         <button
-          id={`${uid}-sw-dec`}
+          aria-label="Decrease stroke width"
           onClick={() => update({ strokeWidth: Math.max(1, element.strokeWidth - 1) })}
           className="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-gray-100"
         >
           −
         </button>
-        <label htmlFor={`${uid}-sw`} className="sr-only">Stroke width</label>
         <input
-          id={`${uid}-sw`}
+          aria-label="Stroke width"
           type="number"
           min={1}
           max={20}
@@ -369,9 +364,8 @@ function ArrowToolbar({
           }
           className="w-10 rounded border border-gray-200 px-1 py-0.5 text-center text-sm"
         />
-        <label htmlFor={`${uid}-sw-inc`} className="sr-only">Increase stroke width</label>
         <button
-          id={`${uid}-sw-inc`}
+          aria-label="Increase stroke width"
           onClick={() => update({ strokeWidth: Math.min(20, element.strokeWidth + 1) })}
           className="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-gray-100"
         >

@@ -68,7 +68,7 @@ test.describe('09 – Arrow Element Customisation', () => {
   }) => {
     await addArrowElement(page)
     await expect(page.getByLabel('Stroke color')).toBeVisible()
-    await expect(page.getByLabel('Stroke width')).toBeVisible()
+    await expect(page.getByLabel('Stroke width', { exact: true })).toBeVisible()
     await expect(page.getByLabel('Arrowhead at end')).toBeVisible()
   })
 
@@ -150,7 +150,7 @@ test.describe('09 – Arrow Element Customisation', () => {
 
   test('AC15: "+" button increments the stroke width by 1', async ({ page }) => {
     await addArrowElement(page)
-    const input = page.getByLabel('Stroke width')
+    const input = page.getByLabel('Stroke width', { exact: true })
     const before = Number(await input.inputValue())
     await page.getByLabel('Increase stroke width').click()
     expect(Number(await input.inputValue())).toBe(before + 1)
@@ -160,7 +160,7 @@ test.describe('09 – Arrow Element Customisation', () => {
     await addArrowElement(page)
     // Bump up first so decrement won't be clamped
     await page.getByLabel('Increase stroke width').click()
-    const input = page.getByLabel('Stroke width')
+    const input = page.getByLabel('Stroke width', { exact: true })
     const before = Number(await input.inputValue())
     await page.getByLabel('Decrease stroke width').click()
     expect(Number(await input.inputValue())).toBe(before - 1)
@@ -181,15 +181,15 @@ test.describe('09 – Arrow Element Customisation', () => {
     // Default is 2; click decrement twice
     await page.getByLabel('Decrease stroke width').click()
     await page.getByLabel('Decrease stroke width').click()
-    expect(await page.getByLabel('Stroke width').inputValue()).toBe('1')
+    expect(await page.getByLabel('Stroke width', { exact: true }).inputValue()).toBe('1')
   })
 
   test('AC15: stroke width does not exceed the maximum of 20', async ({ page }) => {
     await addArrowElement(page)
-    await page.getByLabel('Stroke width').fill('20')
+    await page.getByLabel('Stroke width', { exact: true }).fill('20')
     await page.keyboard.press('Tab')
     await page.getByLabel('Increase stroke width').click()
-    expect(await page.getByLabel('Stroke width').inputValue()).toBe('20')
+    expect(await page.getByLabel('Stroke width', { exact: true }).inputValue()).toBe('20')
   })
 
   // =========================================================================
@@ -479,7 +479,7 @@ test.describe('09 – Arrow Element Customisation', () => {
     await (await getArrowElement(page, 1)).click({ force: true })
 
     // Second arrow should still have the default stroke width of 2
-    expect(await page.getByLabel('Stroke width').inputValue()).toBe('2')
+    expect(await page.getByLabel('Stroke width', { exact: true }).inputValue()).toBe('2')
   })
 
   // =========================================================================
@@ -505,7 +505,7 @@ test.describe('09 – Arrow Element Customisation', () => {
     await clickCanvasBackground(page)
     await (await getArrowElement(page)).click()
 
-    expect(await page.getByLabel('Stroke width').inputValue()).toBe('4')
+    expect(await page.getByLabel('Stroke width', { exact: true }).inputValue()).toBe('4')
   })
 
   test('AC18: stroke colour persists after deselecting and reselecting', async ({ page }) => {

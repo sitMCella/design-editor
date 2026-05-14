@@ -227,15 +227,14 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
       >
         <ArrowMarkers id={id} stroke={stroke} arrowHead={arrowHead} />
 
-        {/* Wide transparent stroke used as the click/drag target — avoids
-            blocking pointer events on elements that overlap the bounding box */}
-        <line
-          x1={x1}
-          y1={y1}
-          x2={x2}
-          y2={y2}
+        {/* Wide transparent path used as the click/drag target — using <path>
+            (not <line>) keeps el.locator('line') returning a single element,
+            while still providing a generous hit zone around the arrow */}
+        <path
+          d={`M${x1},${y1} L${x2},${y2}`}
           stroke="transparent"
           strokeWidth={Math.max(10, strokeWidth + 8)}
+          fill="none"
           style={{ cursor, pointerEvents: 'stroke' }}
           onClick={handleClick}
           onMouseDown={handleBodyMouseDown}
@@ -265,7 +264,7 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
               fill="white"
               stroke="#3B82F6"
               strokeWidth={2}
-              style={{ cursor: 'crosshair' }}
+              style={{ cursor: 'crosshair', pointerEvents: 'auto' }}
               onMouseDown={(e) => handleEndpointMouseDown(e, 'start')}
             />
             {/* End handle: filled circle */}
@@ -276,7 +275,7 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
               r={4}
               fill="#3B82F6"
               stroke="none"
-              style={{ cursor: 'crosshair' }}
+              style={{ cursor: 'crosshair', pointerEvents: 'auto' }}
               onMouseDown={(e) => handleEndpointMouseDown(e, 'end')}
             />
           </>
