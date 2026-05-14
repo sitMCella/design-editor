@@ -36,6 +36,24 @@ export async function mockApiRoutes(page: Page) {
     await route.continue()
   })
 
+  // POST /api/projects/:id/thumbnail — thumbnail upload (silent success)
+  // GET  /api/projects/:id/thumbnail — thumbnail not found by default
+  await page.route(/\/api\/projects\/[^/]+\/thumbnail$/, async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ status: 204 })
+      return
+    }
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: false, error: { code: 'NOT_FOUND', message: 'No thumbnail' } }),
+      })
+      return
+    }
+    await route.continue()
+  })
+
   // GET /api/projects/:id — single project
   // PATCH /api/projects/:id — auto-save
   await page.route(/\/api\/projects\/[^/]+$/, async (route) => {
