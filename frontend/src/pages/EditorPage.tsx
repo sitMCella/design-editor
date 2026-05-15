@@ -86,7 +86,10 @@ export function EditorPage() {
 
   const handleZoomIn = () => setZoom(Math.min(MAX_ZOOM, zoom * ZOOM_STEP))
   const handleZoomOut = () => setZoom(Math.max(MIN_ZOOM, zoom / ZOOM_STEP))
-  const handleZoomReset = () => { setZoom(1); setPan(0, 0) }
+  const handleZoomReset = () => {
+    setZoom(1)
+    setPan(0, 0)
+  }
 
   return (
     <div className="flex h-screen flex-col">

@@ -23,7 +23,10 @@ function parseTransform(transform: string): { panX: number; panY: number; zoom: 
 
 /** Click a safe spot on the canvas background to deselect everything. */
 async function clickBackground(page: Page) {
-  await page.locator('.bg-gray-100').first().click({ position: { x: 10, y: 10 }, force: true })
+  await page
+    .locator('.bg-gray-100')
+    .first()
+    .click({ position: { x: 10, y: 10 }, force: true })
 }
 
 /** Drag `from` by (dx, dy) screen pixels starting from its centre. */
@@ -32,7 +35,7 @@ async function dragBy(
   from: ReturnType<Page['locator']>,
   dx: number,
   dy: number,
-  steps = 20,
+  steps = 20
 ) {
   const box = await from.boundingBox()
   const cx = box!.x + box!.width / 2

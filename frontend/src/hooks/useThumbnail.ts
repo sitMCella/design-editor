@@ -53,12 +53,17 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
           node.style.transform = prevTransform
           canvas.toBlob(
             (blob) => {
-              if (!blob) { generating.current = false; return }
+              if (!blob) {
+                generating.current = false
+                return
+              }
               const formData = new FormData()
               formData.append('file', blob, 'thumb.jpg')
               fetch(`/api/projects/${designId}/thumbnail`, { method: 'POST', body: formData })
                 .catch(() => {})
-                .finally(() => { generating.current = false })
+                .finally(() => {
+                  generating.current = false
+                })
             },
             'image/jpeg',
             0.7

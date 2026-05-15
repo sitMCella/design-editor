@@ -26,7 +26,9 @@ export function Canvas({ worldRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const spaceDownRef = useRef(false)
   const [spaceActive, setSpaceActive] = useState(false)
-  const panStartRef = useRef<{ mouseX: number; mouseY: number; panX: number; panY: number } | null>(null)
+  const panStartRef = useRef<{ mouseX: number; mouseY: number; panX: number; panY: number } | null>(
+    null
+  )
   const isPanningRef = useRef(false)
 
   // Container pixel size — drives scrollbar geometry. Tracked via ResizeObserver.
@@ -54,8 +56,8 @@ export function Canvas({ worldRef }: Props) {
   // Virtual bounds: union of initial canvas, element bboxes (+padding), and current viewport.
   const bounds = computeVirtualBounds(elements, panX, panY, zoom, vpW, vpH)
 
-  const totalScreenW = (bounds.right  - bounds.left) * zoom
-  const totalScreenH = (bounds.bottom - bounds.top)  * zoom
+  const totalScreenW = (bounds.right - bounds.left) * zoom
+  const totalScreenH = (bounds.bottom - bounds.top) * zoom
 
   // Thumb visibility: hide when the entire virtual canvas fits in the viewport.
   const hScrollVisible = vpW > 0 && totalScreenW > vpW
@@ -66,16 +68,24 @@ export function Canvas({ worldRef }: Props) {
   const maxScrollY = Math.max(0, totalScreenH - vpH)
 
   // Thumb sizes: proportional to (viewport / total), clamped to minimum.
-  const thumbW = vpW > 0 ? Math.min(vpW, Math.max(MIN_THUMB_SIZE, (vpW * vpW) / totalScreenW)) : MIN_THUMB_SIZE
-  const thumbH = vpH > 0 ? Math.min(vpH, Math.max(MIN_THUMB_SIZE, (vpH * vpH) / totalScreenH)) : MIN_THUMB_SIZE
+  const thumbW =
+    vpW > 0 ? Math.min(vpW, Math.max(MIN_THUMB_SIZE, (vpW * vpW) / totalScreenW)) : MIN_THUMB_SIZE
+  const thumbH =
+    vpH > 0 ? Math.min(vpH, Math.max(MIN_THUMB_SIZE, (vpH * vpH) / totalScreenH)) : MIN_THUMB_SIZE
 
   // Current scroll offset: distance from virtual-canvas edge to viewport edge, in screen px.
   const scrollX = -panX - bounds.left * zoom
-  const scrollY = -panY - bounds.top  * zoom
+  const scrollY = -panY - bounds.top * zoom
 
   // Thumb positions along their respective tracks.
-  const thumbX = maxScrollX > 0 ? Math.max(0, Math.min(vpW - thumbW, (scrollX / maxScrollX) * (vpW - thumbW))) : 0
-  const thumbY = maxScrollY > 0 ? Math.max(0, Math.min(vpH - thumbH, (scrollY / maxScrollY) * (vpH - thumbH))) : 0
+  const thumbX =
+    maxScrollX > 0
+      ? Math.max(0, Math.min(vpW - thumbW, (scrollX / maxScrollX) * (vpW - thumbW)))
+      : 0
+  const thumbY =
+    maxScrollY > 0
+      ? Math.max(0, Math.min(vpH - thumbH, (scrollY / maxScrollY) * (vpH - thumbH)))
+      : 0
 
   // Non-passive wheel listener for zoom toward cursor
   useEffect(() => {
@@ -149,28 +159,31 @@ export function Canvas({ worldRef }: Props) {
     }
   }, [setZoom, setPan])
 
-  const startPan = useCallback((clientX: number, clientY: number) => {
-    const { panX, panY } = useCanvasStore.getState()
-    isPanningRef.current = false
-    panStartRef.current = { mouseX: clientX, mouseY: clientY, panX, panY }
-    document.body.style.cursor = 'grabbing'
+  const startPan = useCallback(
+    (clientX: number, clientY: number) => {
+      const { panX, panY } = useCanvasStore.getState()
+      isPanningRef.current = false
+      panStartRef.current = { mouseX: clientX, mouseY: clientY, panX, panY }
+      document.body.style.cursor = 'grabbing'
 
-    const onMove = (me: MouseEvent) => {
-      if (!panStartRef.current) return
-      isPanningRef.current = true
-      const dx = me.clientX - panStartRef.current.mouseX
-      const dy = me.clientY - panStartRef.current.mouseY
-      setPan(panStartRef.current.panX + dx, panStartRef.current.panY + dy)
-    }
-    const onUp = () => {
-      document.body.style.cursor = ''
-      panStartRef.current = null
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [setPan])
+      const onMove = (me: MouseEvent) => {
+        if (!panStartRef.current) return
+        isPanningRef.current = true
+        const dx = me.clientX - panStartRef.current.mouseX
+        const dy = me.clientY - panStartRef.current.mouseY
+        setPan(panStartRef.current.panX + dx, panStartRef.current.panY + dy)
+      }
+      const onUp = () => {
+        document.body.style.cursor = ''
+        panStartRef.current = null
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+      }
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
+    },
+    [setPan]
+  )
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Middle mouse button or Space+left click → pan
@@ -215,42 +228,54 @@ export function Canvas({ worldRef }: Props) {
   }, [])
 
   /** Horizontal thumb dragged to newOffset px from track start → update panX. */
-  const handleHThumbMove = useCallback((newOffset: number) => {
-    const { panY: py } = useCanvasStore.getState()
-    const g = freshGeometry('h')
-    const trackLen = g.vp - g.thumb
-    const newScroll = trackLen > 0 ? (newOffset / trackLen) * g.maxScroll : 0
-    setPan(-(newScroll + g.edgeOffset * g.z), py)
-  }, [freshGeometry, setPan])
+  const handleHThumbMove = useCallback(
+    (newOffset: number) => {
+      const { panY: py } = useCanvasStore.getState()
+      const g = freshGeometry('h')
+      const trackLen = g.vp - g.thumb
+      const newScroll = trackLen > 0 ? (newOffset / trackLen) * g.maxScroll : 0
+      setPan(-(newScroll + g.edgeOffset * g.z), py)
+    },
+    [freshGeometry, setPan]
+  )
 
   /** Vertical thumb dragged to newOffset px from track start → update panY. */
-  const handleVThumbMove = useCallback((newOffset: number) => {
-    const { panX: px } = useCanvasStore.getState()
-    const g = freshGeometry('v')
-    const trackLen = g.vp - g.thumb
-    const newScroll = trackLen > 0 ? (newOffset / trackLen) * g.maxScroll : 0
-    setPan(px, -(newScroll + g.edgeOffset * g.z))
-  }, [freshGeometry, setPan])
+  const handleVThumbMove = useCallback(
+    (newOffset: number) => {
+      const { panX: px } = useCanvasStore.getState()
+      const g = freshGeometry('v')
+      const trackLen = g.vp - g.thumb
+      const newScroll = trackLen > 0 ? (newOffset / trackLen) * g.maxScroll : 0
+      setPan(px, -(newScroll + g.edgeOffset * g.z))
+    },
+    [freshGeometry, setPan]
+  )
 
   /** Click on horizontal track → jump one viewport-width toward the clicked side. */
-  const handleHTrackClick = useCallback((clickPosPx: number) => {
-    const { panY: py } = useCanvasStore.getState()
-    const g = freshGeometry('h')
-    const curThumbX = g.maxScroll > 0 ? (g.curScroll / g.maxScroll) * (g.vp - g.thumb) : 0
-    const dir = clickPosPx < curThumbX ? -1 : 1
-    const newScroll = Math.max(0, Math.min(g.maxScroll, g.curScroll + dir * g.vp))
-    setPan(-(newScroll + g.edgeOffset * g.z), py)
-  }, [freshGeometry, setPan])
+  const handleHTrackClick = useCallback(
+    (clickPosPx: number) => {
+      const { panY: py } = useCanvasStore.getState()
+      const g = freshGeometry('h')
+      const curThumbX = g.maxScroll > 0 ? (g.curScroll / g.maxScroll) * (g.vp - g.thumb) : 0
+      const dir = clickPosPx < curThumbX ? -1 : 1
+      const newScroll = Math.max(0, Math.min(g.maxScroll, g.curScroll + dir * g.vp))
+      setPan(-(newScroll + g.edgeOffset * g.z), py)
+    },
+    [freshGeometry, setPan]
+  )
 
   /** Click on vertical track → jump one viewport-height toward the clicked side. */
-  const handleVTrackClick = useCallback((clickPosPx: number) => {
-    const { panX: px } = useCanvasStore.getState()
-    const g = freshGeometry('v')
-    const curThumbY = g.maxScroll > 0 ? (g.curScroll / g.maxScroll) * (g.vp - g.thumb) : 0
-    const dir = clickPosPx < curThumbY ? -1 : 1
-    const newScroll = Math.max(0, Math.min(g.maxScroll, g.curScroll + dir * g.vp))
-    setPan(px, -(newScroll + g.edgeOffset * g.z))
-  }, [freshGeometry, setPan])
+  const handleVTrackClick = useCallback(
+    (clickPosPx: number) => {
+      const { panX: px } = useCanvasStore.getState()
+      const g = freshGeometry('v')
+      const curThumbY = g.maxScroll > 0 ? (g.curScroll / g.maxScroll) * (g.vp - g.thumb) : 0
+      const dir = clickPosPx < curThumbY ? -1 : 1
+      const newScroll = Math.max(0, Math.min(g.maxScroll, g.curScroll + dir * g.vp))
+      setPan(px, -(newScroll + g.edgeOffset * g.z))
+    },
+    [freshGeometry, setPan]
+  )
 
   return (
     <div

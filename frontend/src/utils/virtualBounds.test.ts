@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  computeVirtualBounds,
-  INITIAL_CANVAS_WIDTH,
-  INITIAL_CANVAS_HEIGHT,
-} from './virtualBounds'
+import { computeVirtualBounds, INITIAL_CANVAS_WIDTH, INITIAL_CANVAS_HEIGHT } from './virtualBounds'
 import type { TextElement } from '../types/canvas'
 
 const makeText = (x: number, y: number, w: number, h: number): TextElement => ({

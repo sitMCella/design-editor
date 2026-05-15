@@ -752,7 +752,10 @@ describe('AC12: zoom-aware resize', () => {
 
   it('halves the width delta when zoom is 2 (br handle)', () => {
     useCanvasStore.setState({ zoom: 2 })
-    const { onUpdate } = renderElement({ x: 100, y: 100, width: 400, height: 120 }, { isSelected: true })
+    const { onUpdate } = renderElement(
+      { x: 100, y: 100, width: 400, height: 120 },
+      { isSelected: true }
+    )
     // 100px screen drag at zoom=2 → 50px world delta → width = 400 + 50 = 450
     fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
     fireEvent.mouseMove(window, { clientX: 100, clientY: 0 })
@@ -763,7 +766,10 @@ describe('AC12: zoom-aware resize', () => {
 
   it('doubles the width delta when zoom is 0.5 (br handle)', () => {
     useCanvasStore.setState({ zoom: 0.5 })
-    const { onUpdate } = renderElement({ x: 100, y: 100, width: 400, height: 120 }, { isSelected: true })
+    const { onUpdate } = renderElement(
+      { x: 100, y: 100, width: 400, height: 120 },
+      { isSelected: true }
+    )
     // 50px screen drag at zoom=0.5 → 100px world delta → width = 400 + 100 = 500
     fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
     fireEvent.mouseMove(window, { clientX: 50, clientY: 0 })

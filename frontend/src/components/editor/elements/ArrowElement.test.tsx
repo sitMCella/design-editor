@@ -707,8 +707,14 @@ describe('AC12: zoom-aware body drag', () => {
     useCanvasStore.setState({ zoom: 2 })
     const arrowEl: ArrowElementType = {
       ...baseElement,
-      x1: 100, y1: 100, x2: 300, y2: 100,
-      x: 99, y: 99, width: 202, height: 2,
+      x1: 100,
+      y1: 100,
+      x2: 300,
+      y2: 100,
+      x: 99,
+      y: 99,
+      width: 202,
+      height: 2,
     }
     const onUpdate = vi.fn()
     const { container } = render(
@@ -734,8 +740,14 @@ describe('AC12: zoom-aware body drag', () => {
     useCanvasStore.setState({ zoom: 0.5 })
     const arrowEl: ArrowElementType = {
       ...baseElement,
-      x1: 100, y1: 100, x2: 300, y2: 100,
-      x: 99, y: 99, width: 202, height: 2,
+      x1: 100,
+      y1: 100,
+      x2: 300,
+      y2: 100,
+      x: 99,
+      y: 99,
+      width: 202,
+      height: 2,
     }
     const onUpdate = vi.fn()
     const { container } = render(
@@ -768,8 +780,14 @@ describe('AC12: zoom-aware endpoint drag', () => {
     useCanvasStore.setState({ zoom: 2 })
     const arrowEl: ArrowElementType = {
       ...baseElement,
-      x1: 100, y1: 100, x2: 300, y2: 100,
-      x: 99, y: 99, width: 202, height: 2,
+      x1: 100,
+      y1: 100,
+      x2: 300,
+      y2: 100,
+      x: 99,
+      y: 99,
+      width: 202,
+      height: 2,
     }
     const onUpdate = vi.fn()
     render(
@@ -794,8 +812,14 @@ describe('AC12: zoom-aware endpoint drag', () => {
     useCanvasStore.setState({ zoom: 0.5 })
     const arrowEl: ArrowElementType = {
       ...baseElement,
-      x1: 100, y1: 100, x2: 300, y2: 100,
-      x: 99, y: 99, width: 202, height: 2,
+      x1: 100,
+      y1: 100,
+      x2: 300,
+      y2: 100,
+      x: 99,
+      y: 99,
+      width: 202,
+      height: 2,
     }
     const onUpdate = vi.fn()
     render(

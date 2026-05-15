@@ -29,22 +29,30 @@ export function computeVirtualBounds(
   panY: number,
   zoom: number,
   viewportWidth: number,
-  viewportHeight: number,
+  viewportHeight: number
 ): VirtualBounds {
   const z = zoom || 1
   const bbox = elementsBBox(elements)
 
   // Current viewport extent in world space.
   // Add 0 to each negation so that panX/panY === 0 never produces −0.
-  const vpLeft   = (-panX + 0) / z
-  const vpTop    = (-panY + 0) / z
-  const vpRight  = vpLeft  + viewportWidth  / z
-  const vpBottom = vpTop   + viewportHeight / z
+  const vpLeft = (-panX + 0) / z
+  const vpTop = (-panY + 0) / z
+  const vpRight = vpLeft + viewportWidth / z
+  const vpBottom = vpTop + viewportHeight / z
 
-  const left   = Math.min(0, vpLeft,   bbox ? bbox.x - EXPAND_PADDING : 0)
-  const top    = Math.min(0, vpTop,    bbox ? bbox.y - EXPAND_PADDING : 0)
-  const right  = Math.max(INITIAL_CANVAS_WIDTH,  vpRight,  bbox ? bbox.x + bbox.width  + EXPAND_PADDING : INITIAL_CANVAS_WIDTH)
-  const bottom = Math.max(INITIAL_CANVAS_HEIGHT, vpBottom, bbox ? bbox.y + bbox.height + EXPAND_PADDING : INITIAL_CANVAS_HEIGHT)
+  const left = Math.min(0, vpLeft, bbox ? bbox.x - EXPAND_PADDING : 0)
+  const top = Math.min(0, vpTop, bbox ? bbox.y - EXPAND_PADDING : 0)
+  const right = Math.max(
+    INITIAL_CANVAS_WIDTH,
+    vpRight,
+    bbox ? bbox.x + bbox.width + EXPAND_PADDING : INITIAL_CANVAS_WIDTH
+  )
+  const bottom = Math.max(
+    INITIAL_CANVAS_HEIGHT,
+    vpBottom,
+    bbox ? bbox.y + bbox.height + EXPAND_PADDING : INITIAL_CANVAS_HEIGHT
+  )
 
   return { left, top, right, bottom }
 }

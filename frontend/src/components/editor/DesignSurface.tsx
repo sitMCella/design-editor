@@ -27,7 +27,10 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
               key={element.id}
               element={element as TextElementType}
               isSelected={selectedIds.includes(element.id)}
-              onSelect={(e) => { e.stopPropagation(); selectElements([element.id]) }}
+              onSelect={(e) => {
+                e.stopPropagation()
+                selectElements([element.id])
+              }}
               onUpdate={(patch) => updateElement(element.id, patch)}
               onRemove={() => removeElements([element.id])}
             />
@@ -39,7 +42,10 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
               key={element.id}
               element={element as ImageElementType}
               isSelected={selectedIds.includes(element.id)}
-              onSelect={(e) => { e.stopPropagation(); selectElements([element.id]) }}
+              onSelect={(e) => {
+                e.stopPropagation()
+                selectElements([element.id])
+              }}
               onUpdate={(patch) => updateElement(element.id, patch)}
             />
           )
@@ -50,7 +56,10 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
               key={element.id}
               element={element as ArrowElementType}
               isSelected={selectedIds.includes(element.id)}
-              onSelect={(e) => { e.stopPropagation(); selectElements([element.id]) }}
+              onSelect={(e) => {
+                e.stopPropagation()
+                selectElements([element.id])
+              }}
               onUpdate={(patch) => updateElement(element.id, patch)}
               allElements={elements}
             />
@@ -62,7 +71,10 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
               key={element.id}
               element={element as TableElementType}
               isSelected={selectedIds.includes(element.id)}
-              onSelect={(e) => { e.stopPropagation(); selectElements([element.id]) }}
+              onSelect={(e) => {
+                e.stopPropagation()
+                selectElements([element.id])
+              }}
               onUpdate={(patch) => updateElement(element.id, patch)}
             />
           )

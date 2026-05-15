@@ -53,7 +53,10 @@ beforeEach(() => {
   mockHtml2canvas.mockResolvedValue(makeCanvas() as unknown as HTMLCanvasElement)
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
   // Make requestAnimationFrame run synchronously in tests
-  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0 })
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    cb(0)
+    return 0
+  })
 })
 
 afterEach(() => {
@@ -335,7 +338,9 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
     useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
     renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
 
-    act(() => { useCanvasStore.setState({ isDirty: false }) })
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
 
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
     const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
@@ -348,7 +353,9 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
     useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
     renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
 
-    act(() => { useCanvasStore.setState({ isDirty: false }) })
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
 
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
     const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
@@ -362,7 +369,9 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
     useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
     renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
 
-    act(() => { useCanvasStore.setState({ isDirty: false }) })
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
 
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
     const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
@@ -376,7 +385,9 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
     useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
     renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
 
-    act(() => { useCanvasStore.setState({ isDirty: false }) })
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
 
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
     const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
@@ -390,7 +401,9 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
     useCanvasStore.setState({ isDirty: true, elements: [el1, el2] })
     renderHook(() => useThumbnail('design-1', makeRef(fakeDiv)))
 
-    act(() => { useCanvasStore.setState({ isDirty: false }) })
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
 
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
     const opts = mockHtml2canvas.mock.calls[0][1] as Record<string, unknown>
@@ -407,7 +420,9 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
     useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
     renderHook(() => useThumbnail('design-1', makeRef(divWithTransform)))
 
-    act(() => { useCanvasStore.setState({ isDirty: false }) })
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
 
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
     // At the time html2canvas was called, the node passed in should have transform cleared
@@ -421,10 +436,14 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
     useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
     renderHook(() => useThumbnail('design-1', makeRef(divWithTransform)))
 
-    act(() => { useCanvasStore.setState({ isDirty: false }) })
+    act(() => {
+      useCanvasStore.setState({ isDirty: false })
+    })
 
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)) })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50))
+    })
 
     expect(divWithTransform.style.transform).toBe('translate(100px, 50px) scale(1.5)')
   })
