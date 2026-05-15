@@ -273,6 +273,7 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
 
   return (
     <div
+      data-testid="image-element"
       tabIndex={isSelected ? 0 : undefined}
       style={{
         position: 'absolute',
