@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { TableElement as TableElementType, TableRow } from '../../../types/canvas'
-import { SURFACE_WIDTH, SURFACE_HEIGHT } from '../DesignSurface'
+import { useCanvasStore } from '../../../stores/canvasStore'
 
 type Props = {
   element: TableElementType
@@ -109,9 +109,10 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
       if (!isDraggingRef.current && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
       isDraggingRef.current = true
       document.body.style.cursor = 'grabbing'
+      const zoom = useCanvasStore.getState().zoom
       onUpdate({
-        x: Math.max(0, Math.min(SURFACE_WIDTH - width, s.elementX + dx)),
-        y: Math.max(0, Math.min(SURFACE_HEIGHT - height, s.elementY + dy)),
+        x: s.elementX + dx / zoom,
+        y: s.elementY + dy / zoom,
       })
     }
 
@@ -150,8 +151,9 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
     const onMouseMove = (ev: MouseEvent) => {
       const s = resizeStartRef.current
       if (!s) return
-      const dx = ev.clientX - s.mouseX
-      const dy = ev.clientY - s.mouseY
+      const zoom = useCanvasStore.getState().zoom
+      const dx = (ev.clientX - s.mouseX) / zoom
+      const dy = (ev.clientY - s.mouseY) / zoom
 
       let newX = s.elementX
       let newY = s.elementY
@@ -175,11 +177,6 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
         newW = Math.max(MIN_TABLE_WIDTH, s.elementW + dx)
         newH = Math.max(MIN_TABLE_HEIGHT, s.elementH + dy)
       }
-
-      newX = Math.max(0, newX)
-      newY = Math.max(0, newY)
-      if (newX + newW > SURFACE_WIDTH) newW = SURFACE_WIDTH - newX
-      if (newY + newH > SURFACE_HEIGHT) newH = SURFACE_HEIGHT - newY
 
       // Scale column widths proportionally; ensure they sum to newW
       const wRatio = newW / s.elementW
@@ -241,7 +238,8 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
     const onMouseMove = (ev: MouseEvent) => {
       const s = colDivRef.current
       if (!s) return
-      const delta = ev.clientX - s.mouseX
+      const zoom = useCanvasStore.getState().zoom
+      const delta = (ev.clientX - s.mouseX) / zoom
       const total = s.leftWidth + s.rightWidth
       const newLeft = Math.max(MIN_COL_WIDTH, Math.min(total - MIN_COL_WIDTH, s.leftWidth + delta))
       const newRight = total - newLeft
@@ -278,7 +276,8 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
     const onMouseMove = (ev: MouseEvent) => {
       const s = rowDivRef.current
       if (!s) return
-      const delta = ev.clientY - s.mouseY
+      const zoom = useCanvasStore.getState().zoom
+      const delta = (ev.clientY - s.mouseY) / zoom
       const total = s.topHeight + s.bottomHeight
       const newTop = Math.max(MIN_ROW_HEIGHT, Math.min(total - MIN_ROW_HEIGHT, s.topHeight + delta))
       const newBottom = total - newTop

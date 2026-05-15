@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ImageElement as ImageElementType } from '../../../types/canvas'
-import { SURFACE_WIDTH, SURFACE_HEIGHT } from '../DesignSurface'
+import { useCanvasStore } from '../../../stores/canvasStore'
 
 type Props = {
   element: ImageElementType
@@ -115,12 +115,10 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
       if (!isDraggingRef.current && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
       isDraggingRef.current = true
       document.body.style.cursor = 'grabbing'
+      const zoom = useCanvasStore.getState().zoom
       onUpdate({
-        x: Math.max(0, Math.min(SURFACE_WIDTH - element.width, dragStartRef.current.elementX + dx)),
-        y: Math.max(
-          0,
-          Math.min(SURFACE_HEIGHT - element.height, dragStartRef.current.elementY + dy)
-        ),
+        x: dragStartRef.current.elementX + dx / zoom,
+        y: dragStartRef.current.elementY + dy / zoom,
       })
     }
 
@@ -169,8 +167,9 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
     const onMouseMove = (me: MouseEvent) => {
       const s = resizeStartRef.current
       if (!s) return
-      const dx = me.clientX - s.mouseX
-      const dy = me.clientY - s.mouseY
+      const zoom = useCanvasStore.getState().zoom
+      const dx = (me.clientX - s.mouseX) / zoom
+      const dy = (me.clientY - s.mouseY) / zoom
 
       let x = s.elementX,
         y = s.elementY
@@ -207,12 +206,6 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
         h = MIN_SIZE
         if (handle === 'tl' || handle === 'tr') y = s.elementY + s.elementH - MIN_SIZE
       }
-
-      // Clamp to surface bounds
-      x = Math.max(0, x)
-      y = Math.max(0, y)
-      w = Math.min(w, SURFACE_WIDTH - x)
-      h = Math.min(h, SURFACE_HEIGHT - y)
 
       onUpdate({ x, y, width: w, height: h })
     }
@@ -280,6 +273,7 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
 
   return (
     <div
+      data-testid="image-element"
       tabIndex={isSelected ? 0 : undefined}
       style={{
         position: 'absolute',

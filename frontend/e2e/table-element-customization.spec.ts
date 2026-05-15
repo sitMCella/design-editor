@@ -133,40 +133,6 @@ test.describe('11 – Table Element Customisation', () => {
   })
 
   // =========================================================================
-  // AC2 — element cannot be dragged outside the 1280×720 design surface
-  // =========================================================================
-
-  test('AC2: element cannot be dragged past the right edge of the design surface', async ({
-    page,
-  }) => {
-    await addTableElement(page)
-    const el = await getTableElement(page)
-
-    // Drag far to the right — well beyond the surface boundary
-    await dragBy(page, el, 2000, 0)
-
-    const after = await el.boundingBox()
-    const surface = await page.locator('.bg-gray-100 > div').first().boundingBox()
-
-    // Right edge of element must not exceed right edge of design surface
-    expect(after!.x + after!.width).toBeLessThanOrEqual(surface!.x + surface!.width + 2)
-  })
-
-  test('AC2: element cannot be dragged past the bottom edge of the design surface', async ({
-    page,
-  }) => {
-    await addTableElement(page)
-    const el = await getTableElement(page)
-
-    await dragBy(page, el, 0, 2000)
-
-    const after = await el.boundingBox()
-    const surface = await page.locator('.bg-gray-100 > div').first().boundingBox()
-
-    expect(after!.y + after!.height).toBeLessThanOrEqual(surface!.y + surface!.height + 2)
-  })
-
-  // =========================================================================
   // AC3 — corner resize handles appear when selected, hidden when not
   // =========================================================================
 
@@ -238,30 +204,6 @@ test.describe('11 – Table Element Customisation', () => {
     const after = await el.boundingBox()
 
     expect(after!.height).toBeGreaterThanOrEqual(40)
-  })
-
-  test('AC4: element cannot extend past the right edge of the design surface', async ({ page }) => {
-    await addTableElement(page)
-    const el = await getTableElement(page)
-    const surface = await page.locator('.bg-gray-100 > div').first().boundingBox()
-
-    await dragHandle(page, page.getByTestId('resize-handle-br'), 2000, 0)
-    const after = await el.boundingBox()
-
-    expect(after!.x + after!.width).toBeLessThanOrEqual(surface!.x + surface!.width + 2)
-  })
-
-  test('AC4: element cannot extend past the bottom edge of the design surface', async ({
-    page,
-  }) => {
-    await addTableElement(page)
-    const el = await getTableElement(page)
-    const surface = await page.locator('.bg-gray-100 > div').first().boundingBox()
-
-    await dragHandle(page, page.getByTestId('resize-handle-br'), 0, 2000)
-    const after = await el.boundingBox()
-
-    expect(after!.y + after!.height).toBeLessThanOrEqual(surface!.y + surface!.height + 2)
   })
 
   // =========================================================================

@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ArrowElement } from './ArrowElement'
+import { useCanvasStore } from '../../../stores/canvasStore'
 import type {
   ArrowElement as ArrowElementType,
   CanvasElement,
@@ -345,30 +346,30 @@ describe('body drag', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  it('AC3: clamps x2 to the right surface boundary', () => {
+  it('AC3: allows body drag past the right surface boundary on infinite canvas', () => {
     const { container, onUpdate } = renderElement({ x2: 1270, y2: 360 }, { isSelected: true })
     const wrapper = container.firstChild as HTMLElement
 
-    // Try to drag 200px right; x2 would exceed 1280
+    // Drag 200px right; on infinite canvas x2 can exceed previous 1280 limit
     fireEvent.mouseDown(wrapper, { clientX: 0, clientY: 0 })
     fireEvent.mouseMove(window, { clientX: 200, clientY: 0 })
     fireEvent.mouseUp(window)
 
     const patch = onUpdate.mock.calls[0][0]
-    expect(patch.x2).toBeLessThanOrEqual(1280)
+    expect(patch.x2).toBeGreaterThan(1280)
   })
 
-  it('AC3: clamps x1 to the left surface boundary (0)', () => {
+  it('AC3: allows body drag past the left surface boundary on infinite canvas', () => {
     const { container, onUpdate } = renderElement({ x1: 10, y1: 360 }, { isSelected: true })
     const wrapper = container.firstChild as HTMLElement
 
-    // Try to drag 200px left; x1 would go below 0
+    // Drag 200px left; on infinite canvas x1 can go below 0
     fireEvent.mouseDown(wrapper, { clientX: 0, clientY: 0 })
     fireEvent.mouseMove(window, { clientX: -200, clientY: 0 })
     fireEvent.mouseUp(window)
 
     const patch = onUpdate.mock.calls[0][0]
-    expect(patch.x1).toBeGreaterThanOrEqual(0)
+    expect(patch.x1).toBeLessThan(0)
   })
 
   it('AC4: clears startAnchor and endAnchor when body drag begins', () => {
@@ -474,7 +475,7 @@ describe('endpoint drag', () => {
     expect(posCall[0].x1).toBeUndefined()
   })
 
-  it('AC8: end handle clamps to right surface boundary', () => {
+  it('AC8: end handle can move past right surface boundary on infinite canvas', () => {
     const onUpdate = vi.fn()
     render(
       <ArrowElement
@@ -487,16 +488,16 @@ describe('endpoint drag', () => {
     )
     const endHandle = screen.getByTestId('endpoint-end')
 
-    // Try to drag 200px right — would put x2 at 1470 without clamping
+    // Drag 200px right — x2 becomes 1270 + 200 = 1470 (no clamping on infinite canvas)
     fireEvent.mouseDown(endHandle, { clientX: 0, clientY: 0 })
     fireEvent.mouseMove(window, { clientX: 200, clientY: 0 })
     fireEvent.mouseUp(window)
 
     const posCall = onUpdate.mock.calls.find((c) => 'x2' in c[0])!
-    expect(posCall[0].x2).toBeLessThanOrEqual(1280)
+    expect(posCall[0].x2).toBeGreaterThan(1280)
   })
 
-  it('AC8: start handle clamps to left surface boundary (0)', () => {
+  it('AC8: start handle can move past left surface boundary on infinite canvas', () => {
     const onUpdate = vi.fn()
     render(
       <ArrowElement
@@ -514,7 +515,7 @@ describe('endpoint drag', () => {
     fireEvent.mouseUp(window)
 
     const posCall = onUpdate.mock.calls.find((c) => 'x1' in c[0])!
-    expect(posCall[0].x1).toBeGreaterThanOrEqual(0)
+    expect(posCall[0].x1).toBeLessThan(0)
   })
 })
 
@@ -690,5 +691,152 @@ describe('snap behavior', () => {
     expect(screen.queryByTestId('snap-indicator')).toBeNull()
     const anchorCall = onUpdate.mock.calls.find((c) => c[0].startAnchor !== undefined)
     expect(anchorCall).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 12 — drag produces correct world-space deltas at any zoom level
+// ---------------------------------------------------------------------------
+
+describe('AC12: zoom-aware body drag', () => {
+  beforeEach(() => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+  })
+
+  it('halves the world-space position delta when zoom is 2 (body drag)', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const arrowEl: ArrowElementType = {
+      ...baseElement,
+      x1: 100,
+      y1: 100,
+      x2: 300,
+      y2: 100,
+      x: 99,
+      y: 99,
+      width: 202,
+      height: 2,
+    }
+    const onUpdate = vi.fn()
+    const { container } = render(
+      <ArrowElement
+        element={arrowEl}
+        isSelected={true}
+        onSelect={vi.fn()}
+        onUpdate={onUpdate}
+        allElements={[arrowEl]}
+      />
+    )
+    const wrapper = container.firstChild as HTMLElement
+    // 200px screen drag at zoom=2 → 100px world delta
+    fireEvent.mouseDown(wrapper, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 400, clientY: 200 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x1).toBe(200) // 100 + 200/2
+    expect(call.x2).toBe(400) // 300 + 200/2
+  })
+
+  it('doubles the world-space position delta when zoom is 0.5 (body drag)', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    const arrowEl: ArrowElementType = {
+      ...baseElement,
+      x1: 100,
+      y1: 100,
+      x2: 300,
+      y2: 100,
+      x: 99,
+      y: 99,
+      width: 202,
+      height: 2,
+    }
+    const onUpdate = vi.fn()
+    const { container } = render(
+      <ArrowElement
+        element={arrowEl}
+        isSelected={true}
+        onSelect={vi.fn()}
+        onUpdate={onUpdate}
+        allElements={[arrowEl]}
+      />
+    )
+    const wrapper = container.firstChild as HTMLElement
+    // 100px screen drag at zoom=0.5 → 200px world delta
+    fireEvent.mouseDown(wrapper, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(wrapper, { clientX: 300, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 300, clientY: 200 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x1).toBe(300) // 100 + 100/0.5
+    expect(call.x2).toBe(500) // 300 + 100/0.5
+  })
+})
+
+describe('AC12: zoom-aware endpoint drag', () => {
+  beforeEach(() => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+  })
+
+  it('halves the endpoint world-space delta when zoom is 2', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const arrowEl: ArrowElementType = {
+      ...baseElement,
+      x1: 100,
+      y1: 100,
+      x2: 300,
+      y2: 100,
+      x: 99,
+      y: 99,
+      width: 202,
+      height: 2,
+    }
+    const onUpdate = vi.fn()
+    render(
+      <ArrowElement
+        element={arrowEl}
+        isSelected={true}
+        onSelect={vi.fn()}
+        onUpdate={onUpdate}
+        allElements={[arrowEl]}
+      />
+    )
+    const endHandle = screen.getByTestId('endpoint-end')
+    // Drag end handle 200px right at zoom=2 → x2 moves 100px
+    fireEvent.mouseDown(endHandle, { clientX: 300, clientY: 100 })
+    fireEvent.mouseMove(window, { clientX: 500, clientY: 100 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x2).toBe(400) // 300 + 200/2
+  })
+
+  it('doubles the endpoint world-space delta when zoom is 0.5', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    const arrowEl: ArrowElementType = {
+      ...baseElement,
+      x1: 100,
+      y1: 100,
+      x2: 300,
+      y2: 100,
+      x: 99,
+      y: 99,
+      width: 202,
+      height: 2,
+    }
+    const onUpdate = vi.fn()
+    render(
+      <ArrowElement
+        element={arrowEl}
+        isSelected={true}
+        onSelect={vi.fn()}
+        onUpdate={onUpdate}
+        allElements={[arrowEl]}
+      />
+    )
+    const endHandle = screen.getByTestId('endpoint-end')
+    // Drag end handle 50px right at zoom=0.5 → x2 moves 100px
+    fireEvent.mouseDown(endHandle, { clientX: 300, clientY: 100 })
+    fireEvent.mouseMove(window, { clientX: 350, clientY: 100 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x2).toBe(400) // 300 + 50/0.5
   })
 })

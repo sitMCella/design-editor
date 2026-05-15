@@ -3,7 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { Toolbar } from './Toolbar'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
-import { SURFACE_WIDTH, SURFACE_HEIGHT } from './DesignSurface'
+
+const SURFACE_WIDTH = 1280
+const SURFACE_HEIGHT = 720
 
 beforeEach(() => {
   useCanvasStore.setState({ elements: [], selectedIds: [], isDirty: false })

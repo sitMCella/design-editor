@@ -1,7 +1,9 @@
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
 import type { TextElement, ImageElement, ArrowElement, TableElement } from '../../types/canvas'
-import { SURFACE_WIDTH, SURFACE_HEIGHT } from './DesignSurface'
+
+const SURFACE_WIDTH = 1280
+const SURFACE_HEIGHT = 720
 
 export function Toolbar() {
   const activeTool = useUIStore((s) => s.activeTool)

@@ -11,9 +11,6 @@ import type {
   TableElement as TableElementType,
 } from '../../types/canvas'
 
-export const SURFACE_WIDTH = 1280
-export const SURFACE_HEIGHT = 720
-
 export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_props, ref) {
   const elements = useCanvasStore((s) => s.elements)
   const selectedIds = useCanvasStore((s) => s.selectedIds)
@@ -22,17 +19,7 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
   const removeElements = useCanvasStore((s) => s.removeElements)
 
   return (
-    <div
-      ref={ref}
-      style={{
-        position: 'relative',
-        width: SURFACE_WIDTH,
-        height: SURFACE_HEIGHT,
-        background: '#ffffff',
-        flexShrink: 0,
-        boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-      }}
-    >
+    <div ref={ref} style={{ position: 'relative' }}>
       {elements.map((element) => {
         if (element.type === 'text') {
           return (

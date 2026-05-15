@@ -10,6 +10,9 @@ import { useThumbnail } from '../hooks/useThumbnail'
 
 const AUTOSAVE_DEBOUNCE_MS = 2000
 const AUTOSAVE_RETRY_MS = 10000
+const MIN_ZOOM = 0.1
+const MAX_ZOOM = 5
+const ZOOM_STEP = 1.25
 
 export function EditorPage() {
   const name = useCanvasStore((s) => s.name)
@@ -17,10 +20,13 @@ export function EditorPage() {
   const designId = useCanvasStore((s) => s.designId)
   const elements = useCanvasStore((s) => s.elements)
   const markSaved = useCanvasStore((s) => s.markSaved)
+  const zoom = useCanvasStore((s) => s.zoom)
+  const setZoom = useCanvasStore((s) => s.setZoom)
+  const setPan = useCanvasStore((s) => s.setPan)
   const navigate = useNavigate()
   const { designId: routeDesignId = '' } = useParams<{ designId: string }>()
-  const surfaceRef = useRef<HTMLDivElement>(null)
-  useThumbnail(routeDesignId, surfaceRef)
+  const worldRef = useRef<HTMLDivElement>(null)
+  useThumbnail(routeDesignId, worldRef)
 
   // Always-current refs so the mutationFn never closes over stale values
   const nameRef = useRef(name)
@@ -56,10 +62,6 @@ export function EditorPage() {
       saveRef.current()
     }, AUTOSAVE_DEBOUNCE_MS)
 
-    // Do NOT clear the timeout on cleanup — let it fire even if the
-    // component unmounts (e.g. the user closes the editor).  The mutation
-    // runs against the TanStack Query cache, not the component, so it is
-    // safe to execute after unmount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty, designId, name, elements])
 
@@ -72,19 +74,21 @@ export function EditorPage() {
     retryRef.current = setTimeout(() => {
       if (useCanvasStore.getState().isDirty) saveRef.current()
     }, AUTOSAVE_RETRY_MS)
-    // Same as the debounce effect: let the retry fire after unmount if needed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty, designId])
 
   const handleClose = () => {
-    // Cancel any pending debounce so we don't double-save.
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (retryRef.current) clearTimeout(retryRef.current)
-    // Flush immediately if there are unsaved changes.
-    if (isDirtyRef.current && designIdRef.current) {
-      saveRef.current()
-    }
+    if (isDirtyRef.current && designIdRef.current) saveRef.current()
     void navigate('/')
+  }
+
+  const handleZoomIn = () => setZoom(Math.min(MAX_ZOOM, zoom * ZOOM_STEP))
+  const handleZoomOut = () => setZoom(Math.max(MIN_ZOOM, zoom / ZOOM_STEP))
+  const handleZoomReset = () => {
+    setZoom(1)
+    setPan(0, 0)
   }
 
   return (
@@ -111,11 +115,39 @@ export function EditorPage() {
         </button>
         <span className="text-sm font-medium text-gray-700">{name}</span>
         {isDirty && <span className="text-xs text-gray-400">Unsaved changes</span>}
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            onClick={handleZoomOut}
+            disabled={zoom <= MIN_ZOOM}
+            title="Zoom out"
+            aria-label="Zoom out"
+            className="flex h-7 w-7 items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-40"
+          >
+            −
+          </button>
+          <button
+            onClick={handleZoomReset}
+            title="Reset zoom"
+            aria-label="Reset zoom to 100%"
+            className="h-7 min-w-[52px] rounded px-1 text-xs text-gray-600 hover:bg-gray-100"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            onClick={handleZoomIn}
+            disabled={zoom >= MAX_ZOOM}
+            title="Zoom in"
+            aria-label="Zoom in"
+            className="flex h-7 w-7 items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-40"
+          >
+            +
+          </button>
+        </div>
       </header>
       <ContextualToolbar />
       <div className="flex flex-1 overflow-hidden">
         <Toolbar />
-        <Canvas surfaceRef={surfaceRef} />
+        <Canvas worldRef={worldRef} />
       </div>
     </div>
   )

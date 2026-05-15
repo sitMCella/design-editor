@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { TextElement } from './TextElement'
 import type { TextElement as TextElementType } from '../../../types/canvas'
+import { useCanvasStore } from '../../../stores/canvasStore'
 
 const baseElement: TextElementType = {
   id: 'el-1',
@@ -469,39 +470,40 @@ describe('drag behaviour', () => {
     expect(document.querySelector('[contenteditable="true"]')).not.toBeInTheDocument()
   })
 
-  it('AC3: clamps x to 0 when dragged past the left edge', () => {
+  it('AC3: allows movement to negative x when dragged past the left edge', () => {
     const { container, onUpdate } = renderElement({ x: 50, y: 100 }, { isSelected: true })
     const el = container.firstChild as HTMLElement
-    // drag 200px left → would put x at -150, should clamp to 0
+    // drag 200px left → x = 50 - 200 = -150 (no clamping on infinite canvas)
     drag(el, { x: 300, y: 300 }, { x: 100, y: 300 })
     const lastCall = onUpdate.mock.calls.at(-1)![0]
-    expect(lastCall.x).toBe(0)
+    expect(lastCall.x).toBe(-150)
   })
 
-  it('AC3: clamps x to SURFACE_WIDTH - element.width when dragged past the right edge', () => {
+  it('AC3: allows movement beyond right surface bounds', () => {
     const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
     const el = container.firstChild as HTMLElement
-    // drag 2000px right → should clamp to 1280 - 160 = 1120
+    // drag 2000px right → x = 100 + 2000 = 2100 (no clamping on infinite canvas)
     drag(el, { x: 200, y: 200 }, { x: 2200, y: 200 })
     const lastCall = onUpdate.mock.calls.at(-1)![0]
-    expect(lastCall.x).toBe(1120)
+    expect(lastCall.x).toBe(2100)
   })
 
-  it('AC3: clamps y to 0 when dragged past the top edge', () => {
+  it('AC3: allows movement to negative y when dragged past the top edge', () => {
     const { container, onUpdate } = renderElement({ x: 100, y: 50 }, { isSelected: true })
     const el = container.firstChild as HTMLElement
+    // drag 200px up → y = 50 - 200 = -150 (no clamping on infinite canvas)
     drag(el, { x: 300, y: 300 }, { x: 300, y: 100 })
     const lastCall = onUpdate.mock.calls.at(-1)![0]
-    expect(lastCall.y).toBe(0)
+    expect(lastCall.y).toBe(-150)
   })
 
-  it('AC3: clamps y to SURFACE_HEIGHT - element.height when dragged past the bottom edge', () => {
+  it('AC3: allows movement beyond bottom surface bounds', () => {
     const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
     const el = container.firstChild as HTMLElement
-    // drag 2000px down → should clamp to 720 - 40 = 680
+    // drag 2000px down → y = 100 + 2000 = 2100 (no clamping on infinite canvas)
     drag(el, { x: 200, y: 200 }, { x: 200, y: 2200 })
     const lastCall = onUpdate.mock.calls.at(-1)![0]
-    expect(lastCall.y).toBe(680)
+    expect(lastCall.y).toBe(2100)
   })
 
   it('AC2: does not initiate drag when element is not selected', () => {
@@ -655,48 +657,48 @@ describe('AC5: resize behaviour', () => {
     expect(last.y).toBe(110)
   })
 
-  it('element cannot extend past the right edge of the design surface', () => {
-    // x=1100, drag br far right → max width = 1280 - 1100 = 180
+  it('element can extend past the right edge on infinite canvas', () => {
+    // x=1100, drag br far right → width = 100 + 500 = 600 (no surface clamp)
     const { onUpdate } = renderElement(
       { x: 1100, y: 100, width: 100, height: 40 },
       { isSelected: true }
     )
     resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 500, y: 0 })
     const last = onUpdate.mock.calls.at(-1)![0]
-    expect(last.width).toBe(180)
+    expect(last.width).toBe(600)
   })
 
-  it('element cannot extend past the bottom edge of the design surface', () => {
-    // y=700, drag br far down → max height = 720 - 700 = 20
+  it('element can extend past the bottom edge on infinite canvas', () => {
+    // y=700, drag br far down → height = 10 + 200 = 210 (no surface clamp)
     const { onUpdate } = renderElement(
       { x: 100, y: 700, width: 100, height: 10 },
       { isSelected: true }
     )
     resize(screen.getByTestId('resize-handle-br'), { x: 0, y: 0 }, { x: 0, y: 200 })
     const last = onUpdate.mock.calls.at(-1)![0]
-    expect(last.height).toBe(20)
+    expect(last.height).toBe(210)
   })
 
-  it('clamps x to 0 when tl handle is dragged past the left surface edge', () => {
-    // x=50; drag tl far left (dx=-200) → x = 50-200 = -150 → clamped to 0
+  it('tl handle allows x to go negative on infinite canvas', () => {
+    // x=50; drag tl far left (dx=-200) → x = 50-200 = -150 (no clamping)
     const { onUpdate } = renderElement(
       { x: 50, y: 100, width: 160, height: 40 },
       { isSelected: true }
     )
     resize(screen.getByTestId('resize-handle-tl'), { x: 200, y: 0 }, { x: 0, y: 0 })
     const last = onUpdate.mock.calls.at(-1)![0]
-    expect(last.x).toBe(0)
+    expect(last.x).toBe(-150)
   })
 
-  it('clamps y to 0 when tl handle is dragged past the top surface edge', () => {
-    // y=50; drag tl far up (dy=-200) → y = 50-200 = -150 → clamped to 0
+  it('tl handle allows y to go negative on infinite canvas', () => {
+    // y=50; drag tl far up (dy=-200) → y = 50-200 = -150 (no clamping)
     const { onUpdate } = renderElement(
       { x: 100, y: 50, width: 160, height: 40 },
       { isSelected: true }
     )
     resize(screen.getByTestId('resize-handle-tl'), { x: 0, y: 200 }, { x: 0, y: 0 })
     const last = onUpdate.mock.calls.at(-1)![0]
-    expect(last.y).toBe(0)
+    expect(last.y).toBe(-150)
   })
 
   it('does not call onSelect when a resize handle is dragged', () => {
@@ -729,5 +731,97 @@ describe('AC6: text reflow styles', () => {
     // jsdom reports height from the style attribute, not computed layout
     expect(el.style.height).toBe('40px')
     expect(el.style.minHeight).toBe('')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 12 — drag and resize produce correct world-space deltas at any zoom level
+// ---------------------------------------------------------------------------
+
+describe('AC12: zoom-aware drag', () => {
+  beforeEach(() => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+  })
+
+  it('halves the world-space position delta when zoom is 2 (drag)', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
+    const el = container.firstChild as HTMLElement
+    // 100px screen drag at zoom=2 → 50px world delta
+    fireEvent.mouseDown(el, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 300, clientY: 200 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x).toBe(150) // 100 + 100/2
+  })
+
+  it('doubles the world-space position delta when zoom is 0.5 (drag)', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
+    const el = container.firstChild as HTMLElement
+    // 100px screen drag at zoom=0.5 → 200px world delta
+    fireEvent.mouseDown(el, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 300, clientY: 200 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x).toBe(300) // 100 + 100/0.5
+  })
+
+  it('produces correct y-axis world delta at zoom=2 (drag)', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
+    const el = container.firstChild as HTMLElement
+    fireEvent.mouseDown(el, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 200, clientY: 360 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.y).toBe(180) // 100 + 160/2
+  })
+})
+
+describe('AC12: zoom-aware resize', () => {
+  beforeEach(() => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+  })
+
+  it('halves the width delta when zoom is 2 (br handle)', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const { onUpdate } = renderElement(
+      { x: 100, y: 100, width: 160, height: 40 },
+      { isSelected: true }
+    )
+    // 100px screen drag at zoom=2 → 50px world delta → width = 160 + 50 = 210
+    fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 100, clientY: 0 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.width).toBe(210)
+  })
+
+  it('doubles the width delta when zoom is 0.5 (br handle)', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    const { onUpdate } = renderElement(
+      { x: 100, y: 100, width: 160, height: 40 },
+      { isSelected: true }
+    )
+    // 50px screen drag at zoom=0.5 → 100px world delta → width = 160 + 100 = 260
+    fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 50, clientY: 0 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.width).toBe(260)
+  })
+
+  it('zoom=1 produces unscaled delta for baseline comparison', () => {
+    useCanvasStore.setState({ zoom: 1 })
+    const { onUpdate } = renderElement(
+      { x: 100, y: 100, width: 160, height: 40 },
+      { isSelected: true }
+    )
+    fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 60, clientY: 0 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.width).toBe(220) // 160 + 60/1
   })
 })
