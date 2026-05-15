@@ -115,7 +115,7 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects/proj-far' });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = response.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toMatchObject({ x: 3500, y: 2800 });
     });
 
@@ -144,7 +144,7 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects/proj-neg' });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = response.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toMatchObject({ x: -500, y: -300 });
     });
 
@@ -168,15 +168,66 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects/proj-edge' });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = response.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toMatchObject({ x: 3680, y: 2760 });
     });
 
     it('returns every element in a multi-element canvas with mixed coordinates, all verbatim', async () => {
       const elements = [
-        { id: 'e1', type: 'text', x: -200, y: -100, width: 160, height: 40, rotation: 0, opacity: 1, locked: false, content: 'A', fontSize: 16, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', color: '#111827', align: 'left' },
-        { id: 'e2', type: 'text', x: 0, y: 0, width: 160, height: 40, rotation: 0, opacity: 1, locked: false, content: 'B', fontSize: 16, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', color: '#111827', align: 'left' },
-        { id: 'e3', type: 'text', x: 5000, y: 4000, width: 160, height: 40, rotation: 0, opacity: 1, locked: false, content: 'C', fontSize: 16, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', color: '#111827', align: 'left' },
+        {
+          id: 'e1',
+          type: 'text',
+          x: -200,
+          y: -100,
+          width: 160,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          content: 'A',
+          fontSize: 16,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          color: '#111827',
+          align: 'left',
+        },
+        {
+          id: 'e2',
+          type: 'text',
+          x: 0,
+          y: 0,
+          width: 160,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          content: 'B',
+          fontSize: 16,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          color: '#111827',
+          align: 'left',
+        },
+        {
+          id: 'e3',
+          type: 'text',
+          x: 5000,
+          y: 4000,
+          width: 160,
+          height: 40,
+          rotation: 0,
+          opacity: 1,
+          locked: false,
+          content: 'C',
+          fontSize: 16,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          color: '#111827',
+          align: 'left',
+        },
       ];
 
       mockGetSuccess('proj-multi', { elements });
@@ -215,7 +266,7 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects/proj-huge' });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = response.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toEqual(element);
     });
   });
@@ -352,7 +403,7 @@ describe('Infinite Canvas — project routes (feat13)', () => {
 
       const getResponse = await app.inject({ method: 'GET', url: '/api/projects/proj-rt' });
       expect(getResponse.statusCode).toBe(200);
-      const body = getResponse.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = getResponse.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toEqual(element);
     });
   });
@@ -491,7 +542,7 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = response.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toMatchObject({
         x1: 540,
         y1: 360,
@@ -689,7 +740,7 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects/proj-arrow-large' });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = response.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toMatchObject({
         x1: 3000,
         y1: 2000,
@@ -841,8 +892,8 @@ describe('Infinite Canvas — project routes (feat13)', () => {
         startAnchor?: { elementId: string; side: string };
         endAnchor?: { elementId: string; side: string };
       };
-      expect(saved?.startAnchor).toEqual({ elementId: 'shape-left', side: 'center' });
-      expect(saved?.endAnchor).toEqual({ elementId: 'shape-right', side: 'top' });
+      expect(saved.startAnchor).toEqual({ elementId: 'shape-left', side: 'center' });
+      expect(saved.endAnchor).toEqual({ elementId: 'shape-right', side: 'top' });
     });
 
     it('PATCH → GET round-trip preserves the full extended arrow shape including anchors', async () => {
@@ -881,7 +932,7 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       const getResp = await app.inject({ method: 'GET', url: '/api/projects/proj-arrow-rt' });
       expect(getResp.statusCode).toBe(200);
 
-      const body = getResp.json<{ data: { canvas: { elements: typeof arrow[] } } }>();
+      const body = getResp.json<{ data: { canvas: { elements: (typeof arrow)[] } } }>();
       expect(body.data.canvas.elements[0]).toEqual(arrow);
     });
 
@@ -991,7 +1042,7 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects/proj-img-inf' });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = response.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toMatchObject({ x: -400, y: 1500 });
     });
 
@@ -1020,7 +1071,7 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects/proj-tbl-inf' });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = response.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toMatchObject({ x: 3200, y: 2500, type: 'table' });
     });
 
@@ -1199,7 +1250,9 @@ describe('Infinite Canvas — project routes (feat13)', () => {
       const response = await app.inject({ method: 'GET', url: '/api/projects/proj-legacy' });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ data: { canvas: { elements: { x: number; y: number; type: string }[] } } }>();
+      const body = response.json<{
+        data: { canvas: { elements: { x: number; y: number; type: string }[] } };
+      }>();
       expect(body.data.canvas.elements).toHaveLength(4);
       // Coordinates are unchanged — no migration or transformation applied
       expect(body.data.canvas.elements[0]).toMatchObject({ type: 'text', x: 560, y: 320 });
@@ -1240,32 +1293,70 @@ describe('Infinite Canvas — project routes (feat13)', () => {
 
       mockGetSuccess('proj-leg-rt', { elements: [element] });
       const getResp = await app.inject({ method: 'GET', url: '/api/projects/proj-leg-rt' });
-      const body = getResp.json<{ data: { canvas: { elements: typeof element[] } } }>();
+      const body = getResp.json<{ data: { canvas: { elements: (typeof element)[] } } }>();
       expect(body.data.canvas.elements[0]).toEqual(element);
     });
 
     it('multiple designs at different coordinate ranges are independent and each loads correctly', async () => {
       const canvasLegacy = {
         elements: [
-          { id: 'el-a', type: 'text', x: 640, y: 360, width: 160, height: 40, rotation: 0, opacity: 1, locked: false, content: 'Legacy', fontSize: 16, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', color: '#111827', align: 'left' },
+          {
+            id: 'el-a',
+            type: 'text',
+            x: 640,
+            y: 360,
+            width: 160,
+            height: 40,
+            rotation: 0,
+            opacity: 1,
+            locked: false,
+            content: 'Legacy',
+            fontSize: 16,
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 'normal',
+            fontStyle: 'normal',
+            color: '#111827',
+            align: 'left',
+          },
         ],
       };
       const canvasInfinite = {
         elements: [
-          { id: 'el-b', type: 'text', x: 5000, y: -800, width: 160, height: 40, rotation: 0, opacity: 1, locked: false, content: 'Infinite', fontSize: 16, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', color: '#111827', align: 'left' },
+          {
+            id: 'el-b',
+            type: 'text',
+            x: 5000,
+            y: -800,
+            width: 160,
+            height: 40,
+            rotation: 0,
+            opacity: 1,
+            locked: false,
+            content: 'Infinite',
+            fontSize: 16,
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 'normal',
+            fontStyle: 'normal',
+            color: '#111827',
+            align: 'left',
+          },
         ],
       };
 
       // GET design with legacy coordinates
       mockGetSuccess('proj-legacy2', canvasLegacy);
       const respLeg = await app.inject({ method: 'GET', url: '/api/projects/proj-legacy2' });
-      const bodyLeg = respLeg.json<{ data: { canvas: { elements: { x: number; y: number }[] } } }>();
+      const bodyLeg = respLeg.json<{
+        data: { canvas: { elements: { x: number; y: number }[] } };
+      }>();
       expect(bodyLeg.data.canvas.elements[0]).toMatchObject({ x: 640, y: 360 });
 
       // GET design with infinite-canvas coordinates
       mockGetSuccess('proj-infinite2', canvasInfinite);
       const respInf = await app.inject({ method: 'GET', url: '/api/projects/proj-infinite2' });
-      const bodyInf = respInf.json<{ data: { canvas: { elements: { x: number; y: number }[] } } }>();
+      const bodyInf = respInf.json<{
+        data: { canvas: { elements: { x: number; y: number }[] } };
+      }>();
       expect(bodyInf.data.canvas.elements[0]).toMatchObject({ x: 5000, y: -800 });
 
       // The two canvases are independent
