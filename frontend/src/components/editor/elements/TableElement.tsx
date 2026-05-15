@@ -7,6 +7,7 @@ type Props = {
   isSelected: boolean
   onSelect: (e: React.MouseEvent) => void
   onUpdate: (patch: Partial<TableElementType>) => void
+  onDragEnd?: (delta: { x: number; y: number }) => void
 }
 
 type Handle = 'tl' | 'tr' | 'bl' | 'br'
@@ -24,7 +25,7 @@ const handleStyles: Record<Handle, React.CSSProperties> = {
   br: { bottom: -5, right: -5, cursor: 'nwse-resize' },
 }
 
-export function TableElement({ element, isSelected, onSelect, onUpdate }: Props) {
+export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEnd }: Props) {
   const { x, y, width, height, rows, columns, opacity, rotation } = element
 
   // Backward-compat defaults for elements persisted before this feature
@@ -116,7 +117,13 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
       })
     }
 
-    const onMouseUp = () => {
+    const onMouseUp = (ev: MouseEvent) => {
+      if (isDraggingRef.current && dragStartRef.current) {
+        const zoom = useCanvasStore.getState().zoom
+        const deltaX = (ev.clientX - dragStartRef.current.mouseX) / zoom
+        const deltaY = (ev.clientY - dragStartRef.current.mouseY) / zoom
+        onDragEnd?.({ x: deltaX, y: deltaY })
+      }
       dragStartRef.current = null
       document.body.style.cursor = ''
       window.removeEventListener('mousemove', onMouseMove)
@@ -332,6 +339,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate }: Props)
       e.preventDefault()
       e.currentTarget.blur()
     } else if (e.key === 'Escape') {
+      e.preventDefault()
       // Revert content then blur — blur handler commits the original value (no-op)
       e.currentTarget.textContent = valueAtEntryRef.current
       e.currentTarget.blur()
