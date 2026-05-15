@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { DesignSurface } from './DesignSurface'
+import { CanvasScrollbar, SCROLLBAR_SIZE } from './CanvasScrollbar'
+import { computeVirtualBounds } from '../../utils/virtualBounds'
 
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 5
 const ZOOM_STEP = 1.25
+const MIN_THUMB_SIZE = 32
 
 type Props = {
   worldRef?: RefObject<HTMLDivElement | null>
@@ -15,6 +18,7 @@ export function Canvas({ worldRef }: Props) {
   const zoom = useCanvasStore((s) => s.zoom)
   const panX = useCanvasStore((s) => s.panX)
   const panY = useCanvasStore((s) => s.panY)
+  const elements = useCanvasStore((s) => s.elements)
   const setZoom = useCanvasStore((s) => s.setZoom)
   const setPan = useCanvasStore((s) => s.setPan)
   const clearSelection = useCanvasStore((s) => s.clearSelection)
@@ -24,6 +28,54 @@ export function Canvas({ worldRef }: Props) {
   const [spaceActive, setSpaceActive] = useState(false)
   const panStartRef = useRef<{ mouseX: number; mouseY: number; panX: number; panY: number } | null>(null)
   const isPanningRef = useRef(false)
+
+  // Container pixel size — drives scrollbar geometry. Tracked via ResizeObserver.
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 })
+  const containerSizeRef = useRef({ w: 0, h: 0 })
+
+  useLayoutEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const update = () => {
+      const size = { w: el.clientWidth, h: el.clientHeight }
+      containerSizeRef.current = size
+      setContainerSize(size)
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Viewport dimensions: subtract the scrollbar strip from the container.
+  const vpW = Math.max(0, containerSize.w - SCROLLBAR_SIZE)
+  const vpH = Math.max(0, containerSize.h - SCROLLBAR_SIZE)
+
+  // Virtual bounds: union of initial canvas, element bboxes (+padding), and current viewport.
+  const bounds = computeVirtualBounds(elements, panX, panY, zoom, vpW, vpH)
+
+  const totalScreenW = (bounds.right  - bounds.left) * zoom
+  const totalScreenH = (bounds.bottom - bounds.top)  * zoom
+
+  // Thumb visibility: hide when the entire virtual canvas fits in the viewport.
+  const hScrollVisible = vpW > 0 && totalScreenW > vpW
+  const vScrollVisible = vpH > 0 && totalScreenH > vpH
+
+  // Maximum scroll distances (screen pixels).
+  const maxScrollX = Math.max(0, totalScreenW - vpW)
+  const maxScrollY = Math.max(0, totalScreenH - vpH)
+
+  // Thumb sizes: proportional to (viewport / total), clamped to minimum.
+  const thumbW = vpW > 0 ? Math.min(vpW, Math.max(MIN_THUMB_SIZE, (vpW * vpW) / totalScreenW)) : MIN_THUMB_SIZE
+  const thumbH = vpH > 0 ? Math.min(vpH, Math.max(MIN_THUMB_SIZE, (vpH * vpH) / totalScreenH)) : MIN_THUMB_SIZE
+
+  // Current scroll offset: distance from virtual-canvas edge to viewport edge, in screen px.
+  const scrollX = -panX - bounds.left * zoom
+  const scrollY = -panY - bounds.top  * zoom
+
+  // Thumb positions along their respective tracks.
+  const thumbX = maxScrollX > 0 ? Math.max(0, Math.min(vpW - thumbW, (scrollX / maxScrollX) * (vpW - thumbW))) : 0
+  const thumbY = maxScrollY > 0 ? Math.max(0, Math.min(vpH - thumbH, (scrollY / maxScrollY) * (vpH - thumbH))) : 0
 
   // Non-passive wheel listener for zoom toward cursor
   useEffect(() => {
@@ -135,6 +187,71 @@ export function Canvas({ worldRef }: Props) {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Scrollbar helpers — always read fresh store state so callbacks never go stale
+  // ---------------------------------------------------------------------------
+
+  /** Recompute scrollbar geometry for one axis from current store + container state. */
+  const freshGeometry = useCallback((axis: 'h' | 'v') => {
+    const { panX: px, panY: py, zoom: z, elements: els } = useCanvasStore.getState()
+    const { w, h } = containerSizeRef.current
+    const vW = Math.max(0, w - SCROLLBAR_SIZE)
+    const vH = Math.max(0, h - SCROLLBAR_SIZE)
+    const b = computeVirtualBounds(els, px, py, z, vW, vH)
+
+    if (axis === 'h') {
+      const total = (b.right - b.left) * z
+      const thumb = Math.min(vW, Math.max(MIN_THUMB_SIZE, (vW * vW) / total))
+      const maxScroll = Math.max(0, total - vW)
+      const curScroll = -px - b.left * z
+      return { vp: vW, thumb, maxScroll, curScroll, edgeOffset: b.left, z }
+    } else {
+      const total = (b.bottom - b.top) * z
+      const thumb = Math.min(vH, Math.max(MIN_THUMB_SIZE, (vH * vH) / total))
+      const maxScroll = Math.max(0, total - vH)
+      const curScroll = -py - b.top * z
+      return { vp: vH, thumb, maxScroll, curScroll, edgeOffset: b.top, z }
+    }
+  }, [])
+
+  /** Horizontal thumb dragged to newOffset px from track start → update panX. */
+  const handleHThumbMove = useCallback((newOffset: number) => {
+    const { panY: py } = useCanvasStore.getState()
+    const g = freshGeometry('h')
+    const trackLen = g.vp - g.thumb
+    const newScroll = trackLen > 0 ? (newOffset / trackLen) * g.maxScroll : 0
+    setPan(-(newScroll + g.edgeOffset * g.z), py)
+  }, [freshGeometry, setPan])
+
+  /** Vertical thumb dragged to newOffset px from track start → update panY. */
+  const handleVThumbMove = useCallback((newOffset: number) => {
+    const { panX: px } = useCanvasStore.getState()
+    const g = freshGeometry('v')
+    const trackLen = g.vp - g.thumb
+    const newScroll = trackLen > 0 ? (newOffset / trackLen) * g.maxScroll : 0
+    setPan(px, -(newScroll + g.edgeOffset * g.z))
+  }, [freshGeometry, setPan])
+
+  /** Click on horizontal track → jump one viewport-width toward the clicked side. */
+  const handleHTrackClick = useCallback((clickPosPx: number) => {
+    const { panY: py } = useCanvasStore.getState()
+    const g = freshGeometry('h')
+    const curThumbX = g.maxScroll > 0 ? (g.curScroll / g.maxScroll) * (g.vp - g.thumb) : 0
+    const dir = clickPosPx < curThumbX ? -1 : 1
+    const newScroll = Math.max(0, Math.min(g.maxScroll, g.curScroll + dir * g.vp))
+    setPan(-(newScroll + g.edgeOffset * g.z), py)
+  }, [freshGeometry, setPan])
+
+  /** Click on vertical track → jump one viewport-height toward the clicked side. */
+  const handleVTrackClick = useCallback((clickPosPx: number) => {
+    const { panX: px } = useCanvasStore.getState()
+    const g = freshGeometry('v')
+    const curThumbY = g.maxScroll > 0 ? (g.curScroll / g.maxScroll) * (g.vp - g.thumb) : 0
+    const dir = clickPosPx < curThumbY ? -1 : 1
+    const newScroll = Math.max(0, Math.min(g.maxScroll, g.curScroll + dir * g.vp))
+    setPan(px, -(newScroll + g.edgeOffset * g.z))
+  }, [freshGeometry, setPan])
+
   return (
     <div
       ref={containerRef}
@@ -155,6 +272,43 @@ export function Canvas({ worldRef }: Props) {
       >
         <DesignSurface ref={worldRef} />
       </div>
+
+      {/* Horizontal scrollbar */}
+      <CanvasScrollbar
+        orientation="horizontal"
+        thumbSize={thumbW}
+        thumbOffset={thumbX}
+        trackLength={vpW}
+        visible={hScrollVisible}
+        onThumbMove={handleHThumbMove}
+        onTrackClick={handleHTrackClick}
+      />
+
+      {/* Vertical scrollbar */}
+      <CanvasScrollbar
+        orientation="vertical"
+        thumbSize={thumbH}
+        thumbOffset={thumbY}
+        trackLength={vpH}
+        visible={vScrollVisible}
+        onThumbMove={handleVThumbMove}
+        onTrackClick={handleVTrackClick}
+      />
+
+      {/* Corner fill at the intersection of the two scrollbar tracks (AC 29) */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          width: SCROLLBAR_SIZE,
+          height: SCROLLBAR_SIZE,
+          backgroundColor: '#E5E7EB',
+          zIndex: 10,
+        }}
+        aria-hidden="true"
+        data-testid="scrollbar-corner"
+      />
 
       {/* Space-pan overlay — sits on top and captures all pointer events when Space is held */}
       {spaceActive && (
