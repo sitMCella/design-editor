@@ -453,17 +453,36 @@ describe('AC7/8 — middle-mouse pan', () => {
     expect(useCanvasStore.getState().panY).toBe(50)
   })
 
-  it('left-mouse button does not initiate pan', () => {
+  it('left-mouse drag on canvas background initiates pan (AC1 feat14)', () => {
     useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
     const { container } = render(<Canvas />)
     const canvasEl = container.firstChild as HTMLElement
 
     fireEvent.mouseDown(canvasEl, { button: 0, clientX: 0, clientY: 0 })
+    // Exceed 4px threshold
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 100, clientY: 100, bubbles: true }))
 
-    // Pan should not change without Space held
+    // Background left-click drag now pans the viewport
+    expect(useCanvasStore.getState().panX).toBe(100)
+    expect(useCanvasStore.getState().panY).toBe(100)
+
+    // Clean up window listeners
+    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+  })
+
+  it('left-mouse drag under 4px threshold does not pan (AC2 feat14)', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.mouseDown(canvasEl, { button: 0, clientX: 0, clientY: 0 })
+    // Under 4px threshold — should not pan
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 2, clientY: 2, bubbles: true }))
+
     expect(useCanvasStore.getState().panX).toBe(0)
     expect(useCanvasStore.getState().panY).toBe(0)
+
+    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
   })
 
   it('pan has no boundary — allows large negative offsets', () => {

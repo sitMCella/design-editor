@@ -30,6 +30,14 @@ export function Canvas({ worldRef }: Props) {
     null
   )
   const isPanningRef = useRef(false)
+  const bgPanStartRef = useRef<{
+    mouseX: number
+    mouseY: number
+    panX: number
+    panY: number
+  } | null>(null)
+  const isBgPanningRef = useRef(false)
+  const suppressClickRef = useRef(false)
 
   // Container pixel size — drives scrollbar geometry. Tracked via ResizeObserver.
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 })
@@ -115,6 +123,9 @@ export function Canvas({ worldRef }: Props) {
         spaceDownRef.current = true
         setSpaceActive(true)
       }
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        clearSelection()
+      }
       const isMod = e.ctrlKey || e.metaKey
       if (!isMod) return
       if (e.key === '=' || e.key === '+') {
@@ -157,7 +168,7 @@ export function Canvas({ worldRef }: Props) {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
     }
-  }, [setZoom, setPan])
+  }, [setZoom, setPan, clearSelection])
 
   const startPan = useCallback(
     (clientX: number, clientY: number) => {
@@ -186,17 +197,59 @@ export function Canvas({ worldRef }: Props) {
   )
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Middle mouse button or Space+left click → pan
+    // Middle mouse button or Space+left click → existing pan
     if (e.button === 1 || (e.button === 0 && spaceDownRef.current)) {
       e.preventDefault()
       startPan(e.clientX, e.clientY)
+      return
+    }
+
+    // Plain left-click on canvas background (no Space, no Shift) → background drag-to-pan
+    const isBackground =
+      e.target === e.currentTarget || (e.target as HTMLElement).dataset.canvasBg === 'true'
+    if (e.button === 0 && !e.shiftKey && isBackground) {
+      const { panX: px, panY: py } = useCanvasStore.getState()
+      bgPanStartRef.current = { mouseX: e.clientX, mouseY: e.clientY, panX: px, panY: py }
+      isBgPanningRef.current = false
+
+      const onMove = (me: MouseEvent) => {
+        if (!bgPanStartRef.current) return
+        const dx = me.clientX - bgPanStartRef.current.mouseX
+        const dy = me.clientY - bgPanStartRef.current.mouseY
+        if (!isBgPanningRef.current && Math.hypot(dx, dy) < 4) return
+        if (!isBgPanningRef.current) {
+          isBgPanningRef.current = true
+          document.body.style.cursor = 'grabbing'
+        }
+        setPan(bgPanStartRef.current.panX + dx, bgPanStartRef.current.panY + dy)
+      }
+
+      const onUp = () => {
+        document.body.style.cursor = ''
+        if (isBgPanningRef.current) {
+          suppressClickRef.current = true
+        }
+        bgPanStartRef.current = null
+        isBgPanningRef.current = false
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+      }
+
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
     }
   }
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Suppress the click that follows a background pan drag
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false
+      return
+    }
     // Only clear selection on background clicks (target is the container, not an element inside)
     if (e.target === e.currentTarget || (e.target as HTMLElement).dataset.canvasBg === 'true') {
-      if (!isPanningRef.current) clearSelection()
+      // Shift+click on background: do not change selection (spec AC 9)
+      if (!isPanningRef.current && !e.shiftKey) clearSelection()
     }
   }
 

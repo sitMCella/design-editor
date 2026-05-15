@@ -21,6 +21,7 @@ type Actions = {
   updateElement: (id: string, patch: Partial<CanvasElement>) => void
   removeElements: (ids: string[]) => void
   selectElements: (ids: string[]) => void
+  toggleElementSelection: (id: string) => void
   clearSelection: () => void
   markSaved: () => void
   setZoom: (zoom: number) => void
@@ -117,6 +118,16 @@ export const useCanvasStore = create<State & Actions>()(
     selectElements: (ids) =>
       set((state) => {
         state.selectedIds = ids
+      }),
+
+    toggleElementSelection: (id) =>
+      set((state) => {
+        const idx = state.selectedIds.indexOf(id)
+        if (idx === -1) {
+          state.selectedIds.push(id)
+        } else {
+          state.selectedIds.splice(idx, 1)
+        }
       }),
 
     clearSelection: () =>
