@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { render, fireEvent } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { render, fireEvent, act } from '@testing-library/react'
 import { Canvas } from './Canvas'
 import { useCanvasStore } from '../../stores/canvasStore'
 import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
@@ -636,5 +636,93 @@ describe('AC24 — clicking the scrollbar track jumps one page', () => {
     fireEvent.mouseDown(track, { clientX: 0, clientY: 200 })
 
     expect(getByTestId('scrollbar-v')).toBeTruthy()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 25 — scrollbar thumb size shrinks as zoom increases, grows as zoom decreases
+// ---------------------------------------------------------------------------
+
+describe('AC25 — scrollbar thumb size is proportional to zoom', () => {
+  // Provide a non-zero container size so scrollbar geometry is meaningful.
+  // Canvas reads clientWidth/clientHeight via useLayoutEffect; mocking them
+  // makes the containerSize state update to { w: 800, h: 600 }.
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get: () => 800,
+    })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get: () => 600,
+    })
+    useCanvasStore.setState({ elements: [], panX: 0, panY: 0 })
+  })
+
+  afterEach(() => {
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get: () => 0,
+    })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get: () => 0,
+    })
+  })
+
+  it('horizontal thumb is narrower at zoom=2 than at zoom=1', () => {
+    useCanvasStore.setState({ zoom: 1 })
+    const { getByTestId } = render(<Canvas />)
+    const thumbAt1 = parseInt((getByTestId('scrollbar-h-thumb') as HTMLElement).style.width)
+
+    act(() => {
+      useCanvasStore.setState({ zoom: 2 })
+    })
+    const thumbAt2 = parseInt((getByTestId('scrollbar-h-thumb') as HTMLElement).style.width)
+
+    expect(thumbAt1).toBeGreaterThan(0)
+    expect(thumbAt2).toBeGreaterThan(0)
+    expect(thumbAt2).toBeLessThan(thumbAt1)
+  })
+
+  it('vertical thumb is shorter at zoom=2 than at zoom=1', () => {
+    useCanvasStore.setState({ zoom: 1 })
+    const { getByTestId } = render(<Canvas />)
+    const thumbAt1 = parseInt((getByTestId('scrollbar-v-thumb') as HTMLElement).style.height)
+
+    act(() => {
+      useCanvasStore.setState({ zoom: 2 })
+    })
+    const thumbAt2 = parseInt((getByTestId('scrollbar-v-thumb') as HTMLElement).style.height)
+
+    expect(thumbAt1).toBeGreaterThan(0)
+    expect(thumbAt2).toBeGreaterThan(0)
+    expect(thumbAt2).toBeLessThan(thumbAt1)
+  })
+
+  it('horizontal thumb grows when zoom decreases below 1', () => {
+    useCanvasStore.setState({ zoom: 1 })
+    const { getByTestId } = render(<Canvas />)
+    const thumbAt1 = parseInt((getByTestId('scrollbar-h-thumb') as HTMLElement).style.width)
+
+    act(() => {
+      useCanvasStore.setState({ zoom: 0.5 })
+    })
+    const thumbAt05 = parseInt((getByTestId('scrollbar-h-thumb') as HTMLElement).style.width)
+
+    expect(thumbAt05).toBeGreaterThan(thumbAt1)
+  })
+
+  it('vertical thumb grows when zoom decreases below 1', () => {
+    useCanvasStore.setState({ zoom: 1 })
+    const { getByTestId } = render(<Canvas />)
+    const thumbAt1 = parseInt((getByTestId('scrollbar-v-thumb') as HTMLElement).style.height)
+
+    act(() => {
+      useCanvasStore.setState({ zoom: 0.5 })
+    })
+    const thumbAt05 = parseInt((getByTestId('scrollbar-v-thumb') as HTMLElement).style.height)
+
+    expect(thumbAt05).toBeGreaterThan(thumbAt1)
   })
 })
