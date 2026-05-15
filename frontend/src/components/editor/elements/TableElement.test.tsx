@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { TableElement } from './TableElement'
 import type { TableElement as TableElementType } from '../../../types/canvas'
+import { useCanvasStore } from '../../../stores/canvasStore'
 
 const baseElement: TableElementType = {
   id: 'table-1',
@@ -707,5 +708,67 @@ describe('AC19: empty cell placeholder', () => {
     })
     const placeholder = container.querySelector('span')!
     expect(placeholder.style.color).toBe('rgb(156, 163, 175)')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 12 — drag and resize produce correct world-space deltas at any zoom level
+// ---------------------------------------------------------------------------
+
+describe('AC12: zoom-aware drag', () => {
+  beforeEach(() => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+  })
+
+  it('halves the world-space position delta when zoom is 2 (drag)', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
+    const el = container.firstChild as HTMLElement
+    // 200px screen drag at zoom=2 → 100px world delta
+    fireEvent.mouseDown(el, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 400, clientY: 200 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x).toBe(200) // 100 + 200/2
+  })
+
+  it('doubles the world-space position delta when zoom is 0.5 (drag)', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
+    const el = container.firstChild as HTMLElement
+    // 100px screen drag at zoom=0.5 → 200px world delta
+    fireEvent.mouseDown(el, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 300, clientY: 200 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x).toBe(300) // 100 + 100/0.5
+  })
+})
+
+describe('AC12: zoom-aware resize', () => {
+  beforeEach(() => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+  })
+
+  it('halves the width delta when zoom is 2 (br handle)', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const { onUpdate } = renderElement({ x: 100, y: 100, width: 400, height: 120 }, { isSelected: true })
+    // 100px screen drag at zoom=2 → 50px world delta → width = 400 + 50 = 450
+    fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 100, clientY: 0 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.width).toBe(450)
+  })
+
+  it('doubles the width delta when zoom is 0.5 (br handle)', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    const { onUpdate } = renderElement({ x: 100, y: 100, width: 400, height: 120 }, { isSelected: true })
+    // 50px screen drag at zoom=0.5 → 100px world delta → width = 400 + 100 = 500
+    fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 50, clientY: 0 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.width).toBe(500)
   })
 })

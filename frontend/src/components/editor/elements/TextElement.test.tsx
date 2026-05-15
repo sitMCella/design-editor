@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { TextElement } from './TextElement'
 import type { TextElement as TextElementType } from '../../../types/canvas'
+import { useCanvasStore } from '../../../stores/canvasStore'
 
 const baseElement: TextElementType = {
   id: 'el-1',
@@ -730,5 +731,88 @@ describe('AC6: text reflow styles', () => {
     // jsdom reports height from the style attribute, not computed layout
     expect(el.style.height).toBe('40px')
     expect(el.style.minHeight).toBe('')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 12 — drag and resize produce correct world-space deltas at any zoom level
+// ---------------------------------------------------------------------------
+
+describe('AC12: zoom-aware drag', () => {
+  beforeEach(() => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+  })
+
+  it('halves the world-space position delta when zoom is 2 (drag)', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
+    const el = container.firstChild as HTMLElement
+    // 100px screen drag at zoom=2 → 50px world delta
+    fireEvent.mouseDown(el, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 300, clientY: 200 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x).toBe(150) // 100 + 100/2
+  })
+
+  it('doubles the world-space position delta when zoom is 0.5 (drag)', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
+    const el = container.firstChild as HTMLElement
+    // 100px screen drag at zoom=0.5 → 200px world delta
+    fireEvent.mouseDown(el, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 300, clientY: 200 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.x).toBe(300) // 100 + 100/0.5
+  })
+
+  it('produces correct y-axis world delta at zoom=2 (drag)', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const { container, onUpdate } = renderElement({ x: 100, y: 100 }, { isSelected: true })
+    const el = container.firstChild as HTMLElement
+    fireEvent.mouseDown(el, { clientX: 200, clientY: 200 })
+    fireEvent.mouseMove(window, { clientX: 200, clientY: 360 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.y).toBe(180) // 100 + 160/2
+  })
+})
+
+describe('AC12: zoom-aware resize', () => {
+  beforeEach(() => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+  })
+
+  it('halves the width delta when zoom is 2 (br handle)', () => {
+    useCanvasStore.setState({ zoom: 2 })
+    const { onUpdate } = renderElement({ x: 100, y: 100, width: 160, height: 40 }, { isSelected: true })
+    // 100px screen drag at zoom=2 → 50px world delta → width = 160 + 50 = 210
+    fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 100, clientY: 0 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.width).toBe(210)
+  })
+
+  it('doubles the width delta when zoom is 0.5 (br handle)', () => {
+    useCanvasStore.setState({ zoom: 0.5 })
+    const { onUpdate } = renderElement({ x: 100, y: 100, width: 160, height: 40 }, { isSelected: true })
+    // 50px screen drag at zoom=0.5 → 100px world delta → width = 160 + 100 = 260
+    fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 50, clientY: 0 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.width).toBe(260)
+  })
+
+  it('zoom=1 produces unscaled delta for baseline comparison', () => {
+    useCanvasStore.setState({ zoom: 1 })
+    const { onUpdate } = renderElement({ x: 100, y: 100, width: 160, height: 40 }, { isSelected: true })
+    fireEvent.mouseDown(screen.getByTestId('resize-handle-br'), { clientX: 0, clientY: 0 })
+    fireEvent.mouseMove(window, { clientX: 60, clientY: 0 })
+    fireEvent.mouseUp(window)
+    const call = onUpdate.mock.calls.at(-1)![0]
+    expect(call.width).toBe(220) // 160 + 60/1
   })
 })
