@@ -774,12 +774,10 @@ describe('AC1–3 (feat14) — background left-click drag-to-pan', () => {
     const canvasEl = container.firstChild as HTMLElement
 
     fireEvent.mouseDown(canvasEl, { button: 0, clientX: 100, clientY: 100 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 140, clientY: 160, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 140, clientY: 160, bubbles: true }))
 
-    expect(useCanvasStore.getState().panX).toBe(50)  // 10 + 40
-    expect(useCanvasStore.getState().panY).toBe(80)  // 20 + 60
+    expect(useCanvasStore.getState().panX).toBe(50) // 10 + 40
+    expect(useCanvasStore.getState().panY).toBe(80) // 20 + 60
   })
 
   it('AC1: pan stops after mouseup — further movement does not update pan', () => {
@@ -790,9 +788,7 @@ describe('AC1–3 (feat14) — background left-click drag-to-pan', () => {
     fireEvent.mouseDown(canvasEl, { button: 0, clientX: 0, clientY: 0 })
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 300, clientY: 300, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 300, clientY: 300, bubbles: true }))
 
     expect(useCanvasStore.getState().panX).toBe(50)
     expect(useCanvasStore.getState().panY).toBe(50)
@@ -1028,9 +1024,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
     // Start at (200, 200), drag to (50, 80) — up and to the left
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 200, clientY: 200 })
     act(() => {
-      window.dispatchEvent(
-        new MouseEvent('mousemove', { clientX: 50, clientY: 80, bubbles: true })
-      )
+      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 80, bubbles: true }))
     })
 
     const marquee = getByTestId('marquee-rect') as HTMLElement
@@ -1069,9 +1063,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
     const canvasEl = container.firstChild as HTMLElement
 
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 90, clientY: 90 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 
     expect(useCanvasStore.getState().selectedIds).toContain('el-inside')
@@ -1087,9 +1079,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
     const canvasEl = container.firstChild as HTMLElement
 
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 90, clientY: 90 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 
     expect(useCanvasStore.getState().selectedIds).not.toContain('el-partial')
@@ -1110,9 +1100,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
     const canvasEl = container.firstChild as HTMLElement
 
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 90, clientY: 90 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 
     expect(useCanvasStore.getState().selectedIds).toContain('inside')
@@ -1135,9 +1123,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
     const canvasEl = container.firstChild as HTMLElement
 
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 90, clientY: 90 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 
     expect(useCanvasStore.getState().selectedIds).not.toContain('locked-el')
@@ -1159,9 +1145,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
     const canvasEl = container.firstChild as HTMLElement
 
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 90, clientY: 90 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 160, clientY: 160, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 
     // Pre-existing selection should still contain 'far-el'
@@ -1205,9 +1189,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
 
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 50, clientY: 50 })
     // Move only 2px — under the 4px threshold
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 52, clientY: 51, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 52, clientY: 51, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 
     // No marquee was committed → no selection change
@@ -1233,9 +1215,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
     const canvasEl = container.firstChild as HTMLElement
 
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 50, clientY: 50 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 150, clientY: 150, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 150, clientY: 150, bubbles: true }))
 
     expect(document.body.style.cursor).toBe('crosshair')
   })
@@ -1245,9 +1225,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
     const canvasEl = container.firstChild as HTMLElement
 
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 50, clientY: 50 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 150, clientY: 150, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 150, clientY: 150, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 
     expect(document.body.style.cursor).toBe('')
@@ -1264,9 +1242,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
 
     // First marquee: selects el-1
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 0, clientY: 0 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 50, clientY: 50, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 
     expect(useCanvasStore.getState().selectedIds).toContain('el-1')
@@ -1274,9 +1250,7 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
 
     // Second marquee: adds el-2 without removing el-1
     fireEvent.mouseDown(canvasEl, { button: 0, shiftKey: true, clientX: 190, clientY: 190 })
-    window.dispatchEvent(
-      new MouseEvent('mousemove', { clientX: 240, clientY: 240, bubbles: true })
-    )
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 240, clientY: 240, bubbles: true }))
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
 
     expect(useCanvasStore.getState().selectedIds).toContain('el-1')

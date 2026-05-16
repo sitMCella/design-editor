@@ -75,7 +75,14 @@ function ArrowMarkers({
 // Component
 // ---------------------------------------------------------------------------
 
-export function ArrowElement({ element, isSelected, onSelect, onUpdate, allElements, onDragEnd }: Props) {
+export function ArrowElement({
+  element,
+  isSelected,
+  onSelect,
+  onUpdate,
+  allElements,
+  onDragEnd,
+}: Props) {
   const {
     id,
     x,

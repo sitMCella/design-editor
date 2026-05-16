@@ -32,7 +32,7 @@ async function dragBy(
   from: ReturnType<Page['locator']>,
   dx: number,
   dy: number,
-  steps = 20,
+  steps = 20
 ) {
   const box = await from.boundingBox()
   const cx = box!.x + box!.width / 2
@@ -67,7 +67,7 @@ async function shiftDragBackground(
   startY: number,
   dx: number,
   dy: number,
-  steps = 20,
+  steps = 20
 ) {
   await page.keyboard.down('Shift')
   await page.mouse.move(startX, startY)
@@ -795,7 +795,7 @@ test.describe('14 – Mouse Gestures', () => {
       t1Box!.x - 20,
       t1Box!.y - 20,
       t1Box!.width + 40,
-      t1Box!.height + 40,
+      t1Box!.height + 40
     )
     await page.waitForTimeout(100)
 
@@ -810,7 +810,7 @@ test.describe('14 – Mouse Gestures', () => {
       t2Box!.x - 20,
       t2Box!.y - 20,
       t2Box!.width + 40,
-      t2Box!.height + 40,
+      t2Box!.height + 40
     )
     await page.waitForTimeout(100)
 

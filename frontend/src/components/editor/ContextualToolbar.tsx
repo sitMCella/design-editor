@@ -525,10 +525,7 @@ export function ContextualToolbar() {
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <TextToolbar
-          element={refElement as TextElement}
-          update={(patch) => updateAll(patch)}
-        />
+        <TextToolbar element={refElement as TextElement} update={(patch) => updateAll(patch)} />
       </div>
     )
   }
@@ -539,10 +536,7 @@ export function ContextualToolbar() {
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <ImageToolbar
-          element={refElement as ImageElement}
-          update={(patch) => updateAll(patch)}
-        />
+        <ImageToolbar element={refElement as ImageElement} update={(patch) => updateAll(patch)} />
       </div>
     )
   }
@@ -553,10 +547,7 @@ export function ContextualToolbar() {
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <ArrowToolbar
-          element={refElement as ArrowElement}
-          update={(patch) => updateAll(patch)}
-        />
+        <ArrowToolbar element={refElement as ArrowElement} update={(patch) => updateAll(patch)} />
       </div>
     )
   }
@@ -567,10 +558,7 @@ export function ContextualToolbar() {
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <TableToolbar
-          element={refElement as TableElement}
-          update={(patch) => updateAll(patch)}
-        />
+        <TableToolbar element={refElement as TableElement} update={(patch) => updateAll(patch)} />
       </div>
     )
   }

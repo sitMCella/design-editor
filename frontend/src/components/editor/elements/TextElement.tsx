@@ -31,7 +31,14 @@ const handleStyles: Record<Handle, React.CSSProperties> = {
   br: { bottom: -5, right: -5, cursor: 'nwse-resize' },
 }
 
-export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove, onDragEnd }: Props) {
+export function TextElement({
+  element,
+  isSelected,
+  onSelect,
+  onUpdate,
+  onRemove,
+  onDragEnd,
+}: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const editRef = useRef<HTMLDivElement>(null)
   const dragStartRef = useRef<DragStart | null>(null)

@@ -3,10 +3,7 @@ import { render, fireEvent } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DesignSurface } from './DesignSurface'
 import { useCanvasStore } from '../../stores/canvasStore'
-import type {
-  TextElement,
-  ArrowElement as ArrowElementType,
-} from '../../types/canvas'
+import type { TextElement, ArrowElement as ArrowElementType } from '../../types/canvas'
 
 const makeTextElement = (id: string, overrides: Partial<TextElement> = {}): TextElement => ({
   id,
@@ -28,7 +25,10 @@ const makeTextElement = (id: string, overrides: Partial<TextElement> = {}): Text
   ...overrides,
 })
 
-const makeArrowElement = (id: string, overrides: Partial<ArrowElementType> = {}): ArrowElementType => ({
+const makeArrowElement = (
+  id: string,
+  overrides: Partial<ArrowElementType> = {}
+): ArrowElementType => ({
   id,
   type: 'arrow',
   x1: 100,
