@@ -123,7 +123,9 @@ export function EditorPage() {
   if (status === 'error') {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-gray-50">
-        <p className="text-sm text-gray-600">Could not load the design. It may have been deleted or the server is unavailable.</p>
+        <p className="text-sm text-gray-600">
+          Could not load the design. It may have been deleted or the server is unavailable.
+        </p>
         <button
           onClick={() => navigate('/')}
           className="rounded bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"

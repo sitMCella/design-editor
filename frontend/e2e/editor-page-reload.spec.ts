@@ -41,20 +41,17 @@ const PROJECT_WITH_ELEMENTS = {
 // In Playwright, routes are matched LIFO so this takes precedence over the
 // default handler registered by mockApiRoutes.
 async function mockProjectGet(page: Page, project: typeof PROJECT_WITH_ELEMENTS) {
-  await page.route(
-    new RegExp(`/api/projects/${project.id}$`),
-    async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ ok: true, data: project }),
-        })
-        return
-      }
-      await route.continue()
-    },
-  )
+  await page.route(new RegExp(`/api/projects/${project.id}$`), async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, data: project }),
+      })
+      return
+    }
+    await route.continue()
+  })
 }
 
 // Override GET /api/projects/:id to fail with 404.

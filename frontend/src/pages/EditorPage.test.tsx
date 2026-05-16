@@ -611,7 +611,12 @@ describe('AC19 (feat07) — direct URL navigation restores the project', () => {
   })
 
   it('fetches the project when the store holds a stale design from a previous session', async () => {
-    useCanvasStore.setState({ designId: 'old-design', name: 'Old Design', elements: [], isDirty: false })
+    useCanvasStore.setState({
+      designId: 'old-design',
+      name: 'Old Design',
+      elements: [],
+      isDirty: false,
+    })
     mockGetProject.mockResolvedValue(RELOADED_PROJECT)
     const queryClient = makeQueryClient()
     const router = createMemoryRouter(
