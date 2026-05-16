@@ -602,16 +602,18 @@ export function ContextualToolbar() {
 
       <div className={`flex flex-1 items-center gap-2 ${isDimmed ? 'opacity-40' : ''}`}>
         {controls}
-        <button
-          aria-label="Delete"
-          title="Delete"
-          onClick={() => {
-            if (selectedIds.length > 0) removeElements(selectedIds)
-          }}
-          className="ml-auto flex h-6 w-6 items-center justify-center rounded border-l border-gray-200 pl-2 text-gray-500 hover:bg-red-50 hover:text-red-500"
-        >
-          <TrashIcon />
-        </button>
+        <div className="ml-auto flex items-center border-l border-gray-200 pl-2">
+          <button
+            aria-label="Delete"
+            title="Delete"
+            onClick={() => {
+              if (selectedIds.length > 0) removeElements(selectedIds)
+            }}
+            className="flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-red-50 hover:text-red-500"
+          >
+            <TrashIcon />
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center border-l border-gray-200 pl-2">
