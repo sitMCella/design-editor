@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { fireEvent } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { LayerRow } from './LayerRow'
 import type { TextElement, ImageElement, ArrowElement, TableElement } from '../../types/canvas'
 
