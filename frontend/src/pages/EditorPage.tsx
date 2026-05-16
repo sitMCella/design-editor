@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
 import { Canvas } from '../components/editor/Canvas'
 import { ContextualToolbar } from '../components/editor/ContextualToolbar'
 import { Toolbar } from '../components/editor/Toolbar'
 import { useCanvasStore } from '../stores/canvasStore'
-import { patchProject } from '../api/projects'
+import { getProject, patchProject } from '../api/projects'
 import { useThumbnail } from '../hooks/useThumbnail'
 
 const AUTOSAVE_DEBOUNCE_MS = 2000
@@ -20,6 +20,7 @@ export function EditorPage() {
   const designId = useCanvasStore((s) => s.designId)
   const elements = useCanvasStore((s) => s.elements)
   const markSaved = useCanvasStore((s) => s.markSaved)
+  const loadDesign = useCanvasStore((s) => s.loadDesign)
   const zoom = useCanvasStore((s) => s.zoom)
   const setZoom = useCanvasStore((s) => s.setZoom)
   const setPan = useCanvasStore((s) => s.setPan)
@@ -27,6 +28,32 @@ export function EditorPage() {
   const navigate = useNavigate()
   const worldRef = useRef<HTMLDivElement>(null)
   useThumbnail(routeDesignId, worldRef)
+
+  // 'loading' while fetching on reload; 'error' if fetch fails; 'ready' otherwise
+  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>(
+    designId === routeDesignId ? 'ready' : 'loading'
+  )
+
+  // On mount: if the store doesn't already hold this project, fetch it
+  useEffect(() => {
+    if (designId === routeDesignId) {
+      setStatus('ready')
+      return
+    }
+    let cancelled = false
+    getProject(routeDesignId)
+      .then((project) => {
+        if (cancelled) return
+        loadDesign(project.id, project.name, project.canvas.elements)
+        setStatus('ready')
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('error')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [routeDesignId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Always-current refs so the mutationFn never closes over stale values
   const nameRef = useRef(name)
@@ -79,6 +106,28 @@ export function EditorPage() {
   const handleZoomReset = () => {
     setZoom(1)
     setPan(0, 0)
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-gray-50">
+        <p className="text-sm text-gray-600">Could not load the design. It may have been deleted or the server is unavailable.</p>
+        <button
+          onClick={() => navigate('/')}
+          className="rounded bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
+        >
+          Go home
+        </button>
+      </div>
+    )
   }
 
   return (
