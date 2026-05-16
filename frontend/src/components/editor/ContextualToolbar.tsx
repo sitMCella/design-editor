@@ -1,7 +1,9 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef } from 'react'
 import { flushSync } from 'react-dom'
+import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useCanvasStore } from '../../stores/canvasStore'
+import { useUIStore } from '../../stores/uiStore'
 import type { TextElement, ImageElement, ArrowElement, TableElement } from '../../types/canvas'
 import { fetchAssetFromUrl } from '../../api/assets'
 
@@ -43,12 +45,10 @@ function TextToolbar({
   }
 
   const execInline = (command: string, value?: string): boolean => {
-    // contentEditable is currently focused — selection is preserved (bold/italic use preventDefault)
     if (document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable) {
       document.execCommand(command, false, value)
       return true
     }
-    // Selection was saved before the color picker stole focus
     if (savedRangeRef.current) {
       const node = savedRangeRef.current.commonAncestorContainer
       const el = node.nodeType === Node.TEXT_NODE ? (node as Text).parentElement : (node as Element)
@@ -237,7 +237,6 @@ function ImageToolbar({
     const reader = new FileReader()
     reader.onload = () => update({ src: reader.result as string })
     reader.readAsDataURL(file)
-    // Reset so the same file can be re-selected if needed
     e.target.value = ''
   }
 
@@ -310,9 +309,6 @@ function ArrowToolbar({
 }) {
   const colorRef = useRef<HTMLInputElement>(null)
 
-  // Use a native event listener with flushSync so that programmatically
-  // dispatched 'change' events (e.g. from Playwright evaluate()) cause a
-  // synchronous React commit before control returns to the caller.
   useEffect(() => {
     const el = colorRef.current
     if (!el) return
@@ -491,77 +487,111 @@ function TableToolbar({
 }
 
 // ---------------------------------------------------------------------------
+// Pin icon
+// ---------------------------------------------------------------------------
+
+function PinIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+    </svg>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Shell
 // ---------------------------------------------------------------------------
+
+type Snapshot = TextElement | ImageElement | ArrowElement | TableElement
 
 export function ContextualToolbar() {
   const elements = useCanvasStore((s) => s.elements)
   const selectedIds = useCanvasStore((s) => s.selectedIds)
   const updateElement = useCanvasStore((s) => s.updateElement)
+  const isToolbarPinned = useUIStore((s) => s.isToolbarPinned)
+  const toggleToolbarPin = useUIStore((s) => s.toggleToolbarPin)
 
-  if (selectedIds.length === 0) return null
+  // Snapshot of the last valid (non-empty, non-mixed-type) selected element.
+  // Updated synchronously during render so dimmed state shows correct content
+  // on the same render cycle that the selection is cleared.
+  const snapshotRef = useRef<Snapshot | null>(null)
 
   const selectedElements = selectedIds
     .map((id) => elements.find((e) => e.id === id))
-    .filter(Boolean) as (TextElement | ImageElement | ArrowElement | TableElement)[]
+    .filter(Boolean) as Snapshot[]
 
-  if (selectedElements.length === 0) return null
+  const firstType = selectedElements[0]?.type
+  const isLive =
+    selectedElements.length > 0 && selectedElements.every((el) => el.type === firstType)
+  const refElement = isLive ? selectedElements[0] : null
 
-  // Hide toolbar when selection contains mixed element types
-  const firstType = selectedElements[0].type
-  const allSameType = selectedElements.every((el) => el.type === firstType)
-  if (!allSameType) return null
+  // Keep snapshot in sync with the live element (synchronous ref update, no re-render cost)
+  if (refElement) {
+    snapshotRef.current = refElement
+  }
 
-  // Apply a patch to ALL selected elements of the same type
-  const updateAll = (patch: Partial<TextElement | ImageElement | ArrowElement | TableElement>) => {
+  const isDimmed = isToolbarPinned && !isLive
+  const displayElement = isLive ? refElement : snapshotRef.current
+
+  // Not pinned and no live selection → hidden; no layout space consumed
+  if (!isToolbarPinned && !isLive) return null
+
+  const updateAll = (patch: Partial<Snapshot>) => {
     selectedIds.forEach((id) => updateElement(id, patch as Parameters<typeof updateElement>[1]))
   }
 
-  const refElement = selectedElements[0]
-
-  if (refElement.type === 'text') {
-    return (
-      <div
-        data-testid="contextual-toolbar"
-        className="flex h-10 items-center gap-2 border-b bg-white px-3"
-      >
-        <TextToolbar element={refElement as TextElement} update={(patch) => updateAll(patch)} />
-      </div>
+  let controls: React.ReactNode = null
+  if (displayElement?.type === 'text') {
+    controls = (
+      <TextToolbar element={displayElement} update={(p) => updateAll(p as Partial<Snapshot>)} />
+    )
+  } else if (displayElement?.type === 'image') {
+    controls = (
+      <ImageToolbar element={displayElement} update={(p) => updateAll(p as Partial<Snapshot>)} />
+    )
+  } else if (displayElement?.type === 'arrow') {
+    controls = (
+      <ArrowToolbar element={displayElement} update={(p) => updateAll(p as Partial<Snapshot>)} />
+    )
+  } else if (displayElement?.type === 'table') {
+    controls = (
+      <TableToolbar element={displayElement} update={(p) => updateAll(p as Partial<Snapshot>)} />
     )
   }
 
-  if (refElement.type === 'image') {
-    return (
-      <div
-        data-testid="contextual-toolbar"
-        className="flex h-10 items-center gap-2 border-b bg-white px-3"
-      >
-        <ImageToolbar element={refElement as ImageElement} update={(patch) => updateAll(patch)} />
-      </div>
-    )
-  }
+  return (
+    <div
+      data-testid="contextual-toolbar"
+      className="relative flex h-10 items-center gap-2 border-b bg-white px-3"
+    >
+      {/* Transparent overlay that blocks pointer events on the controls area when dimmed.
+          right: 2.5rem leaves the pin button interactive at all times. */}
+      {isDimmed && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0"
+          style={{ right: '2.5rem', pointerEvents: 'all' }}
+        />
+      )}
 
-  if (refElement.type === 'arrow') {
-    return (
-      <div
-        data-testid="contextual-toolbar"
-        className="flex h-10 items-center gap-2 border-b bg-white px-3"
-      >
-        <ArrowToolbar element={refElement as ArrowElement} update={(patch) => updateAll(patch)} />
+      <div className={`flex flex-1 items-center gap-2 ${isDimmed ? 'opacity-40' : ''}`}>
+        {controls}
       </div>
-    )
-  }
 
-  if (refElement.type === 'table') {
-    return (
-      <div
-        data-testid="contextual-toolbar"
-        className="flex h-10 items-center gap-2 border-b bg-white px-3"
-      >
-        <TableToolbar element={refElement as TableElement} update={(patch) => updateAll(patch)} />
+      <div className="flex items-center border-l border-gray-200 pl-2">
+        <button
+          aria-label={isToolbarPinned ? 'Unpin toolbar' : 'Pin toolbar'}
+          title={isToolbarPinned ? 'Unpin toolbar' : 'Pin toolbar'}
+          onClick={toggleToolbarPin}
+          className={`flex h-6 w-6 items-center justify-center rounded ${
+            isToolbarPinned
+              ? 'bg-blue-50 text-blue-500'
+              : 'text-gray-400 hover:bg-gray-100'
+          }`}
+        >
+          <PinIcon />
+        </button>
       </div>
-    )
-  }
-
-  return null
+    </div>
+  )
 }
