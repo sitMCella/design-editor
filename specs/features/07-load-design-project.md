@@ -16,6 +16,9 @@ Extend the home page to display a grid of previously saved design projects fetch
 - Error notification when a project fails to load
 - Canvas store action `loadDesign` that restores id, name, and full element array
 
+**In scope** (continued)
+- Full browser reload of `/editor/:designId`: `EditorPage` reads `designId` from the URL, calls `GET /api/projects/:id`, and hydrates the canvas store via `loadDesign` before rendering the canvas
+
 **Out of scope**
 - Deleting or renaming projects from the home page
 - Pagination or infinite scroll inside the "All designs" modal
@@ -134,6 +137,7 @@ Rendered when the user clicks "View all designs (N)". It overlays the home page 
 | Project load succeeds | Canvas store hydrated via `loadDesign`; navigate to `/editor/:designId` |
 | Project load fails | Error notification shown; card returns to normal state |
 | Click "New design" | Existing modal flow (unchanged) |
+| Full page reload while on `/editor/:designId` | `EditorPage` reads `designId` from URL params; shows a full-page loading indicator; calls `GET /api/projects/:id`; on success hydrates the store via `loadDesign` and renders the canvas; on failure shows an error message with a "Go home" link |
 
 ---
 
@@ -233,8 +237,16 @@ export function getProject(id: string): Promise<Project> {
 | Project load error | Local `useState<string \| null>` in `HomePage` |
 | "All designs" modal open/closed | Local `useState<boolean>` in `HomePage` |
 | Canvas hydration | `loadDesign` action on canvas store |
+| Editor page reload loading state | Local `useState<'loading' \| 'error' \| 'ready'>` in `EditorPage` |
 
 The TanStack Query key `['designs']` is invalidated after a successful `POST /api/projects` (new design creation), so the list refreshes automatically when the user returns to the home page after creating a design.
+
+### Editor page reload
+
+`EditorPage` must handle two entry paths:
+
+1. **Navigated from home** — the canvas store is already hydrated by `initDesign` or `loadDesign` before navigation; the page renders immediately.
+2. **Direct load / browser reload** — the canvas store is empty on mount. `EditorPage` reads `designId` from `useParams` and, on mount, checks whether the store's `designId` matches. If it does not match, it calls `GET /api/projects/:id`, then `loadDesign`. While the request is in flight the entire editor area shows a centered spinner. On failure an error state is shown with a "Go home" link that navigates to `/`.
 
 ---
 
@@ -259,6 +271,7 @@ Implement with a small utility function (`src/utils/relativeDate.ts`) — do not
 | Component | Location | Responsibility |
 |---|---|---|
 | `HomePage` | `src/pages/HomePage.tsx` | Extended: fetches project list; slices to 6 for the grid; renders "View all" link; manages modal open state; handles card click → load flow |
+| `EditorPage` | `src/pages/EditorPage.tsx` | Extended: on mount, if canvas store `designId` does not match the URL param, fetches the project via `GET /api/projects/:id` and calls `loadDesign`; shows a full-page spinner during load and an error state on failure |
 | `ProjectCard` | `src/components/ProjectCard.tsx` | Renders card UI (placeholder, name, subtitle); accepts loading prop for spinner overlay |
 | `ProjectCardSkeleton` | `src/components/ProjectCardSkeleton.tsx` | Grey placeholder card shown during list fetch |
 | `AllDesignsModal` | `src/components/AllDesignsModal.tsx` | Modal overlay that renders the full project list using `ProjectCard`; handles close on ✕, outside click, and Escape |
@@ -309,3 +322,6 @@ frontend/
 14. Creating a new design and returning to the home page shows the newly created project in the list (and updates the "View all" count if applicable).
 15. Multiple projects load independently; navigating between them restores each one's distinct canvas state.
 16. Every project stored in the database is openable from the home page regardless of how many projects exist. Projects within the 6-card cap open directly from the grid. Projects beyond the cap open via the "All designs" modal. In both cases clicking the card fully loads the project: the canvas store is hydrated with the project's complete element array and the editor navigates to `/editor/:designId` with `isDirty = false`.
+17. Performing a full browser reload while on `/editor/:designId` shows a full-page spinner, calls `GET /api/projects/:id`, and restores the canvas exactly as last saved — all elements, positions, sizes, and content are intact — with `isDirty = false`.
+18. If the project fetch fails during a reload of `/editor/:designId`, an error message is displayed with a "Go home" link; the canvas is not rendered in a broken or blank state.
+19. Navigating directly to `/editor/:designId` via the address bar (without coming from the home page) behaves identically to a browser reload — the project is fetched and the canvas is fully restored.
