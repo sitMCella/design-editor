@@ -4,13 +4,16 @@ import { createMemoryRouter, RouterProvider } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { EditorPage } from './EditorPage'
 import { useCanvasStore } from '../stores/canvasStore'
-import { patchProject } from '../api/projects'
+import { getProject, patchProject } from '../api/projects'
+import type { TextElement } from '../types/canvas'
 
 vi.mock('../api/projects', () => ({
   patchProject: vi.fn(),
+  getProject: vi.fn(),
 }))
 
 const mockPatchProject = vi.mocked(patchProject)
+const mockGetProject = vi.mocked(getProject)
 
 const mockNavigate = vi.fn()
 
@@ -23,12 +26,17 @@ function makeQueryClient() {
   return new QueryClient({ defaultOptions: { mutations: { retry: false } } })
 }
 
+// Wraps EditorPage at /editor/:designId with the route matching the store's
+// current designId — guarantees status starts as 'ready' in existing tests.
+// Falls back to 'test-id' when the store has an empty designId so the route
+// segment is always non-empty (avoids a React Router 404 in edge-case tests).
 function renderEditor() {
+  const storeDesignId = useCanvasStore.getState().designId || 'test-id'
   const queryClient = makeQueryClient()
   const router = createMemoryRouter(
     [
       {
-        path: '/',
+        path: '/editor/:designId',
         element: (
           <QueryClientProvider client={queryClient}>
             <EditorPage />
@@ -36,15 +44,75 @@ function renderEditor() {
         ),
       },
     ],
-    { initialEntries: ['/'] }
+    { initialEntries: [`/editor/${storeDesignId}`] }
   )
   render(<RouterProvider router={router} />)
+}
+
+// Simulates a reload or direct URL navigation: the store is blank and the
+// route carries a designId that the store does not yet know about.
+function renderEditorOnReload(routeId: string) {
+  useCanvasStore.setState({
+    designId: '',
+    name: 'Untitled Design',
+    elements: [],
+    selectedIds: [],
+    isDirty: false,
+  })
+  const queryClient = makeQueryClient()
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/editor/:designId',
+        element: (
+          <QueryClientProvider client={queryClient}>
+            <EditorPage />
+          </QueryClientProvider>
+        ),
+      },
+    ],
+    { initialEntries: [`/editor/${routeId}`] }
+  )
+  render(<RouterProvider router={router} />)
+}
+
+// A realistic project payload returned by GET /api/projects/:id
+const RELOADED_PROJECT = {
+  id: 'proj-123',
+  name: 'Reloaded Design',
+  canvas: {
+    elements: [
+      {
+        id: 't1',
+        type: 'text' as const,
+        x: 100,
+        y: 200,
+        width: 160,
+        height: 40,
+        rotation: 0,
+        opacity: 1,
+        locked: false,
+        content: 'Hello reload',
+        fontSize: 16,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: 'normal' as const,
+        fontStyle: 'normal' as const,
+        color: '#111827',
+        align: 'left' as const,
+      },
+    ],
+  },
+  createdAt: '2026-05-10T10:00:00Z',
+  updatedAt: '2026-05-10T10:05:00Z',
 }
 
 beforeEach(() => {
   mockNavigate.mockReset()
   mockPatchProject.mockReset()
+  mockGetProject.mockReset()
   mockPatchProject.mockResolvedValue({ id: 'test-id', updatedAt: '2026-05-10T10:05:00Z' })
+  // Default: getProject never resolves — tests that need a result configure it explicitly
+  mockGetProject.mockReturnValue(new Promise(() => {}))
   useCanvasStore.setState({
     designId: 'test-id',
     name: 'My Design',
@@ -405,5 +473,182 @@ describe('AC6 — zoom in and zoom out buttons', () => {
     expect(header).toContainElement(screen.getByRole('button', { name: /zoom in/i }))
     expect(header).toContainElement(screen.getByRole('button', { name: /zoom out/i }))
     expect(header).toContainElement(screen.getByRole('button', { name: /reset zoom/i }))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC17 (feat07) — browser reload restores the canvas from the backend
+// ---------------------------------------------------------------------------
+
+describe('AC17 (feat07) — browser reload fetches and restores the project', () => {
+  it('shows a full-page loading spinner immediately while fetching', () => {
+    mockGetProject.mockReturnValue(new Promise(() => {})) // never resolves
+    renderEditorOnReload('proj-123')
+    expect(screen.getByRole('status', { name: /loading design/i })).toBeInTheDocument()
+  })
+
+  it('does not render the editor shell while loading', () => {
+    mockGetProject.mockReturnValue(new Promise(() => {}))
+    renderEditorOnReload('proj-123')
+    expect(screen.queryByRole('button', { name: /close design/i })).not.toBeInTheDocument()
+  })
+
+  it('calls getProject with the designId from the URL', () => {
+    mockGetProject.mockReturnValue(new Promise(() => {}))
+    renderEditorOnReload('proj-123')
+    expect(mockGetProject).toHaveBeenCalledWith('proj-123')
+  })
+
+  it('calls getProject exactly once on mount', () => {
+    // Use a never-resolving promise — we only assert the call count here
+    mockGetProject.mockReturnValue(new Promise(() => {}))
+    renderEditorOnReload('proj-123')
+    expect(mockGetProject).toHaveBeenCalledTimes(1)
+  })
+
+  it('removes the spinner after the project is fetched successfully', async () => {
+    mockGetProject.mockResolvedValue(RELOADED_PROJECT)
+    renderEditorOnReload('proj-123')
+    await screen.findByRole('button', { name: /close design/i })
+    expect(screen.queryByRole('status', { name: /loading design/i })).not.toBeInTheDocument()
+  })
+
+  it('renders the editor header after a successful fetch', async () => {
+    mockGetProject.mockResolvedValue(RELOADED_PROJECT)
+    renderEditorOnReload('proj-123')
+    expect(await screen.findByRole('button', { name: /close design/i })).toBeInTheDocument()
+  })
+
+  it('shows the loaded design name in the header', async () => {
+    mockGetProject.mockResolvedValue(RELOADED_PROJECT)
+    renderEditorOnReload('proj-123')
+    await screen.findByRole('button', { name: /close design/i })
+    expect(screen.getByText('Reloaded Design')).toBeInTheDocument()
+  })
+
+  it('hydrates the canvas store with all elements from the fetched project', async () => {
+    mockGetProject.mockResolvedValue(RELOADED_PROJECT)
+    renderEditorOnReload('proj-123')
+    await screen.findByRole('button', { name: /close design/i })
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    expect(useCanvasStore.getState().elements[0].id).toBe('t1')
+  })
+
+  it('restores all element properties exactly as saved', async () => {
+    mockGetProject.mockResolvedValue(RELOADED_PROJECT)
+    renderEditorOnReload('proj-123')
+    await screen.findByRole('button', { name: /close design/i })
+    const el = useCanvasStore.getState().elements[0] as TextElement
+    expect(el.content).toBe('Hello reload')
+    expect(el.x).toBe(100)
+    expect(el.y).toBe(200)
+    expect(el.fontSize).toBe(16)
+  })
+
+  it('sets isDirty to false after loading', async () => {
+    mockGetProject.mockResolvedValue(RELOADED_PROJECT)
+    renderEditorOnReload('proj-123')
+    await screen.findByRole('button', { name: /close design/i })
+    expect(useCanvasStore.getState().isDirty).toBe(false)
+  })
+
+  it('does not show "Unsaved changes" after loading', async () => {
+    mockGetProject.mockResolvedValue(RELOADED_PROJECT)
+    renderEditorOnReload('proj-123')
+    await screen.findByRole('button', { name: /close design/i })
+    expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC18 (feat07) — failed fetch shows error state, not a blank/broken canvas
+// ---------------------------------------------------------------------------
+
+describe('AC18 (feat07) — project fetch failure shows error state', () => {
+  it('shows an error message when getProject rejects', async () => {
+    mockGetProject.mockRejectedValue(new Error('Not found'))
+    renderEditorOnReload('proj-123')
+    expect(await screen.findByText(/could not load the design/i)).toBeInTheDocument()
+  })
+
+  it('shows a "Go home" button in the error state', async () => {
+    mockGetProject.mockRejectedValue(new Error('Not found'))
+    renderEditorOnReload('proj-123')
+    expect(await screen.findByRole('button', { name: /go home/i })).toBeInTheDocument()
+  })
+
+  it('does not render the editor shell in the error state', async () => {
+    mockGetProject.mockRejectedValue(new Error('Not found'))
+    renderEditorOnReload('proj-123')
+    await screen.findByRole('button', { name: /go home/i })
+    expect(screen.queryByRole('button', { name: /close design/i })).not.toBeInTheDocument()
+  })
+
+  it('clicking "Go home" navigates to /', async () => {
+    mockGetProject.mockRejectedValue(new Error('Not found'))
+    renderEditorOnReload('proj-123')
+    fireEvent.click(await screen.findByRole('button', { name: /go home/i }))
+    expect(mockNavigate).toHaveBeenCalledWith('/')
+  })
+
+  it('the loading spinner is gone once the error state is shown', async () => {
+    mockGetProject.mockRejectedValue(new Error('Not found'))
+    renderEditorOnReload('proj-123')
+    await screen.findByRole('button', { name: /go home/i })
+    expect(screen.queryByRole('status', { name: /loading design/i })).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC19 (feat07) — direct URL navigation behaves identically to a reload
+// ---------------------------------------------------------------------------
+
+describe('AC19 (feat07) — direct URL navigation restores the project', () => {
+  it('fetches the project when the store holds no design (fresh page load via URL)', () => {
+    mockGetProject.mockReturnValue(new Promise(() => {}))
+    renderEditorOnReload('proj-123')
+    expect(mockGetProject).toHaveBeenCalledWith('proj-123')
+  })
+
+  it('fetches the project when the store holds a stale design from a previous session', async () => {
+    useCanvasStore.setState({
+      designId: 'old-design',
+      name: 'Old Design',
+      elements: [],
+      isDirty: false,
+    })
+    mockGetProject.mockResolvedValue(RELOADED_PROJECT)
+    const queryClient = makeQueryClient()
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/editor/:designId',
+          element: (
+            <QueryClientProvider client={queryClient}>
+              <EditorPage />
+            </QueryClientProvider>
+          ),
+        },
+      ],
+      { initialEntries: ['/editor/proj-123'] }
+    )
+    render(<RouterProvider router={router} />)
+    expect(mockGetProject).toHaveBeenCalledWith('proj-123')
+    await screen.findByRole('button', { name: /close design/i })
+    expect(screen.getByText('Reloaded Design')).toBeInTheDocument()
+  })
+
+  it('shows the spinner before the project resolves on direct URL navigation', () => {
+    mockGetProject.mockReturnValue(new Promise(() => {}))
+    renderEditorOnReload('proj-123')
+    expect(screen.getByRole('status', { name: /loading design/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /close design/i })).not.toBeInTheDocument()
+  })
+
+  it('renders the full editor after the project resolves on direct URL navigation', async () => {
+    mockGetProject.mockResolvedValue(RELOADED_PROJECT)
+    renderEditorOnReload('proj-123')
+    expect(await screen.findByRole('button', { name: /close design/i })).toBeInTheDocument()
+    expect(useCanvasStore.getState().isDirty).toBe(false)
   })
 })
