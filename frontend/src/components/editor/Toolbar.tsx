@@ -74,9 +74,9 @@ export function Toolbar() {
     setActiveTool('arrow')
 
     const x1 = 540
-    const y1 = 200
+    const y1 = 360
     const x2 = 740
-    const y2 = 200
+    const y2 = 360
     const strokeWidth = 2
 
     const element: ArrowElement = {
