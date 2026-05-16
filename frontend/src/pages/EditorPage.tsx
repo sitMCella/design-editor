@@ -23,8 +23,8 @@ export function EditorPage() {
   const zoom = useCanvasStore((s) => s.zoom)
   const setZoom = useCanvasStore((s) => s.setZoom)
   const setPan = useCanvasStore((s) => s.setPan)
-  const navigate = useNavigate()
   const { designId: routeDesignId = '' } = useParams<{ designId: string }>()
+  const navigate = useNavigate()
   const worldRef = useRef<HTMLDivElement>(null)
   useThumbnail(routeDesignId, worldRef)
 
@@ -61,8 +61,6 @@ export function EditorPage() {
     debounceRef.current = setTimeout(() => {
       saveRef.current()
     }, AUTOSAVE_DEBOUNCE_MS)
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty, designId, name, elements])
 
   // Fallback retry timer: if still dirty after 10 s, save again
@@ -74,15 +72,7 @@ export function EditorPage() {
     retryRef.current = setTimeout(() => {
       if (useCanvasStore.getState().isDirty) saveRef.current()
     }, AUTOSAVE_RETRY_MS)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty, designId])
-
-  const handleClose = () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (retryRef.current) clearTimeout(retryRef.current)
-    if (isDirtyRef.current && designIdRef.current) saveRef.current()
-    void navigate('/')
-  }
 
   const handleZoomIn = () => setZoom(Math.min(MAX_ZOOM, zoom * ZOOM_STEP))
   const handleZoomOut = () => setZoom(Math.max(MIN_ZOOM, zoom / ZOOM_STEP))
@@ -95,9 +85,15 @@ export function EditorPage() {
     <div className="flex h-screen flex-col">
       <header className="flex items-center gap-3 border-b bg-white px-4 py-2 shadow-sm">
         <button
-          onClick={handleClose}
+          type="button"
           title="Close"
           aria-label="Close design"
+          onClick={() => {
+            if (debounceRef.current) clearTimeout(debounceRef.current)
+            if (retryRef.current) clearTimeout(retryRef.current)
+            if (isDirtyRef.current && designIdRef.current) saveRef.current()
+            navigate('/')
+          }}
           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700"
         >
           <svg
