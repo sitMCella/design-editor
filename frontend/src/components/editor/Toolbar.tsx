@@ -5,6 +5,10 @@ import type { TextElement, ImageElement, ArrowElement, TableElement } from '../.
 const SURFACE_WIDTH = 1280
 const SURFACE_HEIGHT = 720
 
+// Number of pixels to cascade each successive text element so they don't stack exactly.
+const TEXT_CASCADE_STEP = 50
+const TEXT_CASCADE_MAX = 8
+
 export function Toolbar() {
   const activeTool = useUIStore((s) => s.activeTool)
   const setActiveTool = useUIStore((s) => s.setActiveTool)
@@ -14,11 +18,16 @@ export function Toolbar() {
   const handleTextTool = () => {
     setActiveTool('text')
 
+    // Offset each new text element so successive ones don't stack exactly on top of each other.
+    const existingTextCount = useCanvasStore.getState().elements.filter((e) => e.type === 'text').length
+    const cascadeIdx = existingTextCount % TEXT_CASCADE_MAX
+    const cascade = cascadeIdx * TEXT_CASCADE_STEP
+
     const element: TextElement = {
       id: crypto.randomUUID(),
       type: 'text',
-      x: (SURFACE_WIDTH - 160) / 2,
-      y: (SURFACE_HEIGHT - 40) / 2,
+      x: (SURFACE_WIDTH - 160) / 2 + cascade,
+      y: (SURFACE_HEIGHT - 40) / 2 + cascade,
       width: 160,
       height: 40,
       rotation: 0,
@@ -65,9 +74,9 @@ export function Toolbar() {
     setActiveTool('arrow')
 
     const x1 = 540
-    const y1 = 360
+    const y1 = 200
     const x2 = 740
-    const y2 = 360
+    const y2 = 200
     const strokeWidth = 2
 
     const element: ArrowElement = {

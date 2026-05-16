@@ -579,18 +579,25 @@ export function ContextualToolbar() {
       </div>
 
       <div className="flex items-center border-l border-gray-200 pl-2">
-        <button
-          aria-label={isToolbarPinned ? 'Unpin toolbar' : 'Pin toolbar'}
-          title={isToolbarPinned ? 'Unpin toolbar' : 'Pin toolbar'}
-          onClick={toggleToolbarPin}
-          className={`flex h-6 w-6 items-center justify-center rounded ${
-            isToolbarPinned
-              ? 'bg-blue-50 text-blue-500'
-              : 'text-gray-400 hover:bg-gray-100'
-          }`}
-        >
-          <PinIcon />
-        </button>
+        {isToolbarPinned ? (
+          <button
+            aria-label="Unpin toolbar"
+            title="Unpin toolbar"
+            onClick={toggleToolbarPin}
+            className="flex h-6 w-6 items-center justify-center rounded bg-blue-50 text-blue-500"
+          >
+            <PinIcon />
+          </button>
+        ) : (
+          <button
+            aria-label="Pin toolbar"
+            title="Pin toolbar"
+            onClick={toggleToolbarPin}
+            className="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100"
+          >
+            <PinIcon />
+          </button>
+        )}
       </div>
     </div>
   )

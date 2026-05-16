@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
 import { Canvas } from '../components/editor/Canvas'
 import { ContextualToolbar } from '../components/editor/ContextualToolbar'
@@ -23,7 +23,6 @@ export function EditorPage() {
   const zoom = useCanvasStore((s) => s.zoom)
   const setZoom = useCanvasStore((s) => s.setZoom)
   const setPan = useCanvasStore((s) => s.setPan)
-  const navigate = useNavigate()
   const { designId: routeDesignId = '' } = useParams<{ designId: string }>()
   const worldRef = useRef<HTMLDivElement>(null)
   useThumbnail(routeDesignId, worldRef)
@@ -75,13 +74,6 @@ export function EditorPage() {
     }, AUTOSAVE_RETRY_MS)
   }, [isDirty, designId])
 
-  const handleClose = () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (retryRef.current) clearTimeout(retryRef.current)
-    if (isDirtyRef.current && designIdRef.current) saveRef.current()
-    void navigate('/')
-  }
-
   const handleZoomIn = () => setZoom(Math.min(MAX_ZOOM, zoom * ZOOM_STEP))
   const handleZoomOut = () => setZoom(Math.max(MIN_ZOOM, zoom / ZOOM_STEP))
   const handleZoomReset = () => {
@@ -92,10 +84,15 @@ export function EditorPage() {
   return (
     <div className="flex h-screen flex-col">
       <header className="flex items-center gap-3 border-b bg-white px-4 py-2 shadow-sm">
-        <button
-          onClick={handleClose}
+        <Link
+          to="/"
           title="Close"
           aria-label="Close design"
+          onClick={() => {
+            if (debounceRef.current) clearTimeout(debounceRef.current)
+            if (retryRef.current) clearTimeout(retryRef.current)
+            if (isDirtyRef.current && designIdRef.current) saveRef.current()
+          }}
           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700"
         >
           <svg
@@ -110,7 +107,7 @@ export function EditorPage() {
           >
             <path d="M1 1l12 12M13 1L1 13" />
           </svg>
-        </button>
+        </Link>
         <span className="text-sm font-medium text-gray-700">{name}</span>
         {isDirty && <span className="text-xs text-gray-400">Unsaved changes</span>}
         <div className="ml-auto flex items-center gap-1">

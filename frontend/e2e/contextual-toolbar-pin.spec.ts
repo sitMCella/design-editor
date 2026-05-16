@@ -92,7 +92,7 @@ test.describe('15 – Contextual Toolbar Pin', () => {
     await expect(page.getByLabel('Pin toolbar')).toBeVisible()
     await pinToolbar(page)
     await expect(page.getByLabel('Unpin toolbar')).toBeVisible()
-    await expect(page.getByLabel('Pin toolbar')).not.toBeAttached()
+    await expect(page.getByLabel('Pin toolbar', { exact: true })).not.toBeAttached()
   })
 
   test('AC3: clicking the pin button again reverts to unpinned (label changes back)', async ({
