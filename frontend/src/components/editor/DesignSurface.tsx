@@ -53,6 +53,23 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
+      {/* Arrows rendered first so they sit below all content elements in the stacking order.
+          Their SVG hit paths use overflow:visible which would otherwise intercept clicks
+          on overlapping text/image/table elements rendered later in the DOM. */}
+      {elements.map((element) => {
+        if (element.type !== 'arrow') return null
+        return (
+          <ArrowElement
+            key={element.id}
+            element={element as ArrowElementType}
+            isSelected={selectedIds.includes(element.id)}
+            onSelect={(e) => handleSelect(element.id, e)}
+            onUpdate={(patch) => updateElement(element.id, patch)}
+            allElements={elements}
+            onDragEnd={(delta) => handleDragEnd(element.id, delta)}
+          />
+        )
+      })}
       {elements.map((element) => {
         if (element.type === 'text') {
           return (
@@ -75,19 +92,6 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
               isSelected={selectedIds.includes(element.id)}
               onSelect={(e) => handleSelect(element.id, e)}
               onUpdate={(patch) => updateElement(element.id, patch)}
-              onDragEnd={(delta) => handleDragEnd(element.id, delta)}
-            />
-          )
-        }
-        if (element.type === 'arrow') {
-          return (
-            <ArrowElement
-              key={element.id}
-              element={element as ArrowElementType}
-              isSelected={selectedIds.includes(element.id)}
-              onSelect={(e) => handleSelect(element.id, e)}
-              onUpdate={(patch) => updateElement(element.id, patch)}
-              allElements={elements}
               onDragEnd={(delta) => handleDragEnd(element.id, delta)}
             />
           )
