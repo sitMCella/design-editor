@@ -132,6 +132,49 @@ describe('selectElements / clearSelection', () => {
 })
 
 // ---------------------------------------------------------------------------
+// toggleElementSelection — feat14 AC6/AC7
+// ---------------------------------------------------------------------------
+
+describe('toggleElementSelection (feat14)', () => {
+  it('AC6: adds an unselected element to selectedIds', () => {
+    useCanvasStore.setState({ elements: [makeElement({ id: 'el-1' })], selectedIds: [] })
+    useCanvasStore.getState().toggleElementSelection('el-1')
+    expect(useCanvasStore.getState().selectedIds).toContain('el-1')
+  })
+
+  it('AC7: removes an already-selected element from selectedIds', () => {
+    useCanvasStore.setState({ elements: [makeElement({ id: 'el-1' })], selectedIds: ['el-1'] })
+    useCanvasStore.getState().toggleElementSelection('el-1')
+    expect(useCanvasStore.getState().selectedIds).not.toContain('el-1')
+  })
+
+  it('preserves other selected elements when toggling one off', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'el-1' }), makeElement({ id: 'el-2' })],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    useCanvasStore.getState().toggleElementSelection('el-1')
+    expect(useCanvasStore.getState().selectedIds).toEqual(['el-2'])
+  })
+
+  it('preserves other selected elements when toggling one on', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'el-1' }), makeElement({ id: 'el-2' })],
+      selectedIds: ['el-2'],
+    })
+    useCanvasStore.getState().toggleElementSelection('el-1')
+    expect(useCanvasStore.getState().selectedIds).toContain('el-1')
+    expect(useCanvasStore.getState().selectedIds).toContain('el-2')
+  })
+
+  it('is a no-op on selectedIds when toggling an id that is not in elements', () => {
+    useCanvasStore.setState({ elements: [], selectedIds: [] })
+    useCanvasStore.getState().toggleElementSelection('ghost-id')
+    expect(useCanvasStore.getState().selectedIds).toContain('ghost-id')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // initDesign — resets store for a new design
 // ---------------------------------------------------------------------------
 
@@ -549,5 +592,49 @@ describe('setPan', () => {
     useCanvasStore.getState().setPan(0, 0)
     expect(useCanvasStore.getState().panX).toBe(0)
     expect(useCanvasStore.getState().panY).toBe(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// toggleElementSelection — AC6 / AC7 (feat 14)
+// ---------------------------------------------------------------------------
+
+describe('toggleElementSelection (feat14)', () => {
+  it('adds an unselected element id to selectedIds (AC6)', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'b' }))
+    useCanvasStore.getState().selectElements(['a'])
+
+    useCanvasStore.getState().toggleElementSelection('b')
+    expect(useCanvasStore.getState().selectedIds).toEqual(['a', 'b'])
+  })
+
+  it('removes an already-selected element id from selectedIds (AC7)', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'b' }))
+    useCanvasStore.getState().selectElements(['a', 'b'])
+
+    useCanvasStore.getState().toggleElementSelection('b')
+    expect(useCanvasStore.getState().selectedIds).toEqual(['a'])
+  })
+
+  it('can build a selection from empty by toggling elements', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'x' }))
+    useCanvasStore.getState().toggleElementSelection('x')
+    expect(useCanvasStore.getState().selectedIds).toEqual(['x'])
+  })
+
+  it('can empty selectedIds by toggling the only selected element', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'x' }))
+    useCanvasStore.getState().selectElements(['x'])
+    useCanvasStore.getState().toggleElementSelection('x')
+    expect(useCanvasStore.getState().selectedIds).toEqual([])
+  })
+
+  it('does not affect elements array', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'b' }))
+    useCanvasStore.getState().toggleElementSelection('a')
+    expect(useCanvasStore.getState().elements).toHaveLength(2)
   })
 })

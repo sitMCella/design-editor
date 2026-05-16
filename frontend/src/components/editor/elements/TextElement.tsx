@@ -8,6 +8,7 @@ type Props = {
   onSelect: (e: React.MouseEvent) => void
   onUpdate: (patch: Partial<TextElementType>) => void
   onRemove: () => void
+  onDragEnd?: (delta: { x: number; y: number }) => void
 }
 
 type DragStart = {
@@ -30,7 +31,14 @@ const handleStyles: Record<Handle, React.CSSProperties> = {
   br: { bottom: -5, right: -5, cursor: 'nwse-resize' },
 }
 
-export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove }: Props) {
+export function TextElement({
+  element,
+  isSelected,
+  onSelect,
+  onUpdate,
+  onRemove,
+  onDragEnd,
+}: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const editRef = useRef<HTMLDivElement>(null)
   const dragStartRef = useRef<DragStart | null>(null)
@@ -93,8 +101,14 @@ export function TextElement({ element, isSelected, onSelect, onUpdate, onRemove 
       onUpdate({ x: newX, y: newY })
     }
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (me: MouseEvent) => {
       document.body.style.cursor = ''
+      if (isDraggingRef.current && dragStartRef.current) {
+        const zoom = useCanvasStore.getState().zoom
+        const deltaX = (me.clientX - dragStartRef.current.mouseX) / zoom
+        const deltaY = (me.clientY - dragStartRef.current.mouseY) / zoom
+        onDragEnd?.({ x: deltaX, y: deltaY })
+      }
       dragStartRef.current = null
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)

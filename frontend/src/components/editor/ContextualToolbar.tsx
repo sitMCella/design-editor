@@ -499,55 +499,66 @@ export function ContextualToolbar() {
   const selectedIds = useCanvasStore((s) => s.selectedIds)
   const updateElement = useCanvasStore((s) => s.updateElement)
 
-  const selectedId = selectedIds[0]
-  const found = elements.find((e) => e.id === selectedId)
+  if (selectedIds.length === 0) return null
 
-  if (!found) return null
+  const selectedElements = selectedIds
+    .map((id) => elements.find((e) => e.id === id))
+    .filter(Boolean) as (TextElement | ImageElement | ArrowElement | TableElement)[]
 
-  if (found.type === 'text') {
-    const element = found as TextElement
+  if (selectedElements.length === 0) return null
+
+  // Hide toolbar when selection contains mixed element types
+  const firstType = selectedElements[0].type
+  const allSameType = selectedElements.every((el) => el.type === firstType)
+  if (!allSameType) return null
+
+  // Apply a patch to ALL selected elements of the same type
+  const updateAll = (patch: Partial<TextElement | ImageElement | ArrowElement | TableElement>) => {
+    selectedIds.forEach((id) => updateElement(id, patch as Parameters<typeof updateElement>[1]))
+  }
+
+  const refElement = selectedElements[0]
+
+  if (refElement.type === 'text') {
     return (
       <div
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <TextToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
+        <TextToolbar element={refElement as TextElement} update={(patch) => updateAll(patch)} />
       </div>
     )
   }
 
-  if (found.type === 'image') {
-    const element = found as ImageElement
+  if (refElement.type === 'image') {
     return (
       <div
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <ImageToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
+        <ImageToolbar element={refElement as ImageElement} update={(patch) => updateAll(patch)} />
       </div>
     )
   }
 
-  if (found.type === 'arrow') {
-    const element = found as ArrowElement
+  if (refElement.type === 'arrow') {
     return (
       <div
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <ArrowToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
+        <ArrowToolbar element={refElement as ArrowElement} update={(patch) => updateAll(patch)} />
       </div>
     )
   }
 
-  if (found.type === 'table') {
-    const element = found as TableElement
+  if (refElement.type === 'table') {
     return (
       <div
         data-testid="contextual-toolbar"
         className="flex h-10 items-center gap-2 border-b bg-white px-3"
       >
-        <TableToolbar element={element} update={(patch) => updateElement(selectedId, patch)} />
+        <TableToolbar element={refElement as TableElement} update={(patch) => updateAll(patch)} />
       </div>
     )
   }

@@ -15,6 +15,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @specs/features/09-arrow-element-customization.md
 @specs/features/10-toolbar-table-element.md
 @specs/features/11-table-element-customization.md
+@specs/features/12-card-placeholder-canvas-rendering.md
+@specs/features/13-canvas-infinite.md
+@specs/features/14-mouse-gestures.md
 
 ## Project Overview
 

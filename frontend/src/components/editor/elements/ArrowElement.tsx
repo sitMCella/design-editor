@@ -16,6 +16,7 @@ type Props = {
   onSelect: (e: React.MouseEvent) => void
   onUpdate: (patch: Partial<ArrowElementType>) => void
   allElements: CanvasElement[]
+  onDragEnd?: (delta: { x: number; y: number }) => void
 }
 
 type SnapTarget = {
@@ -74,7 +75,14 @@ function ArrowMarkers({
 // Component
 // ---------------------------------------------------------------------------
 
-export function ArrowElement({ element, isSelected, onSelect, onUpdate, allElements }: Props) {
+export function ArrowElement({
+  element,
+  isSelected,
+  onSelect,
+  onUpdate,
+  allElements,
+  onDragEnd,
+}: Props) {
   const {
     id,
     x,
@@ -139,8 +147,14 @@ export function ArrowElement({ element, isSelected, onSelect, onUpdate, allEleme
       })
     }
 
-    const onMouseUp = () => {
+    const onMouseUp = (me: MouseEvent) => {
       document.body.style.cursor = ''
+      if (isDraggingRef.current) {
+        const zoom = useCanvasStore.getState().zoom
+        const deltaX = (me.clientX - startMouseX) / zoom
+        const deltaY = (me.clientY - startMouseY) / zoom
+        onDragEnd?.({ x: deltaX, y: deltaY })
+      }
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
       setTimeout(() => {

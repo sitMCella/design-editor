@@ -7,6 +7,7 @@ type Props = {
   isSelected: boolean
   onSelect: (e: React.MouseEvent) => void
   onUpdate: (patch: Partial<ImageElementType>) => void
+  onDragEnd?: (delta: { x: number; y: number }) => void
 }
 
 type Handle = 'tl' | 'tr' | 'bl' | 'br'
@@ -53,7 +54,7 @@ const handleStyles: Record<Handle, React.CSSProperties> = {
 // Component
 // ---------------------------------------------------------------------------
 
-export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props) {
+export function ImageElement({ element, isSelected, onSelect, onUpdate, onDragEnd }: Props) {
   const [isCropping, setIsCropping] = useState(false)
 
   const dragStartRef = useRef<{
@@ -122,8 +123,14 @@ export function ImageElement({ element, isSelected, onSelect, onUpdate }: Props)
       })
     }
 
-    const onMouseUp = () => {
+    const onMouseUp = (me: MouseEvent) => {
       document.body.style.cursor = ''
+      if (isDraggingRef.current && dragStartRef.current) {
+        const zoom = useCanvasStore.getState().zoom
+        const deltaX = (me.clientX - dragStartRef.current.mouseX) / zoom
+        const deltaY = (me.clientY - dragStartRef.current.mouseY) / zoom
+        onDragEnd?.({ x: deltaX, y: deltaY })
+      }
       dragStartRef.current = null
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)

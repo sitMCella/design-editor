@@ -1261,3 +1261,148 @@ describe('AC22: multiple table elements are independent', () => {
     expect(asTable(elements.find((e) => e.id === 'tbl-2')!).columns).toBe(2)
   })
 })
+
+// ===========================================================================
+// Feature 14 — multi-selection toolbar behaviour (AC14, AC15)
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// AC14 (feat14) — toolbar hidden for mixed types; visible for same type
+// ---------------------------------------------------------------------------
+
+describe('AC14 (feat14): toolbar visibility with multi-selection', () => {
+  it('renders text toolbar when two text elements of the same type are selected', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeElement('el-2', { x: 400 })],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    renderToolbar()
+    expect(screen.getByTestId('contextual-toolbar')).toBeInTheDocument()
+    expect(screen.getByLabelText('Font family')).toBeInTheDocument()
+  })
+
+  it('renders arrow toolbar when two arrow elements are selected', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1'), makeArrowElement('arr-2', { x1: 600 })],
+      selectedIds: ['arr-1', 'arr-2'],
+    })
+    renderToolbar()
+    expect(screen.getByTestId('contextual-toolbar')).toBeInTheDocument()
+    expect(screen.getByLabelText('Stroke color')).toBeInTheDocument()
+  })
+
+  it('hides the toolbar when a text element and an arrow element are both selected', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeArrowElement('arr-1')],
+      selectedIds: ['el-1', 'arr-1'],
+    })
+    const { container } = renderToolbar()
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('hides the toolbar when a text element and an image element are both selected', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeImageElement('img-1')],
+      selectedIds: ['el-1', 'img-1'],
+    })
+    const { container } = renderToolbar()
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('hides the toolbar when three mixed-type elements are selected', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeArrowElement('arr-1'), makeImageElement('img-1')],
+      selectedIds: ['el-1', 'arr-1', 'img-1'],
+    })
+    const { container } = renderToolbar()
+    expect(container.firstChild).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC15 (feat14) — property changes via toolbar apply to all selected elements
+// ---------------------------------------------------------------------------
+
+describe('AC15 (feat14): toolbar changes apply to all selected elements', () => {
+  it('font size change applies to all selected text elements', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeElement('el-1', { fontSize: 16 }),
+        makeElement('el-2', { fontSize: 16, x: 400 }),
+      ],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Font size'), { target: { value: '24' } })
+
+    const elements = useCanvasStore.getState().elements
+    expect(asText(elements.find((e) => e.id === 'el-1')!).fontSize).toBe(24)
+    expect(asText(elements.find((e) => e.id === 'el-2')!).fontSize).toBe(24)
+  })
+
+  it('font family change applies to all selected text elements', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeElement('el-1', { fontFamily: 'Inter, sans-serif' }),
+        makeElement('el-2', { fontFamily: 'Inter, sans-serif', x: 400 }),
+      ],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Font family'), {
+      target: { value: 'Georgia, serif' },
+    })
+
+    const elements = useCanvasStore.getState().elements
+    expect(asText(elements.find((e) => e.id === 'el-1')!).fontFamily).toBe('Georgia, serif')
+    expect(asText(elements.find((e) => e.id === 'el-2')!).fontFamily).toBe('Georgia, serif')
+  })
+
+  it('bold toggle applies to all selected text elements', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeElement('el-1', { fontWeight: 'normal' }),
+        makeElement('el-2', { fontWeight: 'normal', x: 400 }),
+      ],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Bold'))
+
+    const elements = useCanvasStore.getState().elements
+    expect(asText(elements.find((e) => e.id === 'el-1')!).fontWeight).toBe('bold')
+    expect(asText(elements.find((e) => e.id === 'el-2')!).fontWeight).toBe('bold')
+  })
+
+  it('stroke width change applies to all selected arrow elements', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeArrowElement('arr-1', { strokeWidth: 2 }),
+        makeArrowElement('arr-2', { strokeWidth: 2, x1: 600 }),
+      ],
+      selectedIds: ['arr-1', 'arr-2'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Stroke width'), { target: { value: '8' } })
+
+    const elements = useCanvasStore.getState().elements
+    expect(asArrow(elements.find((e) => e.id === 'arr-1')!).strokeWidth).toBe(8)
+    expect(asArrow(elements.find((e) => e.id === 'arr-2')!).strokeWidth).toBe(8)
+  })
+
+  it('stroke colour change applies to all selected arrow elements', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeArrowElement('arr-1', { stroke: '#111827' }),
+        makeArrowElement('arr-2', { stroke: '#111827', x1: 600 }),
+      ],
+      selectedIds: ['arr-1', 'arr-2'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Stroke color'), { target: { value: '#ff0000' } })
+
+    const elements = useCanvasStore.getState().elements
+    expect(asArrow(elements.find((e) => e.id === 'arr-1')!).stroke).toBe('#ff0000')
+    expect(asArrow(elements.find((e) => e.id === 'arr-2')!).stroke).toBe('#ff0000')
+  })
+})

@@ -2,7 +2,7 @@
 
 ## Vision
 
-A web-based graphic design platform that makes visual creation accessible to everyone — regardless of design skill level. The goal is to lower the barrier to producing professional-quality visuals by providing an intuitive, browser-based editor with templates, assets, and a drag-and-drop canvas.
+A web-based graphic design platform that makes visual creation accessible to everyone — regardless of design skill level. The goal is to lower the barrier to producing professional-quality visuals by providing an intuitive, browser-based editor with drag-and-drop canvas.
 
 ## Target Users
 
