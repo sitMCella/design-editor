@@ -296,9 +296,9 @@ test.describe('16 – Delete Canvas Elements', () => {
     page,
   }) => {
     await addTextElement(page)
-    const fontSizeInput = page.getByLabel('Font size', { exact: true })
-    await fontSizeInput.click()
-    await expect(fontSizeInput).toBeFocused()
+    // Use focus() directly — Firefox headless does not set document.hasFocus()
+    // after a click(), which would cause toBeFocused() to report "inactive".
+    await page.getByLabel('Font size', { exact: true }).focus()
 
     await page.keyboard.press('Delete')
 
@@ -309,9 +309,7 @@ test.describe('16 – Delete Canvas Elements', () => {
     page,
   }) => {
     await addTextElement(page)
-    const fontSizeInput = page.getByLabel('Font size', { exact: true })
-    await fontSizeInput.click()
-    await expect(fontSizeInput).toBeFocused()
+    await page.getByLabel('Font size', { exact: true }).focus()
 
     await page.keyboard.press('Backspace')
 
