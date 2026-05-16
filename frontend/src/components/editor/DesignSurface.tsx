@@ -57,7 +57,7 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
           Their SVG hit paths use overflow:visible which would otherwise intercept clicks
           on overlapping text/image/table elements rendered later in the DOM. */}
       {elements.map((element) => {
-        if (element.type !== 'arrow') return null
+        if (element.type !== 'arrow' || element.hidden) return null
         return (
           <ArrowElement
             key={element.id}
@@ -71,6 +71,7 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
         )
       })}
       {elements.map((element) => {
+        if (element.hidden) return null
         if (element.type === 'text') {
           return (
             <TextElement
