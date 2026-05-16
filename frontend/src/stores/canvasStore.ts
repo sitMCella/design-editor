@@ -24,6 +24,8 @@ type Actions = {
   toggleElementSelection: (id: string) => void
   addToSelection: (ids: string[]) => void
   clearSelection: () => void
+  toggleElementVisibility: (id: string) => void
+  moveElementToIndex: (id: string, panelIndex: number) => void
   markSaved: () => void
   setZoom: (zoom: number) => void
   setPan: (x: number, y: number) => void
@@ -130,11 +132,15 @@ export const useCanvasStore = create<State & Actions>()(
 
     selectElements: (ids) =>
       set((state) => {
-        state.selectedIds = ids
+        state.selectedIds = ids.filter(
+          (id) => !state.elements.find((el) => el.id === id)?.hidden,
+        )
       }),
 
     toggleElementSelection: (id) =>
       set((state) => {
+        const el = state.elements.find((e) => e.id === id)
+        if (el?.hidden) return
         const idx = state.selectedIds.indexOf(id)
         if (idx === -1) {
           state.selectedIds.push(id)
@@ -146,7 +152,8 @@ export const useCanvasStore = create<State & Actions>()(
     addToSelection: (ids) =>
       set((state) => {
         for (const id of ids) {
-          if (!state.selectedIds.includes(id)) {
+          const el = state.elements.find((e) => e.id === id)
+          if (!el?.hidden && !state.selectedIds.includes(id)) {
             state.selectedIds.push(id)
           }
         }
@@ -155,6 +162,28 @@ export const useCanvasStore = create<State & Actions>()(
     clearSelection: () =>
       set((state) => {
         state.selectedIds = []
+      }),
+
+    toggleElementVisibility: (id) =>
+      set((state) => {
+        const el = state.elements.find((e) => e.id === id)
+        if (!el) return
+        el.hidden = !el.hidden
+        if (el.hidden) {
+          state.selectedIds = state.selectedIds.filter((sid) => sid !== id)
+        }
+        state.isDirty = true
+      }),
+
+    moveElementToIndex: (id, panelIndex) =>
+      set((state) => {
+        const from = state.elements.findIndex((el) => el.id === id)
+        if (from === -1) return
+        const [el] = state.elements.splice(from, 1)
+        // After splice, length is one less; panelIndex 0 = topmost = last array position
+        const to = Math.max(0, state.elements.length - panelIndex)
+        state.elements.splice(to, 0, el)
+        state.isDirty = true
       }),
 
     markSaved: () =>
