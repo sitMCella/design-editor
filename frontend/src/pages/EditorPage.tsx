@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Link, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
 import { Canvas } from '../components/editor/Canvas'
 import { ContextualToolbar } from '../components/editor/ContextualToolbar'
@@ -24,6 +24,7 @@ export function EditorPage() {
   const setZoom = useCanvasStore((s) => s.setZoom)
   const setPan = useCanvasStore((s) => s.setPan)
   const { designId: routeDesignId = '' } = useParams<{ designId: string }>()
+  const navigate = useNavigate()
   const worldRef = useRef<HTMLDivElement>(null)
   useThumbnail(routeDesignId, worldRef)
 
@@ -84,14 +85,15 @@ export function EditorPage() {
   return (
     <div className="flex h-screen flex-col">
       <header className="flex items-center gap-3 border-b bg-white px-4 py-2 shadow-sm">
-        <Link
-          to="/"
+        <button
+          type="button"
           title="Close"
           aria-label="Close design"
           onClick={() => {
             if (debounceRef.current) clearTimeout(debounceRef.current)
             if (retryRef.current) clearTimeout(retryRef.current)
             if (isDirtyRef.current && designIdRef.current) saveRef.current()
+            navigate('/')
           }}
           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700"
         >
@@ -107,7 +109,7 @@ export function EditorPage() {
           >
             <path d="M1 1l12 12M13 1L1 13" />
           </svg>
-        </Link>
+        </button>
         <span className="text-sm font-medium text-gray-700">{name}</span>
         {isDirty && <span className="text-xs text-gray-400">Unsaved changes</span>}
         <div className="ml-auto flex items-center gap-1">
