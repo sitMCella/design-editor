@@ -594,3 +594,47 @@ describe('setPan', () => {
     expect(useCanvasStore.getState().panY).toBe(0)
   })
 })
+
+// ---------------------------------------------------------------------------
+// toggleElementSelection — AC6 / AC7 (feat 14)
+// ---------------------------------------------------------------------------
+
+describe('toggleElementSelection (feat14)', () => {
+  it('adds an unselected element id to selectedIds (AC6)', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'b' }))
+    useCanvasStore.getState().selectElements(['a'])
+
+    useCanvasStore.getState().toggleElementSelection('b')
+    expect(useCanvasStore.getState().selectedIds).toEqual(['a', 'b'])
+  })
+
+  it('removes an already-selected element id from selectedIds (AC7)', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'b' }))
+    useCanvasStore.getState().selectElements(['a', 'b'])
+
+    useCanvasStore.getState().toggleElementSelection('b')
+    expect(useCanvasStore.getState().selectedIds).toEqual(['a'])
+  })
+
+  it('can build a selection from empty by toggling elements', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'x' }))
+    useCanvasStore.getState().toggleElementSelection('x')
+    expect(useCanvasStore.getState().selectedIds).toEqual(['x'])
+  })
+
+  it('can empty selectedIds by toggling the only selected element', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'x' }))
+    useCanvasStore.getState().selectElements(['x'])
+    useCanvasStore.getState().toggleElementSelection('x')
+    expect(useCanvasStore.getState().selectedIds).toEqual([])
+  })
+
+  it('does not affect elements array', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'b' }))
+    useCanvasStore.getState().toggleElementSelection('a')
+    expect(useCanvasStore.getState().elements).toHaveLength(2)
+  })
+})
