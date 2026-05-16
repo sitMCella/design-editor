@@ -1,5 +1,5 @@
 import { createRef } from 'react'
-import { render, fireEvent, act } from '@testing-library/react'
+import { render, fireEvent } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DesignSurface } from './DesignSurface'
 import { useCanvasStore } from '../../stores/canvasStore'
