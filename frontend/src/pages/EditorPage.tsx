@@ -62,7 +62,6 @@ export function EditorPage() {
       saveRef.current()
     }, AUTOSAVE_DEBOUNCE_MS)
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty, designId, name, elements])
 
   // Fallback retry timer: if still dirty after 10 s, save again
@@ -74,7 +73,6 @@ export function EditorPage() {
     retryRef.current = setTimeout(() => {
       if (useCanvasStore.getState().isDirty) saveRef.current()
     }, AUTOSAVE_RETRY_MS)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDirty, designId])
 
   const handleClose = () => {

@@ -23,10 +23,6 @@ async function getTextElement(page: Page) {
   return page.locator('[data-testid="text-element"]').first()
 }
 
-async function getSecondTextElement(page: Page) {
-  return page.locator('[data-testid="text-element"]').nth(1)
-}
-
 async function pinToolbar(page: Page) {
   await page.getByLabel('Pin toolbar').click()
 }
