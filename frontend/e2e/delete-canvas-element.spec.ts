@@ -341,8 +341,9 @@ test.describe('16 – Delete Canvas Elements', () => {
     await addTextElement(page)
     await addArrowElement(page)
 
-    // Delete the text element; the arrow should remain
-    await textElements(page).first().click()
+    // Delete the text element; the arrow should remain.
+    // force: true bypasses the arrow's transparent hit-area path interception.
+    await textElements(page).first().click({ force: true })
     await page.keyboard.press('Delete')
 
     await expect(textElements(page)).toHaveCount(0)

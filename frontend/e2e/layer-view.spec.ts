@@ -602,9 +602,15 @@ test.describe('17 – Layer Panel', () => {
     await openLayerPanel(page)
     await expect(page.getByRole('heading', { name: 'Layers' })).toBeVisible()
 
-    // Navigate to the home page and back
-    await page.goto('/')
-    await page.goto(EDITOR_URL)
+    // Use the editor's Close button for a React Router (client-side) navigation to
+    // home, which preserves in-memory Zustand state. page.goto() is a full reload
+    // and would reset the store.
+    await page.getByLabel('Close design').click()
+    await page.waitForURL('/')
+
+    // Browser back — still a client-side SPA transition, state survives.
+    await page.goBack()
+    await page.waitForURL(EDITOR_URL)
 
     await expect(page.getByRole('heading', { name: 'Layers' })).toBeVisible()
   })
