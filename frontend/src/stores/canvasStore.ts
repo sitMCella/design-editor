@@ -22,6 +22,7 @@ type Actions = {
   removeElements: (ids: string[]) => void
   selectElements: (ids: string[]) => void
   toggleElementSelection: (id: string) => void
+  addToSelection: (ids: string[]) => void
   clearSelection: () => void
   markSaved: () => void
   setZoom: (zoom: number) => void
@@ -127,6 +128,15 @@ export const useCanvasStore = create<State & Actions>()(
           state.selectedIds.push(id)
         } else {
           state.selectedIds.splice(idx, 1)
+        }
+      }),
+
+    addToSelection: (ids) =>
+      set((state) => {
+        for (const id of ids) {
+          if (!state.selectedIds.includes(id)) {
+            state.selectedIds.push(id)
+          }
         }
       }),
 
