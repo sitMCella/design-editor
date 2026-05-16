@@ -187,5 +187,5 @@ The pin button sits outside the dimmed overlay so it remains always clickable.
 11. The pin button itself is never dimmed and is always clickable regardless of selection state.
 12. Unpinning while the toolbar is in the dimmed state hides the toolbar immediately (reverts to standard show/hide behaviour).
 13. The pin state is preserved when the user navigates from the editor to the home page and back within the same session.
-14. The pin state resets to unpinned on a full page refresh.
+14. The pin state does not reset to unpinned on a full page refresh.
 15. The dimmed snapshot updates whenever the selection changes to a new valid (non-empty, non-mixed) state.

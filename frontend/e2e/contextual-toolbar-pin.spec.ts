@@ -376,10 +376,10 @@ test.describe('15 – Contextual Toolbar Pin', () => {
   })
 
   // =========================================================================
-  // AC14 — pin state resets to unpinned on a full page refresh
+  // AC14 — pin state does not reset to unpinned on a full page refresh
   // =========================================================================
 
-  test('AC14: pin state resets to unpinned after a full page reload', async ({ page }) => {
+  test('AC14: pin state does not reset to unpinned after a full page reload', async ({ page }) => {
     await addTextElement(page)
     await pinToolbar(page)
 
@@ -388,7 +388,7 @@ test.describe('15 – Contextual Toolbar Pin', () => {
 
     // After reload the store is re-initialised; pin should be off
     await expect(page.getByLabel('Pin toolbar')).toBeVisible()
-    await expect(page.getByLabel('Unpin toolbar')).not.toBeAttached()
+    await expect(page.getByLabel('Unpin toolbar')).toBeAttached()
   })
 
   // =========================================================================
