@@ -2,7 +2,7 @@
 
 ## Summary
 
-Extend canvas interaction with two gestures: click-and-drag on the canvas background to pan the viewport, and Shift+click to build a multi-element selection. The existing zoom behaviour (scroll wheel, keyboard shortcuts, header controls) is unchanged. When multiple elements are selected, dragging any one of them moves all selected elements together.
+Extend canvas interaction with three gestures: click-and-drag on the canvas background to pan the viewport, Shift+click to toggle individual elements in or out of the selection, and Shift+drag on the canvas background to draw a marquee rectangle that adds all enclosed elements to the selection. The existing zoom behaviour (scroll wheel, keyboard shortcuts, header controls) is unchanged. When multiple elements are selected, dragging any one of them moves all selected elements together.
 
 ## Scope
 
@@ -11,14 +11,14 @@ Extend canvas interaction with two gestures: click-and-drag on the canvas backgr
 - Plain click on the canvas background still deselects all elements (unchanged)
 - Shift+click an element: toggle that element in or out of the current selection
 - Shift+click the canvas background: no change to selection (no deselect)
+- Shift+drag on the canvas background: draw a marquee rectangle and add all elements whose bounding boxes are fully enclosed by the rectangle to the current selection
 - When multiple elements are selected, dragging any selected element moves all of them together
 - All selected elements show the same blue bounding-box outline as a single selected element
 - The contextual toolbar appears when all selected elements share the same type; it is hidden when the selection contains mixed types
 - `Escape` key clears the entire selection
 
 **Out of scope (future iterations)**
-- Marquee / rubber-band selection (drag a rectangle to select all enclosed elements)
-- Shift+drag to add elements within a drag rectangle to the selection
+- Marquee selection without Shift (replacing the current selection rather than adding to it)
 - Multi-element resize (handles for the combined bounding box)
 - Copy / paste of multiple elements
 - Alignment and distribution tools for multi-selections
@@ -154,6 +154,122 @@ All element components already pass the event object to `onSelect` — no change
 
 ---
 
+## Shift+Drag Marquee Selection
+
+### Interaction model
+
+| Event sequence | Outcome |
+|---|---|
+| `Shift` + `mousedown` on background → mouse moves ≥ 4 px → `mouseup` | Draw marquee; add fully enclosed elements to selection |
+| `Shift` + `mousedown` on background → `mouseup` (movement < 4 px) | No change to selection (treated as Shift+click on background) |
+| `Shift` + `mousedown` on element → drag | Element drag with Shift held — moves element normally (existing drag behaviour); does not start a marquee |
+
+The 4 px movement threshold is consistent with all other drag interactions in the editor.
+
+### Trigger conditions
+
+The marquee gesture activates when:
+- `e.shiftKey === true`
+- `e.button === 0`
+- The `mousedown` target is the canvas background (`e.target === e.currentTarget` or `dataset.canvasBg === 'true'`)
+
+If the `mousedown` target is an element (not the background), Shift+drag moves that element as normal and does not start a marquee.
+
+### Visual feedback
+
+While the Shift+drag is in progress a **marquee rectangle** is drawn over the canvas:
+
+- Rendered as an absolutely positioned `<div>` inside `Canvas`, above all elements but below any overlay UI.
+- Border: `1px dashed #3B82F6`.
+- Background: `rgba(59, 130, 246, 0.08)` (a very faint blue fill).
+- Sized and positioned to span from the initial `mousedown` point to the current mouse position, supporting drags in any direction (top-left, top-right, bottom-left, or bottom-right).
+
+The marquee `<div>` is removed immediately on `mouseup`.
+
+### Coordinate handling
+
+The marquee rectangle is tracked in **screen-space** (CSS pixels relative to the canvas container) during the drag, then converted to **world-space** (design-surface pixels) at `mouseup` to perform the hit-test. The conversion uses the current `zoom` and `panX`/`panY` from the canvas store:
+
+```
+worldX = (screenX - canvasOriginX - panX) / zoom
+worldY = (screenY - canvasOriginY - panY) / zoom
+```
+
+where `canvasOriginX`/`canvasOriginY` is the top-left of the canvas container measured with `getBoundingClientRect()`.
+
+### Hit-test: which elements are selected
+
+An element is added to the selection if its **full bounding box** is contained within the marquee rectangle (not just intersecting). This avoids accidentally selecting elements the user only partially swept over.
+
+```
+elementFullyInsideMarquee =
+  element.x >= marquee.x1 &&
+  element.y >= marquee.y1 &&
+  element.x + element.width  <= marquee.x2 &&
+  element.y + element.height <= marquee.y2
+```
+
+For `ArrowElement`, use the derived bounding box fields (`x`, `y`, `width`, `height`).
+
+Elements that are `locked` are not added to the selection regardless of their position.
+
+### Selection behaviour
+
+- Elements selected by the marquee are **added** to the existing `selectedIds` (they do not replace it), because Shift is held. This means a user can marquee-select one group, then Shift+click or Shift+drag to add more elements.
+- If the marquee encloses zero elements, `selectedIds` is unchanged.
+- The marquee does not deselect elements that are already selected but fall outside the rectangle.
+
+### Implementation
+
+`Canvas.handleMouseDown` gains a new branch for `e.shiftKey && backgroundTarget`:
+
+1. Record `marqueeStartRef = { mouseX: e.clientX, mouseY: e.clientY }` and set `isMarqueeRef = false`.
+2. Attach `mousemove` and `mouseup` listeners to `window`.
+3. On `mousemove`:
+   - Compute `rect = { x: min(start, current), y: min(start, current), w: |dx|, h: |dy| }` in screen-space.
+   - If displacement ≥ 4 px, set `isMarqueeRef = true` and update `marqueeRect` state (used to render the visual overlay).
+4. On `mouseup`:
+   - Remove window listeners.
+   - If `isMarqueeRef` is `false`: treat as Shift+click on background → no selection change (existing rule).
+   - If `isMarqueeRef` is `true`:
+     - Convert marquee rect to world-space.
+     - Compute hit-test against all elements.
+     - Call `addToSelection(matchingIds)` (see store change below).
+   - Clear `marqueeRect` state (removes visual overlay).
+   - Clear `marqueeStartRef` and `isMarqueeRef`.
+
+### Cursor
+
+| Canvas state | Cursor on background |
+|---|---|
+| Shift held, idle | `crosshair` |
+| Shift+drag (marquee active) | `crosshair` |
+
+The `crosshair` cursor is set on `document.body` when the marquee drag begins (displacement ≥ 4 px) and restored on `mouseup`, matching the pattern used by the existing pan and element-drag handlers.
+
+### Canvas store addition
+
+A new action is added alongside `toggleElementSelection`:
+
+```ts
+addToSelection(ids: string[]): void
+```
+
+Implementation:
+
+```ts
+addToSelection: (ids) =>
+  set((state) => {
+    ids.forEach((id) => {
+      if (!state.selectedIds.includes(id)) {
+        state.selectedIds.push(id)
+      }
+    })
+  }),
+```
+
+---
+
 ## Multi-Element Drag
 
 ### Behaviour
@@ -243,6 +359,7 @@ When a toolbar control changes a property (e.g. font size, stroke colour), the c
 
 ```ts
 toggleElementSelection(id: string): void
+addToSelection(ids: string[]): void
 ```
 
 No other store additions. The existing `clearSelection`, `selectElements`, `setZoom`, and `setPan` are sufficient.
@@ -255,7 +372,8 @@ No other store additions. The existing `clearSelection`, `selectElements`, `setZ
 ### `Canvas` additions
 
 - `bgPanStartRef`, `isBgPanningRef`, and `suppressClickRef` local refs.
-- `handleMouseDown` extended for background left-click drag.
+- `marqueeStartRef`, `isMarqueeRef`, and `marqueeRect` state (for rendering the visual overlay).
+- `handleMouseDown` extended for background left-click drag and Shift+drag marquee.
 - `handleClick` extended to suppress deselect when `suppressClickRef` is set.
 - Keyboard handler extended to call `clearSelection` on `Escape` when no element is in edit mode.
 
@@ -269,14 +387,14 @@ Each element component gains an optional `onDragEnd?: (delta: { x: number; y: nu
 
 | Component | Location | Change |
 |---|---|---|
-| `Canvas` | `src/components/editor/Canvas.tsx` | Background drag-to-pan; `Escape` → `clearSelection`; suppress click on drag commit |
+| `Canvas` | `src/components/editor/Canvas.tsx` | Background drag-to-pan; Shift+drag marquee selection; `Escape` → `clearSelection`; suppress click on drag commit; marquee `<div>` overlay |
 | `DesignSurface` | `src/components/editor/DesignSurface.tsx` | `shiftKey` routing in `onSelect`; `onDragEnd` callback wired for multi-element drag |
 | `TextElement` | `src/components/editor/elements/TextElement.tsx` | `onDragEnd` prop; fires delta on drag commit |
 | `ImageElement` | `src/components/editor/elements/ImageElement.tsx` | `onDragEnd` prop; fires delta on drag commit |
 | `ArrowElement` | `src/components/editor/elements/ArrowElement.tsx` | `onDragEnd` prop; fires delta on body drag commit |
 | `TableElement` | `src/components/editor/elements/TableElement.tsx` | `onDragEnd` prop; fires delta on drag commit |
 | `ContextualToolbar` | `src/components/editor/ContextualToolbar.tsx` | Hides on mixed-type multi-selection; applies property changes to all `selectedIds` |
-| `canvasStore` | `src/stores/canvasStore.ts` | Adds `toggleElementSelection` action |
+| `canvasStore` | `src/stores/canvasStore.ts` | Adds `toggleElementSelection` and `addToSelection` actions |
 
 `EditorPage`, `Toolbar`, and all other components require no changes.
 
@@ -302,3 +420,12 @@ Each element component gains an optional `onDragEnd?: (delta: { x: number; y: nu
 16. After a multi-element drag, all selected elements remain selected (selection is not cleared by the drag).
 17. Clicking an element without Shift while a multi-selection is active replaces the selection with only that element.
 18. Clicking the canvas background without Shift while a multi-selection is active deselects all elements.
+19. Holding Shift and dragging on the canvas background draws a dashed blue marquee rectangle with a faint blue fill as the pointer moves.
+20. The marquee rectangle correctly tracks drags in all four directions (top-left, top-right, bottom-left, bottom-right) from the initial `mousedown` point.
+21. On `mouseup`, elements whose bounding boxes are **fully enclosed** by the marquee rectangle are added to the existing selection; elements that only partially overlap are not selected.
+22. Locked elements are not added to the selection by the marquee, even when fully enclosed.
+23. If the marquee encloses no elements, the current selection is unchanged.
+24. The marquee visual overlay is removed immediately on `mouseup`.
+25. A Shift+drag that does not exceed the 4 px movement threshold is treated as a Shift+click on the background and does not change the selection.
+26. The cursor is `crosshair` on the canvas background while Shift is held and during an active marquee drag.
+27. Multiple successive Shift+drag operations accumulate elements into the selection (each adds to, not replaces, the current `selectedIds`).
