@@ -364,7 +364,7 @@ test.describe('15 – Contextual Toolbar Pin', () => {
     await pinToolbar(page)
 
     // Navigate away to the home page (SPA navigation keeps the store)
-    await page.getByRole('link', { name: /close/i }).click()
+    await page.getByRole('button', { name: /close design/i }).click()
     await expect(page).toHaveURL('/')
 
     // Navigate back to the editor
