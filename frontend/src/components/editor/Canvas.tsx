@@ -23,6 +23,7 @@ export function Canvas({ worldRef }: Props) {
   const setPan = useCanvasStore((s) => s.setPan)
   const clearSelection = useCanvasStore((s) => s.clearSelection)
   const addToSelection = useCanvasStore((s) => s.addToSelection)
+  const removeElements = useCanvasStore((s) => s.removeElements)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const spaceDownRef = useRef(false)
@@ -147,6 +148,17 @@ export function Canvas({ worldRef }: Props) {
       if (e.key === 'Escape' && !e.defaultPrevented) {
         clearSelection()
       }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && !e.defaultPrevented) {
+        const tag = (document.activeElement?.tagName ?? '').toLowerCase()
+        const isEditable = !!(document.activeElement as HTMLElement | null)?.isContentEditable
+        const isFormField = ['input', 'textarea', 'select'].includes(tag)
+        if (!isFormField && !isEditable) {
+          const { selectedIds } = useCanvasStore.getState()
+          if (selectedIds.length > 0) {
+            removeElements(selectedIds)
+          }
+        }
+      }
       const isMod = e.ctrlKey || e.metaKey
       if (!isMod) return
       if (e.key === '=' || e.key === '+') {
@@ -192,7 +204,7 @@ export function Canvas({ worldRef }: Props) {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
     }
-  }, [setZoom, setPan, clearSelection, addToSelection])
+  }, [setZoom, setPan, clearSelection, addToSelection, removeElements])
 
   const startPan = useCallback(
     (clientX: number, clientY: number) => {

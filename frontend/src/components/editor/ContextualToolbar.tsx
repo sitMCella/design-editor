@@ -487,6 +487,31 @@ function TableToolbar({
 }
 
 // ---------------------------------------------------------------------------
+// Trash icon
+// ---------------------------------------------------------------------------
+
+function TrashIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+    </svg>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Pin icon
 // ---------------------------------------------------------------------------
 
@@ -508,6 +533,7 @@ export function ContextualToolbar() {
   const elements = useCanvasStore((s) => s.elements)
   const selectedIds = useCanvasStore((s) => s.selectedIds)
   const updateElement = useCanvasStore((s) => s.updateElement)
+  const removeElements = useCanvasStore((s) => s.removeElements)
   const isToolbarPinned = useUIStore((s) => s.isToolbarPinned)
   const toggleToolbarPin = useUIStore((s) => s.toggleToolbarPin)
 
@@ -576,6 +602,16 @@ export function ContextualToolbar() {
 
       <div className={`flex flex-1 items-center gap-2 ${isDimmed ? 'opacity-40' : ''}`}>
         {controls}
+        <button
+          aria-label="Delete"
+          title="Delete"
+          onClick={() => {
+            if (selectedIds.length > 0) removeElements(selectedIds)
+          }}
+          className="ml-auto flex h-6 w-6 items-center justify-center rounded border-l border-gray-200 pl-2 text-gray-500 hover:bg-red-50 hover:text-red-500"
+        >
+          <TrashIcon />
+        </button>
       </div>
 
       <div className="flex items-center border-l border-gray-200 pl-2">
