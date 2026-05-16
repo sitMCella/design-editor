@@ -467,8 +467,7 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
 
       expect(response.statusCode).toBe(200);
       const canvas = extractCanvasFromPatch();
-      const saved = canvas?.elements[0] as Record<string, unknown>;
-      expect(saved).not.toHaveProperty('startAnchor');
+      expect(canvas?.elements[0]).not.toHaveProperty('startAnchor');
     });
 
     it('stores an arrow without endAnchor when the connected element was deleted', async () => {
@@ -491,8 +490,7 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
 
       expect(response.statusCode).toBe(200);
       const canvas = extractCanvasFromPatch();
-      const saved = canvas?.elements[0] as Record<string, unknown>;
-      expect(saved).not.toHaveProperty('endAnchor');
+      expect(canvas?.elements[0]).not.toHaveProperty('endAnchor');
     });
 
     it('stores an arrow without either anchor when both connected elements were deleted', async () => {
@@ -519,9 +517,8 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
 
       expect(response.statusCode).toBe(200);
       const canvas = extractCanvasFromPatch();
-      const saved = canvas?.elements[0] as Record<string, unknown>;
-      expect(saved).not.toHaveProperty('startAnchor');
-      expect(saved).not.toHaveProperty('endAnchor');
+      expect(canvas?.elements[0]).not.toHaveProperty('startAnchor');
+      expect(canvas?.elements[0]).not.toHaveProperty('endAnchor');
     });
 
     it('GET returns the arrow without dangling anchor after the cleanup was persisted', async () => {
@@ -560,9 +557,8 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
 
       expect(response.statusCode).toBe(200);
       const canvas = extractCanvasFromPatch();
-      const saved = canvas?.elements[1] as Record<string, unknown>;
-      expect(saved).toMatchObject({ endAnchor: { elementId: 'txt-3', side: 'left' } });
-      expect(saved).not.toHaveProperty('startAnchor');
+      expect(canvas?.elements[1]).toMatchObject({ endAnchor: { elementId: 'txt-3', side: 'left' } });
+      expect(canvas?.elements[1]).not.toHaveProperty('startAnchor');
     });
 
     it('round-trip: PATCH cleanup → GET returns arrow without stale anchors', async () => {
