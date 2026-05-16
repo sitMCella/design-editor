@@ -16,7 +16,10 @@ async function addArrowElement(page: Page) {
 }
 
 async function clickBackground(page: Page) {
-  await page.locator('.bg-gray-100').first().click({ position: { x: 10, y: 10 }, force: true })
+  await page
+    .locator('.bg-gray-100')
+    .first()
+    .click({ position: { x: 10, y: 10 }, force: true })
 }
 
 async function getTextElement(page: Page) {
@@ -230,10 +233,7 @@ test.describe('15 – Contextual Toolbar Pin', () => {
     await pinToolbar(page)
     await clickBackground(page)
 
-    const controlsArea = page
-      .getByTestId('contextual-toolbar')
-      .locator('.opacity-40')
-      .first()
+    const controlsArea = page.getByTestId('contextual-toolbar').locator('.opacity-40').first()
     await expect(controlsArea).toBeVisible()
   })
 

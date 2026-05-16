@@ -1506,14 +1506,20 @@ describe('AC4 (feat15): tooltip text reflects pin state', () => {
 describe('AC6 (feat15): pinned + active selection has live controls', () => {
   it('shows live controls when pinned and one element is selected', () => {
     useUIStore.setState({ isToolbarPinned: true })
-    useCanvasStore.setState({ elements: [makeElement('el-1', { fontSize: 20 })], selectedIds: ['el-1'] })
+    useCanvasStore.setState({
+      elements: [makeElement('el-1', { fontSize: 20 })],
+      selectedIds: ['el-1'],
+    })
     renderToolbar()
     expect((screen.getByLabelText('Font size') as HTMLInputElement).value).toBe('20')
   })
 
   it('updating a control while pinned + live applies to the canvas store', () => {
     useUIStore.setState({ isToolbarPinned: true })
-    useCanvasStore.setState({ elements: [makeElement('el-1', { fontSize: 16 })], selectedIds: ['el-1'] })
+    useCanvasStore.setState({
+      elements: [makeElement('el-1', { fontSize: 16 })],
+      selectedIds: ['el-1'],
+    })
     renderToolbar()
     fireEvent.change(screen.getByLabelText('Font size'), { target: { value: '32' } })
     expect(asText(useCanvasStore.getState().elements[0]).fontSize).toBe(32)
@@ -1528,7 +1534,10 @@ describe('AC7 (feat15): pinned + same-type multi-selection has live controls', (
   it('shows live controls for same-type multi-selection when pinned', () => {
     useUIStore.setState({ isToolbarPinned: true })
     useCanvasStore.setState({
-      elements: [makeElement('el-1', { fontSize: 14 }), makeElement('el-2', { fontSize: 14, x: 400 })],
+      elements: [
+        makeElement('el-1', { fontSize: 14 }),
+        makeElement('el-2', { fontSize: 14, x: 400 }),
+      ],
       selectedIds: ['el-1', 'el-2'],
     })
     renderToolbar()
@@ -1538,7 +1547,10 @@ describe('AC7 (feat15): pinned + same-type multi-selection has live controls', (
   it('toolbar change applies to all selected elements when pinned', () => {
     useUIStore.setState({ isToolbarPinned: true })
     useCanvasStore.setState({
-      elements: [makeElement('el-1', { fontSize: 14 }), makeElement('el-2', { fontSize: 14, x: 400 })],
+      elements: [
+        makeElement('el-1', { fontSize: 14 }),
+        makeElement('el-2', { fontSize: 14, x: 400 }),
+      ],
       selectedIds: ['el-1', 'el-2'],
     })
     renderToolbar()
@@ -1562,7 +1574,9 @@ describe('AC8 (feat15): pinned + empty selection shows dimmed snapshot', () => {
     // Clear selection
     useCanvasStore.setState({ selectedIds: [] })
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
+      >
         <ContextualToolbar />
       </QueryClientProvider>
     )
@@ -1578,7 +1592,9 @@ describe('AC8 (feat15): pinned + empty selection shows dimmed snapshot', () => {
     const { rerender } = renderToolbar()
     useCanvasStore.setState({ selectedIds: [] })
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
+      >
         <ContextualToolbar />
       </QueryClientProvider>
     )
@@ -1600,7 +1616,9 @@ describe('AC9 (feat15): pinned + mixed selection shows dimmed snapshot', () => {
       selectedIds: ['el-1', 'arr-1'],
     })
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
+      >
         <ContextualToolbar />
       </QueryClientProvider>
     )
@@ -1623,7 +1641,9 @@ describe('AC10 (feat15): dimmed controls do not mutate canvas state', () => {
     // Clear selection → enters dimmed state
     useCanvasStore.setState({ selectedIds: [] })
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
+      >
         <ContextualToolbar />
       </QueryClientProvider>
     )
@@ -1647,7 +1667,9 @@ describe('AC11 (feat15): pin button is always interactive', () => {
     const { rerender } = renderToolbar()
     useCanvasStore.setState({ selectedIds: [] })
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
+      >
         <ContextualToolbar />
       </QueryClientProvider>
     )
@@ -1667,14 +1689,18 @@ describe('AC12 (feat15): unpinning while dimmed hides toolbar', () => {
     const { rerender } = renderToolbar()
     useCanvasStore.setState({ selectedIds: [] })
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
+      >
         <ContextualToolbar />
       </QueryClientProvider>
     )
     // Unpin while dimmed
     fireEvent.click(screen.getByLabelText('Unpin toolbar'))
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
+      >
         <ContextualToolbar />
       </QueryClientProvider>
     )
@@ -1724,14 +1750,18 @@ describe('AC15 (feat15): snapshot updates with new valid selection', () => {
     // Switch to el-2
     useCanvasStore.setState({ selectedIds: ['el-2'] })
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
+      >
         <ContextualToolbar />
       </QueryClientProvider>
     )
     // Clear selection
     useCanvasStore.setState({ selectedIds: [] })
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}
+      >
         <ContextualToolbar />
       </QueryClientProvider>
     )

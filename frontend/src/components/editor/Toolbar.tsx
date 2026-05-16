@@ -19,7 +19,9 @@ export function Toolbar() {
     setActiveTool('text')
 
     // Offset each new text element so successive ones don't stack exactly on top of each other.
-    const existingTextCount = useCanvasStore.getState().elements.filter((e) => e.type === 'text').length
+    const existingTextCount = useCanvasStore
+      .getState()
+      .elements.filter((e) => e.type === 'text').length
     const cascadeIdx = existingTextCount % TEXT_CASCADE_MAX
     const cascade = cascadeIdx * TEXT_CASCADE_STEP
 
