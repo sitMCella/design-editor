@@ -132,6 +132,49 @@ describe('selectElements / clearSelection', () => {
 })
 
 // ---------------------------------------------------------------------------
+// toggleElementSelection — feat14 AC6/AC7
+// ---------------------------------------------------------------------------
+
+describe('toggleElementSelection (feat14)', () => {
+  it('AC6: adds an unselected element to selectedIds', () => {
+    useCanvasStore.setState({ elements: [makeElement({ id: 'el-1' })], selectedIds: [] })
+    useCanvasStore.getState().toggleElementSelection('el-1')
+    expect(useCanvasStore.getState().selectedIds).toContain('el-1')
+  })
+
+  it('AC7: removes an already-selected element from selectedIds', () => {
+    useCanvasStore.setState({ elements: [makeElement({ id: 'el-1' })], selectedIds: ['el-1'] })
+    useCanvasStore.getState().toggleElementSelection('el-1')
+    expect(useCanvasStore.getState().selectedIds).not.toContain('el-1')
+  })
+
+  it('preserves other selected elements when toggling one off', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'el-1' }), makeElement({ id: 'el-2' })],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    useCanvasStore.getState().toggleElementSelection('el-1')
+    expect(useCanvasStore.getState().selectedIds).toEqual(['el-2'])
+  })
+
+  it('preserves other selected elements when toggling one on', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'el-1' }), makeElement({ id: 'el-2' })],
+      selectedIds: ['el-2'],
+    })
+    useCanvasStore.getState().toggleElementSelection('el-1')
+    expect(useCanvasStore.getState().selectedIds).toContain('el-1')
+    expect(useCanvasStore.getState().selectedIds).toContain('el-2')
+  })
+
+  it('is a no-op on selectedIds when toggling an id that is not in elements', () => {
+    useCanvasStore.setState({ elements: [], selectedIds: [] })
+    useCanvasStore.getState().toggleElementSelection('ghost-id')
+    expect(useCanvasStore.getState().selectedIds).toContain('ghost-id')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // initDesign — resets store for a new design
 // ---------------------------------------------------------------------------
 

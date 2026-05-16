@@ -745,3 +745,225 @@ describe('AC25 — scrollbar thumb size is proportional to zoom', () => {
     expect(thumbAt05).toBeGreaterThan(thumbAt1)
   })
 })
+
+// ---------------------------------------------------------------------------
+// feat14 AC1–3 — background left-click drag-to-pan
+// ---------------------------------------------------------------------------
+
+describe('AC1–3 (feat14) — background left-click drag-to-pan', () => {
+  afterEach(() => {
+    document.body.style.cursor = ''
+    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+  })
+
+  it('AC1: pans viewport when left-click drag exceeds 4px on background', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.mouseDown(canvasEl, { button: 0, clientX: 50, clientY: 50 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 150, clientY: 130, bubbles: true }))
+
+    expect(useCanvasStore.getState().panX).toBe(100)
+    expect(useCanvasStore.getState().panY).toBe(80)
+  })
+
+  it('AC1: pan delta is relative to mousedown position, not origin', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 10, panY: 20 })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.mouseDown(canvasEl, { button: 0, clientX: 100, clientY: 100 })
+    window.dispatchEvent(
+      new MouseEvent('mousemove', { clientX: 140, clientY: 160, bubbles: true })
+    )
+
+    expect(useCanvasStore.getState().panX).toBe(50)  // 10 + 40
+    expect(useCanvasStore.getState().panY).toBe(80)  // 20 + 60
+  })
+
+  it('AC1: pan stops after mouseup — further movement does not update pan', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.mouseDown(canvasEl, { button: 0, clientX: 0, clientY: 0 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50, bubbles: true }))
+    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+    window.dispatchEvent(
+      new MouseEvent('mousemove', { clientX: 300, clientY: 300, bubbles: true })
+    )
+
+    expect(useCanvasStore.getState().panX).toBe(50)
+    expect(useCanvasStore.getState().panY).toBe(50)
+  })
+
+  it('AC2: movement under 4px threshold does not pan', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.mouseDown(canvasEl, { button: 0, clientX: 0, clientY: 0 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 2, clientY: 2, bubbles: true }))
+
+    expect(useCanvasStore.getState().panX).toBe(0)
+    expect(useCanvasStore.getState().panY).toBe(0)
+  })
+
+  it('AC2: sub-threshold background mousedown followed by mouseup deselects', () => {
+    useCanvasStore.setState({
+      zoom: 1,
+      panX: 0,
+      panY: 0,
+      elements: [makeElement('el-1')],
+      selectedIds: ['el-1'],
+    })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.mouseDown(canvasEl, { button: 0, clientX: 0, clientY: 0 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 1, clientY: 1, bubbles: true }))
+    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+    fireEvent.click(canvasEl, { clientX: 1, clientY: 1 })
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('AC3: grabbing cursor is set on body once 4px threshold is crossed', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.mouseDown(canvasEl, { button: 0, clientX: 0, clientY: 0 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50, bubbles: true }))
+
+    expect(document.body.style.cursor).toBe('grabbing')
+  })
+
+  it('AC3: grabbing cursor is restored on mouseup', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.mouseDown(canvasEl, { button: 0, clientX: 0, clientY: 0 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50, bubbles: true }))
+    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+
+    expect(document.body.style.cursor).toBe('')
+  })
+
+  it('AC3: a pan that does not cross 4px threshold does not set grabbing cursor', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.mouseDown(canvasEl, { button: 0, clientX: 0, clientY: 0 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 2, clientY: 2, bubbles: true }))
+
+    expect(document.body.style.cursor).not.toBe('grabbing')
+  })
+
+  it('AC4: Space+drag still pans without triggering bg-pan logic', () => {
+    useCanvasStore.setState({ zoom: 1, panX: 0, panY: 0 })
+    const { container } = render(<Canvas />)
+    const canvasEl = container.firstChild as HTMLElement
+
+    fireEvent.keyDown(window, { code: 'Space' })
+    // Space pan uses the overlay div; middle-mouse still uses the container
+    fireEvent.mouseDown(canvasEl, { button: 1, clientX: 0, clientY: 0 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 60, clientY: 30, bubbles: true }))
+
+    expect(useCanvasStore.getState().panX).toBe(60)
+    expect(useCanvasStore.getState().panY).toBe(30)
+
+    fireEvent.keyUp(window, { code: 'Space' })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat14 AC9 — shift+click canvas background does not change selection
+// ---------------------------------------------------------------------------
+
+describe('AC9 (feat14) — shift+click canvas background', () => {
+  it('shift+click on background preserves the current selection', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeElement('el-2')],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    const { container } = render(<Canvas />)
+
+    fireEvent.click(container.firstChild as HTMLElement, { shiftKey: true })
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(2)
+    expect(useCanvasStore.getState().selectedIds).toContain('el-1')
+    expect(useCanvasStore.getState().selectedIds).toContain('el-2')
+  })
+
+  it('shift+click on background with empty selection leaves it empty', () => {
+    useCanvasStore.setState({ elements: [], selectedIds: [] })
+    const { container } = render(<Canvas />)
+
+    fireEvent.click(container.firstChild as HTMLElement, { shiftKey: true })
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat14 AC11 — Escape clears selection
+// ---------------------------------------------------------------------------
+
+describe('AC11 (feat14) — Escape clears the entire selection', () => {
+  it('Escape clears selectedIds when no element is in edit mode', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeElement('el-2')],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('Escape is a no-op when nothing is selected', () => {
+    useCanvasStore.setState({ elements: [], selectedIds: [] })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('Escape does not fire clearSelection when defaultPrevented is set', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1')],
+      selectedIds: ['el-1'],
+    })
+    render(<Canvas />)
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    Object.defineProperty(event, 'defaultPrevented', { value: true, writable: false })
+    window.dispatchEvent(event)
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat14 AC18 — plain click on background deselects multi-selection
+// ---------------------------------------------------------------------------
+
+describe('AC18 (feat14) — plain click background deselects multi-selection', () => {
+  it('plain click on canvas background clears all selected elements', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeElement('el-2')],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    const { container } = render(<Canvas />)
+
+    fireEvent.click(container.firstChild as HTMLElement)
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+})
