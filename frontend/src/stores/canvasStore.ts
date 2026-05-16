@@ -111,8 +111,20 @@ export const useCanvasStore = create<State & Actions>()(
 
     removeElements: (ids) =>
       set((state) => {
-        state.elements = state.elements.filter((el) => !ids.includes(el.id))
-        state.selectedIds = state.selectedIds.filter((id) => !ids.includes(id))
+        const idSet = new Set(ids)
+        state.elements = state.elements.filter((el) => !idSet.has(el.id))
+        state.selectedIds = state.selectedIds.filter((id) => !idSet.has(id))
+        // Clear dangling anchor references on remaining arrows
+        for (const el of state.elements) {
+          if (el.type !== 'arrow') continue
+          const arr = el as ArrowElement
+          if (arr.startAnchor && idSet.has(arr.startAnchor.elementId)) {
+            arr.startAnchor = undefined
+          }
+          if (arr.endAnchor && idSet.has(arr.endAnchor.elementId)) {
+            arr.endAnchor = undefined
+          }
+        }
         state.isDirty = true
       }),
 

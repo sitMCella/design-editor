@@ -18,6 +18,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @specs/features/12-card-placeholder-canvas-rendering.md
 @specs/features/13-canvas-infinite.md
 @specs/features/14-mouse-gestures.md
+@specs/features/15-contextual-toolbar-pin.md
+@specs/features/16-delete-canvas-element.md
 
 ## Project Overview
 
