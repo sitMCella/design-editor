@@ -68,6 +68,10 @@ test.describe('13 – Infinite Canvas', () => {
   test.beforeEach(async ({ page }) => {
     await mockApiRoutes(page)
     await page.goto(EDITOR_URL)
+    // Wait for the Canvas world layer to mount — the editor loads the project
+    // asynchronously after navigation, so the keyboard handler may not be
+    // registered yet. Waiting for the world layer guarantees it is.
+    await page.locator('[style*="transform-origin"]').waitFor()
   })
 
   // =========================================================================
