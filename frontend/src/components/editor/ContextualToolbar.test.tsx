@@ -1769,3 +1769,184 @@ describe('AC15 (feat15): snapshot updates with new valid selection', () => {
     expect((screen.getByLabelText('Font size') as HTMLInputElement).value).toBe('99')
   })
 })
+
+// ---------------------------------------------------------------------------
+// feat16 AC1/2 — delete button is always present in the toolbar with a live selection
+// ---------------------------------------------------------------------------
+
+describe('AC1/2 (feat16): delete button presence and tooltip', () => {
+  it('AC1: delete button is rendered when a text element is selected', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    renderToolbar()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+  })
+
+  it('AC1: delete button is rendered when an image element is selected', () => {
+    useCanvasStore.setState({ elements: [makeImageElement('img-1')], selectedIds: ['img-1'] })
+    renderToolbar()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+  })
+
+  it('AC1: delete button is rendered when an arrow element is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeArrowElement('arr-1')],
+      selectedIds: ['arr-1'],
+    })
+    renderToolbar()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+  })
+
+  it('AC1: delete button is rendered when a table element is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeTableElement('tbl-1')],
+      selectedIds: ['tbl-1'],
+    })
+    renderToolbar()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+  })
+
+  it('AC2: delete button has title "Delete" for tooltip', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    renderToolbar()
+    const btn = screen.getByRole('button', { name: 'Delete' })
+    expect(btn).toHaveAttribute('title', 'Delete')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat16 AC4/5 — clicking delete removes the selected element
+// ---------------------------------------------------------------------------
+
+describe('AC4/5 (feat16): delete button removes the selected element', () => {
+  it('AC4: removes the selected text element from the canvas', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('AC4: clears selectedIds after deletion', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('AC5: deletes an image element', () => {
+    useCanvasStore.setState({ elements: [makeImageElement('img-1')], selectedIds: ['img-1'] })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('AC5: deletes an arrow element', () => {
+    useCanvasStore.setState({ elements: [makeArrowElement('arr-1')], selectedIds: ['arr-1'] })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('AC5: deletes a table element', () => {
+    useCanvasStore.setState({ elements: [makeTableElement('tbl-1')], selectedIds: ['tbl-1'] })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('leaves unselected elements untouched', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeElement('el-2')],
+      selectedIds: ['el-1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    const remaining = useCanvasStore.getState().elements
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0].id).toBe('el-2')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat16 AC6 — multi-element deletion via the toolbar button
+// ---------------------------------------------------------------------------
+
+describe('AC6 (feat16): delete button removes all elements in a multi-selection', () => {
+  it('removes all selected elements at once', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeElement('el-2'), makeElement('el-3')],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    const remaining = useCanvasStore.getState().elements
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0].id).toBe('el-3')
+  })
+
+  it('clears selectedIds after multi-element deletion', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeElement('el-2')],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat16 AC7 — toolbar hides after deletion in unpinned mode
+// ---------------------------------------------------------------------------
+
+describe('AC7 (feat16): toolbar hides after deletion when unpinned', () => {
+  it('toolbar disappears once selectedIds is empty after deletion', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    useUIStore.setState({ isToolbarPinned: false })
+    const { container } = renderToolbar()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+
+    expect(container.firstChild).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat16 AC18 — delete button non-interactive in pinned-dimmed state
+// ---------------------------------------------------------------------------
+
+describe('AC18 (feat16): delete button is present but non-interactive when pinned-dimmed', () => {
+  it('delete button is visible in the toolbar in the pinned-dimmed state', () => {
+    useUIStore.setState({ isToolbarPinned: true })
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    const { rerender } = renderToolbar()
+
+    // Clear selection — enters pinned-dimmed state with last snapshot retained
+    useCanvasStore.setState({ selectedIds: [] })
+    rerender(
+      <QueryClientProvider client={makeQueryClient()}>
+        <ContextualToolbar />
+      </QueryClientProvider>
+    )
+
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+  })
+
+  it('AC18: clicking delete in pinned-dimmed state has no effect on the canvas', () => {
+    useUIStore.setState({ isToolbarPinned: true })
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    const { rerender } = renderToolbar()
+
+    // Clear selection — enters pinned-dimmed state
+    useCanvasStore.setState({ selectedIds: [] })
+    rerender(
+      <QueryClientProvider client={makeQueryClient()}>
+        <ContextualToolbar />
+      </QueryClientProvider>
+    )
+
+    // Button's onClick guard requires selectedIds.length > 0, so this is a no-op
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+})

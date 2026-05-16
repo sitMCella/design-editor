@@ -1257,3 +1257,182 @@ describe('AC19–27 (feat14) — Shift+drag marquee selection', () => {
     expect(useCanvasStore.getState().selectedIds).toContain('el-2')
   })
 })
+
+// ---------------------------------------------------------------------------
+// feat16 AC8/9/14 — Delete and Backspace keys remove selected elements
+// ---------------------------------------------------------------------------
+
+describe('AC8/9/14 (feat16) — Delete and Backspace keyboard deletion', () => {
+  it('AC8: Delete removes all selected elements', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('AC9: Backspace has the same effect as Delete', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Backspace' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('AC14: selection is cleared after Delete', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeElement('el-2')],
+      selectedIds: ['el-1', 'el-2'],
+    })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('AC14: selection is cleared after Backspace', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Backspace' })
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('removes multiple selected elements at once', () => {
+    useCanvasStore.setState({
+      elements: [makeElement('el-1'), makeElement('el-2'), makeElement('el-3')],
+      selectedIds: ['el-1', 'el-3'],
+    })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    const remaining = useCanvasStore.getState().elements
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0].id).toBe('el-2')
+  })
+
+  it('is a no-op when selectedIds is empty', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: [] })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+
+  it('does not fire when defaultPrevented is set', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    const event = new KeyboardEvent('keydown', { key: 'Delete', bubbles: true })
+    Object.defineProperty(event, 'defaultPrevented', { value: true, writable: false })
+    window.dispatchEvent(event)
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat16 AC10–13 — Delete / Backspace suppressed when a text-entry context is focused
+// ---------------------------------------------------------------------------
+
+describe('AC10–13 (feat16) — Delete/Backspace suppressed in text-entry contexts', () => {
+  // jsdom does not reliably update document.activeElement for contentEditable divs,
+  // so we stub the getter directly to simulate the focused-contentEditable scenario.
+  function stubActiveElement(stub: Partial<HTMLElement>) {
+    Object.defineProperty(document, 'activeElement', {
+      configurable: true,
+      get: () => stub,
+    })
+  }
+
+  afterEach(() => {
+    // Restore the prototype getter so subsequent tests use real activeElement behaviour
+    const proto = Object.getOwnPropertyDescriptor(Document.prototype, 'activeElement')
+    if (proto) Object.defineProperty(document, 'activeElement', proto)
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+  })
+
+  it('AC10: Delete does not fire when a contentEditable element is focused', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    stubActiveElement({ tagName: 'DIV', isContentEditable: true } as HTMLElement)
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+
+  it('AC10: Backspace does not fire when a contentEditable element is focused', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    stubActiveElement({ tagName: 'DIV', isContentEditable: true } as HTMLElement)
+
+    fireEvent.keyDown(window, { key: 'Backspace' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+
+  it('AC12/13: Delete does not fire when an <input> is focused', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    document.body.removeChild(input)
+  })
+
+  it('AC13: Delete does not fire when a <textarea> is focused', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    const textarea = document.createElement('textarea')
+    document.body.appendChild(textarea)
+    textarea.focus()
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    document.body.removeChild(textarea)
+  })
+
+  it('AC13: Delete does not fire when a <select> is focused', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    const select = document.createElement('select')
+    document.body.appendChild(select)
+    select.focus()
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    document.body.removeChild(select)
+  })
+
+  it('AC13: Backspace does not fire when an <input> is focused', () => {
+    useCanvasStore.setState({ elements: [makeElement('el-1')], selectedIds: ['el-1'] })
+    render(<Canvas />)
+
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+
+    fireEvent.keyDown(window, { key: 'Backspace' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+    document.body.removeChild(input)
+  })
+})

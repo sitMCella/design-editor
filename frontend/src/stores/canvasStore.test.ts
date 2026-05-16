@@ -638,3 +638,149 @@ describe('toggleElementSelection (feat14)', () => {
     expect(useCanvasStore.getState().elements).toHaveLength(2)
   })
 })
+
+// ---------------------------------------------------------------------------
+// feat16 — removeElements: arrow anchor cleanup, isDirty, multi-delete
+// ---------------------------------------------------------------------------
+
+const makeArrowElement = (id: string, overrides: Partial<ArrowElement> = {}): ArrowElement => ({
+  id,
+  type: 'arrow',
+  x1: 540,
+  y1: 360,
+  x2: 740,
+  y2: 360,
+  x: 539,
+  y: 359,
+  width: 202,
+  height: 4,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  stroke: '#111827',
+  strokeWidth: 2,
+  arrowHead: 'end',
+  ...overrides,
+})
+
+// AC16 — deletion marks the store dirty
+describe('AC16 (feat16): removeElements marks isDirty', () => {
+  it('sets isDirty to true after removing an element', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.setState({ isDirty: false })
+    useCanvasStore.getState().removeElements(['a'])
+    expect(useCanvasStore.getState().isDirty).toBe(true)
+  })
+})
+
+// AC16 / AC19 — multiple elements removed atomically; successive deletions are independent
+describe('AC16/AC19 (feat16): removeElements handles multiple ids', () => {
+  it('removes all listed ids in a single call', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'b' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'c' }))
+    useCanvasStore.getState().removeElements(['a', 'c'])
+    const ids = useCanvasStore.getState().elements.map((e) => e.id)
+    expect(ids).toEqual(['b'])
+  })
+
+  it('AC19: successive removals each act on the then-current element list', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'b' }))
+    useCanvasStore.getState().addElement(makeElement({ id: 'c' }))
+
+    useCanvasStore.getState().removeElements(['a'])
+    expect(useCanvasStore.getState().elements.map((e) => e.id)).toEqual(['b', 'c'])
+
+    useCanvasStore.getState().removeElements(['c'])
+    expect(useCanvasStore.getState().elements.map((e) => e.id)).toEqual(['b'])
+  })
+
+  it('is a no-op for ids that do not exist', () => {
+    useCanvasStore.getState().addElement(makeElement({ id: 'a' }))
+    useCanvasStore.getState().removeElements(['ghost'])
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+})
+
+// AC15 — dangling arrow anchor references are cleared on deletion
+describe('AC15 (feat16): removeElements clears dangling arrow anchors', () => {
+  it('clears startAnchor on an arrow when its target element is deleted', () => {
+    const target = makeElement({ id: 'target' })
+    const arrow = makeArrowElement('arrow-1', {
+      startAnchor: { elementId: 'target', side: 'right' },
+    })
+    useCanvasStore.setState({ elements: [target, arrow] })
+
+    useCanvasStore.getState().removeElements(['target'])
+
+    const remaining = useCanvasStore
+      .getState()
+      .elements.find((e) => e.id === 'arrow-1') as ArrowElement
+    expect(remaining).toBeDefined()
+    expect(remaining.startAnchor).toBeUndefined()
+  })
+
+  it('clears endAnchor on an arrow when its target element is deleted', () => {
+    const target = makeElement({ id: 'target' })
+    const arrow = makeArrowElement('arrow-1', {
+      endAnchor: { elementId: 'target', side: 'left' },
+    })
+    useCanvasStore.setState({ elements: [target, arrow] })
+
+    useCanvasStore.getState().removeElements(['target'])
+
+    const remaining = useCanvasStore
+      .getState()
+      .elements.find((e) => e.id === 'arrow-1') as ArrowElement
+    expect(remaining).toBeDefined()
+    expect(remaining.endAnchor).toBeUndefined()
+  })
+
+  it('clears both startAnchor and endAnchor when both point to the deleted element', () => {
+    const target = makeElement({ id: 'target' })
+    const arrow = makeArrowElement('arrow-1', {
+      startAnchor: { elementId: 'target', side: 'top' },
+      endAnchor: { elementId: 'target', side: 'bottom' },
+    })
+    useCanvasStore.setState({ elements: [target, arrow] })
+
+    useCanvasStore.getState().removeElements(['target'])
+
+    const remaining = useCanvasStore
+      .getState()
+      .elements.find((e) => e.id === 'arrow-1') as ArrowElement
+    expect(remaining.startAnchor).toBeUndefined()
+    expect(remaining.endAnchor).toBeUndefined()
+  })
+
+  it('leaves anchors pointing to a non-deleted element intact', () => {
+    const kept = makeElement({ id: 'kept' })
+    const deleted = makeElement({ id: 'deleted' })
+    const arrow = makeArrowElement('arrow-1', {
+      endAnchor: { elementId: 'kept', side: 'left' },
+    })
+    useCanvasStore.setState({ elements: [kept, deleted, arrow] })
+
+    useCanvasStore.getState().removeElements(['deleted'])
+
+    const remaining = useCanvasStore
+      .getState()
+      .elements.find((e) => e.id === 'arrow-1') as ArrowElement
+    expect(remaining.endAnchor).toEqual({ elementId: 'kept', side: 'left' })
+  })
+
+  it('AC15: the arrow itself remains on the canvas after its connected element is deleted', () => {
+    const target = makeElement({ id: 'target' })
+    const arrow = makeArrowElement('arrow-1', {
+      endAnchor: { elementId: 'target', side: 'left' },
+    })
+    useCanvasStore.setState({ elements: [target, arrow] })
+
+    useCanvasStore.getState().removeElements(['target'])
+
+    const ids = useCanvasStore.getState().elements.map((e) => e.id)
+    expect(ids).toContain('arrow-1')
+    expect(ids).not.toContain('target')
+  })
+})
