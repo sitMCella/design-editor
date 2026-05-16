@@ -348,7 +348,7 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
       expect(response.statusCode).toBe(200);
       const body = response.json<{ data: { canvas: { elements: { id: string }[] } } }>();
       expect(body.data.canvas.elements).toHaveLength(1);
-      expect(body.data.canvas.elements[0].id).toBe('txt-1');
+      expect(body.data.canvas.elements[0]!.id).toBe('txt-1');
     });
 
     it('round-trip: PATCH with deleted element → GET returns canvas without it', async () => {
@@ -373,7 +373,7 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
 
       const body = getResp.json<{ data: { canvas: { elements: { id: string }[] } } }>();
       expect(body.data.canvas.elements).toHaveLength(1);
-      expect(body.data.canvas.elements[0].id).toBe('txt-1');
+      expect(body.data.canvas.elements[0]!.id).toBe('txt-1');
     });
 
     it('round-trip: PATCH with empty canvas → GET returns empty elements array', async () => {
