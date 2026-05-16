@@ -223,3 +223,67 @@ describe('bbox dimensions', () => {
     expect(elementsBBox([el])).toEqual({ x: 0, y: 0, width: 1, height: 1 })
   })
 })
+
+// ---------------------------------------------------------------------------
+// feat17 AC15 — hidden elements are excluded from the bounding box
+// ---------------------------------------------------------------------------
+
+describe('hidden elements excluded from bbox (feat17 AC15)', () => {
+  it('returns null when the only element is hidden', () => {
+    const el = makeText({ hidden: true })
+    expect(elementsBBox([el])).toBeNull()
+  })
+
+  it('returns null when all elements are hidden', () => {
+    const elements = [
+      makeText({ id: 't1', hidden: true }),
+      makeText({ id: 't2', x: 300, hidden: true }),
+    ]
+    expect(elementsBBox(elements)).toBeNull()
+  })
+
+  it('returns the bbox of visible elements only, ignoring a hidden one', () => {
+    // visible: x=100, y=100, w=100, h=50 → right=200, bottom=150
+    // hidden:  x=0,   y=0,   w=50,  h=50 (should not expand the bbox)
+    const visible = makeText({ id: 'vis', x: 100, y: 100, width: 100, height: 50 })
+    const hidden = makeText({ id: 'hid', x: 0, y: 0, width: 50, height: 50, hidden: true })
+    const result = elementsBBox([visible, hidden])
+    expect(result).toEqual({ x: 100, y: 100, width: 100, height: 50 })
+  })
+
+  it('computes the union of multiple visible elements ignoring hidden ones', () => {
+    // v1: x=10,  y=10,  right=110, bottom=60
+    // h1: x=500, y=500, right=600, bottom=600 (hidden — must be excluded)
+    // v2: x=50,  y=100, right=250, bottom=150
+    // union of v1+v2: x=10, y=10, right=250, bottom=150 → width=240, height=140
+    const v1 = makeText({ id: 'v1', x: 10, y: 10, width: 100, height: 50 })
+    const h1 = makeText({ id: 'h1', x: 500, y: 500, width: 100, height: 100, hidden: true })
+    const v2 = makeText({ id: 'v2', x: 50, y: 100, width: 200, height: 50 })
+    const result = elementsBBox([v1, h1, v2])
+    expect(result).toEqual({ x: 10, y: 10, width: 240, height: 140 })
+  })
+
+  it('treats undefined hidden field as visible (backward-compatible default)', () => {
+    // Elements with no hidden property should be included
+    const el = makeText({ id: 'no-hidden-field' })
+    delete (el as Partial<typeof el>).hidden
+    const result = elementsBBox([el])
+    expect(result).not.toBeNull()
+    expect(result!.width).toBe(el.width)
+  })
+
+  it('hidden image element is excluded from the bbox', () => {
+    const visible = makeText({ id: 'vis', x: 0, y: 0, width: 100, height: 50 })
+    const hiddenImg = makeImage({ id: 'himg', x: 1000, y: 1000, hidden: true })
+    const result = elementsBBox([visible, hiddenImg])
+    expect(result).toEqual({ x: 0, y: 0, width: 100, height: 50 })
+  })
+
+  it('hidden arrow element is excluded from the bbox', () => {
+    const visible = makeText({ id: 'vis', x: 0, y: 0, width: 100, height: 50 })
+    // Arrow with derived bbox far from visible element
+    const hiddenArrow = makeArrow({ id: 'harr', x: 2000, y: 2000, hidden: true })
+    const result = elementsBBox([visible, hiddenArrow])
+    expect(result).toEqual({ x: 0, y: 0, width: 100, height: 50 })
+  })
+})

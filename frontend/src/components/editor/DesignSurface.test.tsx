@@ -264,3 +264,75 @@ describe('AC13 (feat14) — arrow startAnchor/endAnchor cleared in multi-drag', 
     expect(arr.endAnchor).toBeUndefined()
   })
 })
+
+// ---------------------------------------------------------------------------
+// feat17 AC11/AC12 — hidden elements are not rendered on the canvas
+// ---------------------------------------------------------------------------
+
+describe('AC11/AC12 (feat17) — hidden elements are not rendered', () => {
+  it('a hidden text element produces no child node in the surface', () => {
+    useCanvasStore.setState({
+      elements: [makeTextElement('hidden-el', { hidden: true })],
+      selectedIds: [],
+    })
+    const { container } = render(<DesignSurface />)
+    // No element wrapper should appear
+    const children = getDirectChildren(container)
+    expect(children).toHaveLength(0)
+  })
+
+  it('a visible element alongside a hidden one is still rendered', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeTextElement('visible-el', { x: 100 }),
+        makeTextElement('hidden-el', { x: 300, hidden: true }),
+      ],
+      selectedIds: [],
+    })
+    const { container } = render(<DesignSurface />)
+    const children = getDirectChildren(container)
+    // Only the visible element should render
+    expect(children).toHaveLength(1)
+  })
+
+  it('when all elements are hidden the surface renders no children', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeTextElement('h1', { hidden: true }),
+        makeTextElement('h2', { x: 300, hidden: true }),
+      ],
+      selectedIds: [],
+    })
+    const { container } = render(<DesignSurface />)
+    const children = getDirectChildren(container)
+    expect(children).toHaveLength(0)
+  })
+
+  it('making a hidden element visible renders it after store update', () => {
+    useCanvasStore.setState({
+      elements: [makeTextElement('t1', { hidden: true })],
+      selectedIds: [],
+    })
+    const { container, rerender } = render(<DesignSurface />)
+    expect(getDirectChildren(container)).toHaveLength(0)
+
+    // Show the element
+    useCanvasStore.getState().toggleElementVisibility('t1')
+    rerender(<DesignSurface />)
+    expect(getDirectChildren(container)).toHaveLength(1)
+  })
+
+  it('hiding a visible element removes it from the rendered surface', () => {
+    useCanvasStore.setState({
+      elements: [makeTextElement('t1')],
+      selectedIds: [],
+    })
+    const { container, rerender } = render(<DesignSurface />)
+    expect(getDirectChildren(container)).toHaveLength(1)
+
+    // Hide the element
+    useCanvasStore.getState().toggleElementVisibility('t1')
+    rerender(<DesignSurface />)
+    expect(getDirectChildren(container)).toHaveLength(0)
+  })
+})
