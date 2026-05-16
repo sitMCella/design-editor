@@ -166,7 +166,9 @@ test.describe('16 – Delete Canvas Elements', () => {
     await addTextElement(page)
 
     // Shift-click first element to make a two-text selection
-    await textElements(page).nth(0).click({ modifiers: ['Shift'] })
+    await textElements(page)
+      .nth(0)
+      .click({ modifiers: ['Shift'] })
     await expect(textElements(page)).toHaveCount(2)
 
     await page.getByLabel('Delete').click()
@@ -193,7 +195,9 @@ test.describe('16 – Delete Canvas Elements', () => {
     await pinToolbar(page)
     await page.getByLabel('Delete').click()
     await expect(page.getByTestId('contextual-toolbar')).toBeVisible()
-    await expect(page.getByTestId('contextual-toolbar').locator('.opacity-40').first()).toBeVisible()
+    await expect(
+      page.getByTestId('contextual-toolbar').locator('.opacity-40').first()
+    ).toBeVisible()
   })
 
   // =========================================================================

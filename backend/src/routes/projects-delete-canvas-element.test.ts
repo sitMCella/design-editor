@@ -416,7 +416,13 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
   describe('AC16 — GET /api/projects elementCount is updated after deletion', () => {
     it('returns elementCount 0 for a project whose all elements were deleted', async () => {
       mockSql.mockResolvedValueOnce([
-        { id: 'proj-cnt-0', name: 'Design', element_count: 0, created_at: new Date(), updated_at: new Date() },
+        {
+          id: 'proj-cnt-0',
+          name: 'Design',
+          element_count: 0,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
       ]);
 
       const response = await app.inject({ method: 'GET', url: '/api/projects' });
@@ -429,7 +435,13 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
     it('returns the correct elementCount for a project where some elements were deleted', async () => {
       // Originally had 4 elements; 3 were deleted → 1 remains
       mockSql.mockResolvedValueOnce([
-        { id: 'proj-cnt-1', name: 'Design', element_count: 1, created_at: new Date(), updated_at: new Date() },
+        {
+          id: 'proj-cnt-1',
+          name: 'Design',
+          element_count: 1,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
       ]);
 
       const response = await app.inject({ method: 'GET', url: '/api/projects' });
@@ -453,9 +465,7 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
       mockPatchSuccess('proj-no-start', {
         name: 'Design',
         canvas: {
-          elements: [
-            { ...arrowElement, startAnchor: { elementId: 'txt-1', side: 'right' } },
-          ],
+          elements: [{ ...arrowElement, startAnchor: { elementId: 'txt-1', side: 'right' } }],
         },
       });
 
@@ -476,9 +486,7 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
       mockPatchSuccess('proj-no-end', {
         name: 'Design',
         canvas: {
-          elements: [
-            { ...arrowElement, endAnchor: { elementId: 'img-1', side: 'left' } },
-          ],
+          elements: [{ ...arrowElement, endAnchor: { elementId: 'img-1', side: 'left' } }],
         },
       });
 
@@ -557,7 +565,9 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
 
       expect(response.statusCode).toBe(200);
       const canvas = extractCanvasFromPatch();
-      expect(canvas?.elements[1]).toMatchObject({ endAnchor: { elementId: 'txt-3', side: 'left' } });
+      expect(canvas?.elements[1]).toMatchObject({
+        endAnchor: { elementId: 'txt-3', side: 'left' },
+      });
       expect(canvas?.elements[1]).not.toHaveProperty('startAnchor');
     });
 
@@ -603,7 +613,10 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
       expect(r1.statusCode).toBe(200);
 
       // Deletion 2: imageElement deleted → 1 remains
-      mockPatchSuccess('proj-seq', { name: 'Design', canvas: { elements: [textElement, imageElement] } });
+      mockPatchSuccess('proj-seq', {
+        name: 'Design',
+        canvas: { elements: [textElement, imageElement] },
+      });
       const r2 = await app.inject({
         method: 'PATCH',
         url: '/api/projects/proj-seq',
@@ -655,7 +668,10 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
 
     it('multiple independent projects maintain their own element counts after deletions', async () => {
       // Project A: all 3 elements deleted → empty
-      mockPatchSuccess('proj-A', { name: 'A', canvas: { elements: [textElement, imageElement, arrowElement] } });
+      mockPatchSuccess('proj-A', {
+        name: 'A',
+        canvas: { elements: [textElement, imageElement, arrowElement] },
+      });
       const rA = await app.inject({
         method: 'PATCH',
         url: '/api/projects/proj-A',
@@ -666,7 +682,10 @@ describe('Delete Canvas Elements — project routes (feat16)', () => {
       vi.clearAllMocks();
 
       // Project B: only imageElement deleted → 2 remain
-      mockPatchSuccess('proj-B', { name: 'B', canvas: { elements: [textElement, imageElement, arrowElement] } });
+      mockPatchSuccess('proj-B', {
+        name: 'B',
+        canvas: { elements: [textElement, imageElement, arrowElement] },
+      });
       const rB = await app.inject({
         method: 'PATCH',
         url: '/api/projects/proj-B',
