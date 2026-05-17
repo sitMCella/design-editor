@@ -9,6 +9,7 @@ import { useCanvasStore } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
 import { getProject, patchProject } from '../api/projects'
 import { useThumbnail } from '../hooks/useThumbnail'
+import { downloadPng } from '../utils/downloadPng'
 
 const AUTOSAVE_DEBOUNCE_MS = 2000
 const AUTOSAVE_RETRY_MS = 10000
@@ -31,6 +32,32 @@ export function EditorPage() {
   const activePanel = useUIStore((s) => s.activePanel)
   const worldRef = useRef<HTMLDivElement>(null)
   useThumbnail(routeDesignId, worldRef)
+
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const exportErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleDownloadPng = async () => {
+    if (isExporting) return
+    const currentElements = useCanvasStore.getState().elements
+    const visibleCount = currentElements.filter((el) => !el.hidden).length
+    if (visibleCount === 0) {
+      setExportError('Nothing to export — add at least one visible element.')
+      if (exportErrorTimerRef.current) clearTimeout(exportErrorTimerRef.current)
+      exportErrorTimerRef.current = setTimeout(() => setExportError(null), 4000)
+      return
+    }
+    setIsExporting(true)
+    try {
+      await downloadPng(worldRef, currentElements, useCanvasStore.getState().name)
+    } catch {
+      setExportError('Export failed. Please try again.')
+      if (exportErrorTimerRef.current) clearTimeout(exportErrorTimerRef.current)
+      exportErrorTimerRef.current = setTimeout(() => setExportError(null), 4000)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   // 'loading' while fetching on reload; 'error' if fetch fails; 'ready' otherwise
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>(
@@ -196,6 +223,36 @@ export function EditorPage() {
           >
             +
           </button>
+          <button
+            onClick={handleDownloadPng}
+            disabled={isExporting}
+            title="Download PNG"
+            aria-label="Download PNG"
+            className="ml-2 flex h-7 items-center gap-1.5 rounded border border-gray-200 bg-white px-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+            style={isExporting ? { pointerEvents: 'none' } : undefined}
+          >
+            {isExporting ? (
+              <span
+                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent"
+                aria-hidden="true"
+              />
+            ) : (
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M6 1v7M3 5l3 3 3-3M1 9v1a1 1 0 001 1h8a1 1 0 001-1V9" />
+              </svg>
+            )}
+            {!isExporting && 'Download PNG'}
+          </button>
         </div>
       </header>
       <ContextualToolbar />
@@ -204,6 +261,14 @@ export function EditorPage() {
         {activePanel === 'layers' && <LayerPanel />}
         <Canvas worldRef={worldRef} />
       </div>
+      {exportError && (
+        <div
+          role="alert"
+          className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 shadow"
+        >
+          {exportError}
+        </div>
+      )}
     </div>
   )
 }
