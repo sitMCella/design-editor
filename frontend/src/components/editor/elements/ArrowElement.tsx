@@ -246,7 +246,6 @@ export function ArrowElement({
   // Render
   // -------------------------------------------------------------------------
 
-  const outline = isSelected ? '2px solid #3B82F6' : 'none'
   const cursor = isSelected ? 'grab' : 'default'
 
   // Expand the SVG by markerPadding on all sides so arrowhead markers stay
@@ -256,9 +255,17 @@ export function ArrowElement({
   // mishandling SVG transform elements.
   const markerPadding = Math.ceil(8 * strokeWidth)
 
-  // All SVG coordinates are offset by markerPadding so the origin of the
-  // expanded SVG (placed at left:-markerPadding, top:-markerPadding) maps the
-  // arrow's bounding-box top-left to SVG position (markerPadding, markerPadding).
+  // Position the outer div at the expanded bounds so the SVG (which fills
+  // the div at 0,0) requires no negative CSS offset. html2canvas does not
+  // correctly handle absolutely-positioned children with negative left/top,
+  // which caused arrows to appear shifted in PNG/PDF exports.
+  const renderX = x - markerPadding
+  const renderY = y - markerPadding
+  const renderW = width + markerPadding * 2
+  const renderH = height + markerPadding * 2
+
+  // SVG coordinates: offset by markerPadding so the arrow's bounding-box
+  // top-left maps to SVG position (markerPadding, markerPadding).
   const svgX1 = x1 - x + markerPadding
   const svgY1 = y1 - y + markerPadding
   const svgX2 = x2 - x + markerPadding
@@ -269,14 +276,12 @@ export function ArrowElement({
       data-testid="arrow-element"
       style={{
         position: 'absolute',
-        left: x,
-        top: y,
-        width,
-        height,
+        left: renderX,
+        top: renderY,
+        width: renderW,
+        height: renderH,
         transform: rotation ? `rotate(${rotation}deg)` : undefined,
         opacity,
-        outline,
-        outlineOffset: '2px',
         cursor,
         pointerEvents: 'none',
         overflow: 'visible',
@@ -284,13 +289,29 @@ export function ArrowElement({
       onClick={handleClick}
       onMouseDown={handleBodyMouseDown}
     >
+      {/* Selection outline scoped to the actual arrow bounding box, inset
+          by markerPadding from the expanded outer div */}
+      {isSelected && (
+        <div
+          style={{
+            position: 'absolute',
+            left: markerPadding,
+            top: markerPadding,
+            width,
+            height,
+            outline: '2px solid #3B82F6',
+            outlineOffset: '2px',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
       <svg
-        width={width + markerPadding * 2}
-        height={height + markerPadding * 2}
+        width={renderW}
+        height={renderH}
         style={{
           position: 'absolute',
-          left: -markerPadding,
-          top: -markerPadding,
+          left: 0,
+          top: 0,
           display: 'block',
           overflow: 'visible',
         }}

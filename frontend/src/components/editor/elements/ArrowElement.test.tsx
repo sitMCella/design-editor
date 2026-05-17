@@ -154,14 +154,16 @@ describe('sizing', () => {
     expect(container.querySelector('svg')?.getAttribute('height')).toBe('34')
   })
 
-  it('wrapper div width matches element width', () => {
+  it('wrapper div width matches element width plus marker padding on both sides', () => {
     const { container } = renderElement()
-    expect((container.firstChild as HTMLElement).style.width).toBe('202px')
+    // markerPadding = Math.ceil(8 * 2) = 16; renderW = 202 + 32 = 234
+    expect((container.firstChild as HTMLElement).style.width).toBe('234px')
   })
 
-  it('wrapper div height matches element height', () => {
+  it('wrapper div height matches element height plus marker padding on both sides', () => {
     const { container } = renderElement()
-    expect((container.firstChild as HTMLElement).style.height).toBe('2px')
+    // markerPadding = 16; renderH = 2 + 32 = 34
+    expect((container.firstChild as HTMLElement).style.height).toBe('34px')
   })
 })
 
@@ -175,14 +177,16 @@ describe('positioning', () => {
     expect((container.firstChild as HTMLElement).style.position).toBe('absolute')
   })
 
-  it('left matches element x (bounding box left)', () => {
+  it('left is x minus marker padding (so SVG needs no negative offset)', () => {
     const { container } = renderElement()
-    expect((container.firstChild as HTMLElement).style.left).toBe('539px')
+    // markerPadding = Math.ceil(8 * 2) = 16; renderX = 539 - 16 = 523
+    expect((container.firstChild as HTMLElement).style.left).toBe('523px')
   })
 
-  it('top matches element y (bounding box top)', () => {
+  it('top is y minus marker padding (so SVG needs no negative offset)', () => {
     const { container } = renderElement()
-    expect((container.firstChild as HTMLElement).style.top).toBe('359px')
+    // markerPadding = 16; renderY = 359 - 16 = 343
+    expect((container.firstChild as HTMLElement).style.top).toBe('343px')
   })
 })
 
@@ -213,16 +217,22 @@ describe('selection', () => {
     expect(onSelect).toHaveBeenCalledTimes(1)
   })
 
-  it('applies a blue outline when isSelected is true', () => {
+  it('renders an outline child div with blue outline when isSelected is true', () => {
     const { container } = renderElement({}, { isSelected: true })
-    const el = container.firstChild as HTMLElement
-    expect(el.style.outline).toContain('solid')
-    expect(el.style.outline.toLowerCase()).toContain('3b82f6')
+    // Outline is on a child div (not the wrapper) to keep it scoped to the
+    // actual arrow bounding box rather than the expanded SVG container.
+    const outlineDiv = (container.firstChild as HTMLElement).querySelector(
+      'div'
+    ) as HTMLElement | null
+    expect(outlineDiv).not.toBeNull()
+    expect(outlineDiv!.style.outline).toContain('solid')
+    expect(outlineDiv!.style.outline.toLowerCase()).toContain('3b82f6')
   })
 
-  it('applies no outline when isSelected is false', () => {
+  it('renders no outline child div when isSelected is false', () => {
     const { container } = renderElement({}, { isSelected: false })
-    expect((container.firstChild as HTMLElement).style.outline).toBe('none')
+    const outlineDiv = (container.firstChild as HTMLElement).querySelector('div')
+    expect(outlineDiv).toBeNull()
   })
 })
 

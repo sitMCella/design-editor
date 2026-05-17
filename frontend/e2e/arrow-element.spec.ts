@@ -130,14 +130,16 @@ test.describe('08 – Toolbar & Arrow Element', () => {
     await expect(el).toHaveCSS('outline-style', 'none')
 
     await el.click()
-    await expect(el).toHaveCSS('outline-style', 'solid')
-    await expect(el).toHaveCSS('outline-color', 'rgb(59, 130, 246)')
+    // The selection outline lives on an inner div (the outer container is expanded
+    // for html2canvas and does not carry the outline itself)
+    await expect(el.locator('div').first()).toHaveCSS('outline-style', 'solid')
+    await expect(el.locator('div').first()).toHaveCSS('outline-color', 'rgb(59, 130, 246)')
   })
 
   test('AC5: arrow element is auto-selected immediately after insertion', async ({ page }) => {
     await addArrowElement(page)
     const el = await getArrowElement(page)
-    await expect(el).toHaveCSS('outline-style', 'solid')
+    await expect(el.locator('div').first()).toHaveCSS('outline-style', 'solid')
   })
 
   // AC 6 — clicking the canvas background deselects the arrow element
@@ -146,7 +148,7 @@ test.describe('08 – Toolbar & Arrow Element', () => {
     const el = await getArrowElement(page)
 
     // Confirm selected state from auto-selection on insert
-    await expect(el).toHaveCSS('outline-style', 'solid')
+    await expect(el.locator('div').first()).toHaveCSS('outline-style', 'solid')
 
     await clickCanvasBackground(page)
     await expect(el).toHaveCSS('outline-style', 'none')
@@ -176,8 +178,15 @@ test.describe('08 – Toolbar & Arrow Element', () => {
     // one of the two has the selected outline — not both.
     await second.click({ force: true })
 
-    const firstStyle = await first.evaluate((el) => getComputedStyle(el).outlineStyle)
-    const secondStyle = await second.evaluate((el) => getComputedStyle(el).outlineStyle)
+    // The selection outline lives on an inner div; check that div's computed style
+    const firstStyle = await first.evaluate((el) => {
+      const div = el.querySelector('div')
+      return div ? getComputedStyle(div).outlineStyle : 'none'
+    })
+    const secondStyle = await second.evaluate((el) => {
+      const div = el.querySelector('div')
+      return div ? getComputedStyle(div).outlineStyle : 'none'
+    })
 
     // Exactly one must be solid; they cannot both be selected by a single click
     const selectedCount = [firstStyle, secondStyle].filter((s) => s === 'solid').length
