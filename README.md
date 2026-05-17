@@ -1,5 +1,7 @@
 # Design Studio
 
+![Canvas Design](https://github.com/sitMCella/design-editor/wiki/images/canvas_design.png)
+
 A browser-based graphic design editor that makes visual creation accessible to everyone — regardless of design skill level. Compose designs from text and image elements on a drag-and-drop canvas, customise styling, and export your work.
 
 Read the [User Guide](https://github.com/sitMCella/design-editor/wiki) 
