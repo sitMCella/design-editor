@@ -254,7 +254,8 @@ test.describe('09 – Arrow Element Customisation', () => {
     await addArrowElement(page)
     const el = await getArrowElement(page)
     await dragBy(page, el, 80, 40)
-    await expect(el).toHaveCSS('outline-style', 'solid')
+    // The selection outline lives on an inner div
+    await expect(el.locator('div').first()).toHaveCSS('outline-style', 'solid')
   })
 
   // =========================================================================

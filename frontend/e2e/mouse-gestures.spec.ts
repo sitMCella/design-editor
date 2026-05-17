@@ -379,7 +379,8 @@ test.describe('14 – Mouse Gestures', () => {
     await textEl.click()
     await arrowEl.click({ modifiers: ['Shift'] })
     await expect(textEl).toHaveCSS('outline-style', 'solid')
-    await expect(arrowEl).toHaveCSS('outline-style', 'solid')
+    // Arrow selection outline lives on an inner div inside the arrow container
+    await expect(arrowEl.locator('div').first()).toHaveCSS('outline-style', 'solid')
 
     // Drag the text element — both should move
     const textBefore = await textEl.boundingBox()
@@ -391,7 +392,7 @@ test.describe('14 – Mouse Gestures', () => {
 
     // Both should still be selected after the drag (AC16 also)
     await expect(textEl).toHaveCSS('outline-style', 'solid')
-    await expect(arrowEl).toHaveCSS('outline-style', 'solid')
+    await expect(arrowEl.locator('div').first()).toHaveCSS('outline-style', 'solid')
   })
 
   // =========================================================================
