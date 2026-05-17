@@ -236,14 +236,14 @@ describe('downloadPdf', () => {
       cleanup()
     })
 
-    it('calls html2canvas with scale=1, useCORS=true, logging=false', async () => {
+    it('calls html2canvas with scale=2, useCORS=true, logging=false', async () => {
       const { worldRef, cleanup } = makeWorldDom()
 
       await downloadPdf(worldRef, [makeText()], 'My Design')
 
       expect(mockHtml2canvas).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ scale: 1, useCORS: true, logging: false })
+        expect.objectContaining({ scale: 2, useCORS: true, logging: false })
       )
       cleanup()
     })
@@ -295,56 +295,56 @@ describe('downloadPdf', () => {
   // -------------------------------------------------------------------------
 
   describe('canvas crop step', () => {
-    it('sets the cropped canvas dimensions to captureW × captureH', async () => {
+    it('sets the cropped canvas dimensions to captureW × captureH × scale', async () => {
       const { worldRef, cleanup } = makeWorldDom()
       const el = makeText({ x: 100, y: 100, width: 160, height: 40 })
-      // captureW = 208, captureH = 88
+      // captureW = 208, captureH = 88, scale = 2
 
       await downloadPdf(worldRef, [el], 'My Design')
 
-      expect(mockCroppedCanvas.width).toBe(208)
-      expect(mockCroppedCanvas.height).toBe(88)
+      expect(mockCroppedCanvas.width).toBe(416)
+      expect(mockCroppedCanvas.height).toBe(176)
       cleanup()
     })
 
-    it('crops the full canvas to the padded bounding-box region via drawImage', async () => {
+    it('crops the full canvas to the padded bounding-box region via drawImage (scaled)', async () => {
       const { worldRef, cleanup } = makeWorldDom()
       const el = makeText({ x: 100, y: 100, width: 160, height: 40 })
-      // captureX=76, captureY=76, captureW=208, captureH=88
+      // captureX=76, captureY=76, captureW=208, captureH=88, scale=2
 
       await downloadPdf(worldRef, [el], 'My Design')
 
       expect(mockCtx.drawImage).toHaveBeenCalledWith(
         expect.anything(), // fullCanvas returned by html2canvas
-        76, // source x (captureX)
-        76, // source y (captureY)
-        208, // source width
-        88, // source height
+        152, // source x (captureX * scale)
+        152, // source y (captureY * scale)
+        416, // source width (captureW * scale)
+        176, // source height (captureH * scale)
         0, // dest x
         0, // dest y
-        208, // dest width
-        88 // dest height
+        416, // dest width (captureW * scale)
+        176 // dest height (captureH * scale)
       )
       cleanup()
     })
 
-    it('accounts for 24px padding on all sides of the element bounding box', async () => {
+    it('accounts for 24px padding on all sides of the element bounding box (scaled)', async () => {
       const { worldRef, cleanup } = makeWorldDom()
       const el = makeText({ x: 200, y: 300, width: 100, height: 50 })
-      // captureX=176, captureY=276, captureW=148, captureH=98
+      // captureX=176, captureY=276, captureW=148, captureH=98, scale=2
 
       await downloadPdf(worldRef, [el], 'My Design')
 
       expect(mockCtx.drawImage).toHaveBeenCalledWith(
         expect.anything(),
-        176,
-        276,
-        148,
-        98,
+        352,
+        552,
+        296,
+        196,
         0,
         0,
-        148,
-        98
+        296,
+        196
       )
       cleanup()
     })
@@ -555,14 +555,14 @@ describe('downloadPdf', () => {
       )
       expect(mockCtx.drawImage).toHaveBeenCalledWith(
         expect.anything(),
-        26,
-        26,
-        278,
-        138,
+        52,
+        52,
+        556,
+        276,
         0,
         0,
-        278,
-        138
+        556,
+        276
       )
       cleanup()
     })
