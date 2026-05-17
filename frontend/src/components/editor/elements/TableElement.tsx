@@ -417,6 +417,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
           return (
             <div
               key={rowIndex}
+              data-testid={`table-row-${rowIndex}`}
               style={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -433,6 +434,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
                 return (
                   <div
                     key={colIndex}
+                    data-cell-type={row.isHeader ? 'header' : 'data'}
                     style={{
                       width: colWidth,
                       minWidth: colWidth,
