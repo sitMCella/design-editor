@@ -433,6 +433,10 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
                         fontFamily: 'Inter, sans-serif',
                         textAlign: 'center',
                         verticalAlign: 'middle',
+                        // line-height matches row height for reliable single-line
+                        // vertical centering in html2canvas (vertical-align:middle
+                        // on <td> is not always honoured by html2canvas)
+                        lineHeight: isEditingThis ? 'normal' : `${row.height}px`,
                         border: '1px solid #E5E7EB',
                         padding: isEditingThis ? 0 : '0 8px',
                         overflow: 'hidden',
