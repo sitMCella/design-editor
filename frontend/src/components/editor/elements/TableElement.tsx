@@ -434,8 +434,10 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
                         textAlign: 'center',
                         verticalAlign: 'middle',
                         border: '1px solid #E5E7EB',
-                        padding: 0,
+                        padding: isEditingThis ? 0 : '0 8px',
                         overflow: 'hidden',
+                        whiteSpace: isEditingThis ? 'normal' : 'nowrap',
+                        textOverflow: 'ellipsis',
                         boxSizing: 'border-box',
                       }}
                       onDoubleClick={(e) => handleCellDoubleClick(e, rowIndex, colIndex)}
@@ -467,37 +469,17 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
                           {cell}
                         </div>
                       ) : (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            height: '100%',
-                            padding: '0 8px',
-                            overflow: 'hidden',
-                            boxSizing: 'border-box',
-                          }}
-                        >
+                        cell || (
                           <span
                             style={{
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              width: '100%',
+                              color: '#9CA3AF',
+                              fontStyle: 'italic',
+                              fontWeight: 'normal',
                             }}
                           >
-                            {cell || (
-                              <span
-                                style={{
-                                  color: '#9CA3AF',
-                                  fontStyle: 'italic',
-                                  fontWeight: 'normal',
-                                }}
-                              >
-                                Click to edit
-                              </span>
-                            )}
+                            Click to edit
                           </span>
-                        </div>
+                        )
                       )}
                     </Tag>
                   )
