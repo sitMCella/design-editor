@@ -338,11 +338,14 @@ test.describe('16 – Delete Canvas Elements', () => {
   test('AC15: deleting an element leaves the connected arrow on canvas with a free endpoint', async ({
     page,
   }) => {
-    await addTextElement(page)
+    // Add arrow first so the text element (added second) has higher z-order
+    // and sits above the arrow in the DOM. This avoids the arrow's transparent
+    // hit-area path intercepting clicks on the text element.
     await addArrowElement(page)
+    await clickBackground(page)
+    await addTextElement(page)
 
-    // Delete the text element; the arrow should remain
-    await textElements(page).first().click()
+    // Text is already selected right after insertion — delete it directly.
     await page.keyboard.press('Delete')
 
     await expect(textElements(page)).toHaveCount(0)

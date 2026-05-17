@@ -27,7 +27,8 @@ export const useUIStore = create<State & Actions>()(
       isToolbarPinned: false,
 
       setActiveTool: (tool) => set({ activeTool: tool }),
-      setActivePanel: (panel) => set({ activePanel: panel }),
+      setActivePanel: (panel) =>
+        set((s) => ({ activePanel: s.activePanel === panel ? null : panel })),
       setExportModalOpen: (open) => set({ isExportModalOpen: open }),
       toggleToolbarPin: () => set((s) => ({ isToolbarPinned: !s.isToolbarPinned })),
     }),

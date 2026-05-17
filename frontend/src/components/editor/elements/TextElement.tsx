@@ -77,8 +77,9 @@ export function TextElement({
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (isEditing || !isSelected) return
+    if (isEditing) return
     e.preventDefault()
+    if (!isSelected) return
     dragStartRef.current = {
       mouseX: e.clientX,
       mouseY: e.clientY,

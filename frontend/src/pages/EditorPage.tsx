@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
 import { Canvas } from '../components/editor/Canvas'
 import { ContextualToolbar } from '../components/editor/ContextualToolbar'
+import { LayerPanel } from '../components/editor/LayerPanel'
 import { Toolbar } from '../components/editor/Toolbar'
 import { useCanvasStore } from '../stores/canvasStore'
+import { useUIStore } from '../stores/uiStore'
 import { getProject, patchProject } from '../api/projects'
 import { useThumbnail } from '../hooks/useThumbnail'
 
@@ -26,6 +28,7 @@ export function EditorPage() {
   const setPan = useCanvasStore((s) => s.setPan)
   const { designId: routeDesignId = '' } = useParams<{ designId: string }>()
   const navigate = useNavigate()
+  const activePanel = useUIStore((s) => s.activePanel)
   const worldRef = useRef<HTMLDivElement>(null)
   useThumbnail(routeDesignId, worldRef)
 
@@ -198,6 +201,7 @@ export function EditorPage() {
       <ContextualToolbar />
       <div className="flex flex-1 overflow-hidden">
         <Toolbar />
+        {activePanel === 'layers' && <LayerPanel />}
         <Canvas worldRef={worldRef} />
       </div>
     </div>

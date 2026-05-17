@@ -2,6 +2,26 @@ import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
 import type { TextElement, ImageElement, ArrowElement, TableElement } from '../../types/canvas'
 
+function LayersIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M2 10l8 4 8-4" />
+      <path d="M2 6l8 4 8-4" />
+      <path d="M2 14l8 4 8-4" />
+    </svg>
+  )
+}
+
 const SURFACE_WIDTH = 1280
 const SURFACE_HEIGHT = 720
 
@@ -12,6 +32,8 @@ const TEXT_CASCADE_MAX = 8
 export function Toolbar() {
   const activeTool = useUIStore((s) => s.activeTool)
   const setActiveTool = useUIStore((s) => s.setActiveTool)
+  const activePanel = useUIStore((s) => s.activePanel)
+  const setActivePanel = useUIStore((s) => s.setActivePanel)
   const addElement = useCanvasStore((s) => s.addElement)
   const selectElements = useCanvasStore((s) => s.selectElements)
 
@@ -137,7 +159,7 @@ export function Toolbar() {
   }
 
   return (
-    <aside className="flex w-14 flex-col items-center gap-2 border-r bg-white py-3">
+    <aside className="flex w-14 flex-shrink-0 flex-col items-center gap-2 border-r bg-white py-3">
       <button
         onClick={handleTextTool}
         title="Text"
@@ -202,6 +224,16 @@ export function Toolbar() {
           <line x1="2" y1="13" x2="18" y2="13" />
           <line x1="10" y1="2" x2="10" y2="18" />
         </svg>
+      </button>
+      <div className="mt-1 w-8 border-t border-gray-200" />
+      <button
+        onClick={() => setActivePanel('layers')}
+        title="Layers"
+        className={`flex h-10 w-10 items-center justify-center rounded transition-colors ${
+          activePanel === 'layers' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'
+        }`}
+      >
+        <LayersIcon />
       </button>
     </aside>
   )

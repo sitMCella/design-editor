@@ -78,9 +78,11 @@ test.describe('15 – Contextual Toolbar Pin', () => {
   test('AC2: toolbar is hidden in unpinned mode when selection is mixed type', async ({ page }) => {
     await addTextElement(page)
     await addArrowElement(page)
-    // Shift-click the text element to create a mixed-type multi-selection
+    // Shift-click the text element to create a mixed-type multi-selection.
+    // force: true is needed because the arrow's transparent hit-area path
+    // overlaps the text element and would otherwise intercept the click.
     const textEl = await getTextElement(page)
-    await textEl.click({ modifiers: ['Shift'] })
+    await textEl.click({ modifiers: ['Shift'], force: true })
     await expect(page.getByTestId('contextual-toolbar')).not.toBeAttached()
   })
 
@@ -267,7 +269,7 @@ test.describe('15 – Contextual Toolbar Pin', () => {
     // Add an arrow and shift-click the text to make a mixed selection
     await addArrowElement(page)
     const textEl = await getTextElement(page)
-    await textEl.click({ modifiers: ['Shift'] })
+    await textEl.click({ modifiers: ['Shift'], force: true })
 
     await expect(page.getByTestId('contextual-toolbar')).toBeVisible()
   })
@@ -276,10 +278,11 @@ test.describe('15 – Contextual Toolbar Pin', () => {
     await addTextElement(page)
     await pinToolbar(page)
 
-    // Add arrow then shift-click text to form a mixed selection
+    // Add arrow then shift-click text to form a mixed selection.
+    // force: true bypasses the arrow's transparent hit-area path interception.
     await addArrowElement(page)
     const textEl = await getTextElement(page)
-    await textEl.click({ modifiers: ['Shift'] })
+    await textEl.click({ modifiers: ['Shift'], force: true })
 
     await expect(
       page.getByTestId('contextual-toolbar').locator('.opacity-40').first()

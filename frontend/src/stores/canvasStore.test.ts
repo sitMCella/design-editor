@@ -784,3 +784,215 @@ describe('AC15 (feat16): removeElements clears dangling arrow anchors', () => {
     expect(ids).not.toContain('target')
   })
 })
+
+// ---------------------------------------------------------------------------
+// feat17 — toggleElementVisibility (AC11, AC13, AC25)
+// ---------------------------------------------------------------------------
+
+describe('toggleElementVisibility (feat17)', () => {
+  it('AC11: hides a visible element by setting hidden = true', () => {
+    useCanvasStore.setState({ elements: [makeElement()], selectedIds: [] })
+    useCanvasStore.getState().toggleElementVisibility('el-1')
+    expect(useCanvasStore.getState().elements[0].hidden).toBe(true)
+  })
+
+  it('AC11: shows a hidden element by clearing hidden flag', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ hidden: true })],
+      selectedIds: [],
+    })
+    useCanvasStore.getState().toggleElementVisibility('el-1')
+    expect(useCanvasStore.getState().elements[0].hidden).toBe(false)
+  })
+
+  it('AC11: toggling twice restores the original visible state', () => {
+    useCanvasStore.setState({ elements: [makeElement()], selectedIds: [] })
+    useCanvasStore.getState().toggleElementVisibility('el-1')
+    useCanvasStore.getState().toggleElementVisibility('el-1')
+    expect(useCanvasStore.getState().elements[0].hidden).toBeFalsy()
+  })
+
+  it('AC13: hides an element that was selected, removing it from selectedIds', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'el-1' })],
+      selectedIds: ['el-1'],
+    })
+    useCanvasStore.getState().toggleElementVisibility('el-1')
+    expect(useCanvasStore.getState().selectedIds).not.toContain('el-1')
+  })
+
+  it('AC13: showing a hidden element does not change selectedIds', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'el-1', hidden: true })],
+      selectedIds: [],
+    })
+    useCanvasStore.getState().toggleElementVisibility('el-1')
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('AC13: hiding one element does not affect other selected elements', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'a' }), makeElement({ id: 'b' })],
+      selectedIds: ['a', 'b'],
+    })
+    useCanvasStore.getState().toggleElementVisibility('a')
+    expect(useCanvasStore.getState().selectedIds).not.toContain('a')
+    expect(useCanvasStore.getState().selectedIds).toContain('b')
+  })
+
+  it('AC25: marks isDirty when hiding an element', () => {
+    useCanvasStore.setState({ elements: [makeElement()], isDirty: false, selectedIds: [] })
+    useCanvasStore.getState().toggleElementVisibility('el-1')
+    expect(useCanvasStore.getState().isDirty).toBe(true)
+  })
+
+  it('AC25: marks isDirty when showing a hidden element', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ hidden: true })],
+      isDirty: false,
+      selectedIds: [],
+    })
+    useCanvasStore.getState().toggleElementVisibility('el-1')
+    expect(useCanvasStore.getState().isDirty).toBe(true)
+  })
+
+  it('is a no-op for an unknown id', () => {
+    useCanvasStore.setState({ elements: [makeElement()], selectedIds: [] })
+    expect(() => useCanvasStore.getState().toggleElementVisibility('ghost')).not.toThrow()
+    expect(useCanvasStore.getState().elements[0].hidden).toBeFalsy()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat17 — moveElementToIndex (AC16, AC20, AC26)
+// ---------------------------------------------------------------------------
+
+describe('moveElementToIndex (feat17)', () => {
+  it('AC16: moves element to front — panel index 0 = last in elements array (topmost)', () => {
+    // elements: [a, b, c] (c is topmost)
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'a' }), makeElement({ id: 'b' }), makeElement({ id: 'c' })],
+      selectedIds: [],
+    })
+    // Move 'a' to panel index 0 (topmost position)
+    useCanvasStore.getState().moveElementToIndex('a', 0)
+    const ids = useCanvasStore.getState().elements.map((e) => e.id)
+    // 'a' should now be at the end of the array (topmost)
+    expect(ids[ids.length - 1]).toBe('a')
+  })
+
+  it('AC16: moves element to back — panel index n-1 = index 0 in elements array (bottommost)', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'a' }), makeElement({ id: 'b' }), makeElement({ id: 'c' })],
+      selectedIds: [],
+    })
+    // Move 'c' to panel index 2 (bottommost position)
+    useCanvasStore.getState().moveElementToIndex('c', 2)
+    const ids = useCanvasStore.getState().elements.map((e) => e.id)
+    // 'c' should now be at index 0 (bottommost)
+    expect(ids[0]).toBe('c')
+  })
+
+  it('AC16: moves element from middle to top', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'a' }), makeElement({ id: 'b' }), makeElement({ id: 'c' })],
+      selectedIds: [],
+    })
+    // Move 'b' (middle) to panel index 0 (topmost)
+    useCanvasStore.getState().moveElementToIndex('b', 0)
+    const ids = useCanvasStore.getState().elements.map((e) => e.id)
+    // Result: [a, c, b] — b is now topmost
+    expect(ids).toEqual(['a', 'c', 'b'])
+  })
+
+  it('AC20: element count stays the same after reordering', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'a' }), makeElement({ id: 'b' })],
+      selectedIds: [],
+    })
+    useCanvasStore.getState().moveElementToIndex('a', 0)
+    expect(useCanvasStore.getState().elements).toHaveLength(2)
+  })
+
+  it('AC26: marks isDirty after reordering', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'a' }), makeElement({ id: 'b' })],
+      selectedIds: [],
+      isDirty: false,
+    })
+    useCanvasStore.getState().moveElementToIndex('a', 0)
+    expect(useCanvasStore.getState().isDirty).toBe(true)
+  })
+
+  it('is a no-op for an unknown id', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'a' }), makeElement({ id: 'b' })],
+      selectedIds: [],
+    })
+    useCanvasStore.getState().moveElementToIndex('ghost', 0)
+    const ids = useCanvasStore.getState().elements.map((e) => e.id)
+    expect(ids).toEqual(['a', 'b'])
+  })
+
+  it('moving the only element to panel index 0 leaves the array unchanged', () => {
+    useCanvasStore.setState({ elements: [makeElement({ id: 'a' })], selectedIds: [] })
+    useCanvasStore.getState().moveElementToIndex('a', 0)
+    expect(useCanvasStore.getState().elements[0].id).toBe('a')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat17 — selectElements hidden guard (AC14)
+// ---------------------------------------------------------------------------
+
+describe('selectElements — hidden guard (feat17 AC14)', () => {
+  it('AC14: does not include a hidden element in selectedIds', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'visible' }), makeElement({ id: 'hidden-el', hidden: true })],
+      selectedIds: [],
+    })
+    useCanvasStore.getState().selectElements(['visible', 'hidden-el'])
+    expect(useCanvasStore.getState().selectedIds).toContain('visible')
+    expect(useCanvasStore.getState().selectedIds).not.toContain('hidden-el')
+  })
+
+  it('AC14: selectElements with only a hidden id results in empty selectedIds', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'hidden-el', hidden: true })],
+      selectedIds: [],
+    })
+    useCanvasStore.getState().selectElements(['hidden-el'])
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat17 — toggleElementSelection hidden guard (AC14)
+// ---------------------------------------------------------------------------
+
+describe('toggleElementSelection — hidden guard (feat17 AC14)', () => {
+  it('AC14: does not add a hidden element to selectedIds', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'hidden-el', hidden: true })],
+      selectedIds: [],
+    })
+    useCanvasStore.getState().toggleElementSelection('hidden-el')
+    expect(useCanvasStore.getState().selectedIds).not.toContain('hidden-el')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat17 — addToSelection hidden guard (AC14)
+// ---------------------------------------------------------------------------
+
+describe('addToSelection — hidden guard (feat17 AC14)', () => {
+  it('AC14: addToSelection skips hidden elements', () => {
+    useCanvasStore.setState({
+      elements: [makeElement({ id: 'vis' }), makeElement({ id: 'hid', hidden: true })],
+      selectedIds: [],
+    })
+    useCanvasStore.getState().addToSelection(['vis', 'hid'])
+    expect(useCanvasStore.getState().selectedIds).toContain('vis')
+    expect(useCanvasStore.getState().selectedIds).not.toContain('hid')
+  })
+})

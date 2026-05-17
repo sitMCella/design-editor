@@ -7,6 +7,7 @@ export type BaseElement = {
   rotation: number
   opacity: number
   locked: boolean
+  hidden?: boolean
 }
 
 export type TextElement = BaseElement & {
