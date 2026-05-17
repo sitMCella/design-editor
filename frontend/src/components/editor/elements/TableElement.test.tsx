@@ -52,31 +52,32 @@ describe('AC3: table structure', () => {
 
   it('renders exactly 3 rows in total', () => {
     const { container } = renderElement()
-    expect(container.querySelectorAll('tr')).toHaveLength(3)
+    expect(container.querySelectorAll('[data-testid^="table-row-"]')).toHaveLength(3)
   })
 
-  it('renders 2 <th> cells for the header row', () => {
+  it('renders 2 header cells for the header row', () => {
     const { container } = renderElement()
-    expect(container.querySelectorAll('th')).toHaveLength(2)
+    expect(container.querySelectorAll('[data-cell-type="header"]')).toHaveLength(2)
   })
 
-  it('renders 4 <td> cells for the two data rows', () => {
+  it('renders 4 data cells for the two data rows', () => {
     const { container } = renderElement()
-    expect(container.querySelectorAll('td')).toHaveLength(4)
+    expect(container.querySelectorAll('[data-cell-type="data"]')).toHaveLength(4)
   })
 
   it('the first row is the header row', () => {
     const { container } = renderElement()
-    const firstRow = container.querySelector('tr')!
-    expect(firstRow.querySelectorAll('th')).toHaveLength(2)
-    expect(firstRow.querySelectorAll('td')).toHaveLength(0)
+    const firstRow = container.querySelector('[data-testid="table-row-0"]')!
+    expect(firstRow.querySelectorAll('[data-cell-type="header"]')).toHaveLength(2)
+    expect(firstRow.querySelectorAll('[data-cell-type="data"]')).toHaveLength(0)
   })
 
   it('the second and third rows are data rows', () => {
     const { container } = renderElement()
-    const rows = container.querySelectorAll('tr')
-    expect(rows[1].querySelectorAll('td')).toHaveLength(2)
-    expect(rows[2].querySelectorAll('td')).toHaveLength(2)
+    const row1 = container.querySelector('[data-testid="table-row-1"]')!
+    const row2 = container.querySelector('[data-testid="table-row-2"]')!
+    expect(row1.querySelectorAll('[data-cell-type="data"]')).toHaveLength(2)
+    expect(row2.querySelectorAll('[data-cell-type="data"]')).toHaveLength(2)
   })
 })
 
@@ -181,12 +182,13 @@ describe('AC5: cell content', () => {
 // ---------------------------------------------------------------------------
 
 describe('AC6: equal cell dimensions', () => {
-  it('renders a <col> for each column with the correct width', () => {
+  it('header cells in the first row have the correct column widths', () => {
     const { container } = renderElement()
-    const cols = container.querySelectorAll('col')
-    expect(cols).toHaveLength(baseElement.columns)
-    cols.forEach((col, i) => {
-      expect((col as HTMLElement).style.width).toBe(`${baseElement.columnWidths[i]}px`)
+    // The implementation uses div cells with inline width style instead of <col>
+    const headerCells = container.querySelectorAll('[data-testid="table-row-0"] [data-cell-type="header"]')
+    expect(headerCells).toHaveLength(baseElement.columns)
+    headerCells.forEach((cell, i) => {
+      expect((cell as HTMLElement).style.width).toBe(`${baseElement.columnWidths![i]}px`)
     })
   })
 
