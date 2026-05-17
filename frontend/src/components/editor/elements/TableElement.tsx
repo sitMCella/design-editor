@@ -392,7 +392,10 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
       onMouseDown={handleBodyMouseDown}
       onClick={handleClick}
     >
-      {/* Table content — div-based layout for reliable html2canvas rendering */}
+      {/* Table content — div-based layout for reliable html2canvas rendering.
+          Border strategy: each cell carries only borderRight + borderBottom;
+          the outer container supplies the top and left outer edges. This avoids
+          negative-margin border-collapse which causes 1px clipping in html2canvas. */}
       <div
         style={{
           position: 'absolute',
@@ -405,101 +408,102 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
         }}
       >
         {effectiveRows.map((row, rowIndex) => (
-            <div
-              key={rowIndex}
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                flexShrink: 0,
-                height: row.height,
-                minHeight: row.height,
-              }}
-            >
-              {row.cells.map((cell, colIndex) => {
-                const isEditingThis =
-                  editingCell?.rowIndex === rowIndex && editingCell?.colIndex === colIndex
-                const colWidth = columnWidths[colIndex] ?? Math.round(width / columns)
-                return (
-                  <div
-                    key={colIndex}
-                    style={{
-                      width: colWidth,
-                      minWidth: colWidth,
-                      maxWidth: colWidth,
-                      height: '100%',
-                      backgroundColor: row.isHeader ? '#F3F4F6' : '#FFFFFF',
-                      color: row.isHeader ? '#111827' : '#374151',
-                      fontWeight: row.isHeader ? 'bold' : 'normal',
-                      fontSize: 14,
-                      fontFamily: 'Inter, sans-serif',
-                      border: '1px solid #E5E7EB',
-                      // Negative margin collapses double borders with neighbours
-                      marginLeft: colIndex === 0 ? 0 : -1,
-                      marginTop: rowIndex === 0 ? 0 : -1,
-                      boxSizing: 'border-box',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0 8px',
-                      cursor: isEditingThis ? 'text' : undefined,
-                      position: 'relative',
-                    }}
-                    onDoubleClick={(e) => handleCellDoubleClick(e, rowIndex, colIndex)}
-                  >
-                    {isEditingThis ? (
-                      <div
-                        ref={(el) => {
-                          if (isEditingThis) editableRef.current = el
-                        }}
-                        contentEditable
-                        suppressContentEditableWarning
-                        style={{
-                          width: '100%',
-                          outline: 'none',
-                          cursor: 'text',
-                          textAlign: 'center',
-                          fontWeight: row.isHeader ? 'bold' : 'normal',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
-                        }}
-                        onBlur={(e) => handleCellBlur(e, rowIndex, colIndex)}
-                        onKeyDown={handleCellKeyDown}
-                        onClick={(e) => e.stopPropagation()}
-                        onDoubleClick={(e) => e.stopPropagation()}
-                      >
-                        {cell}
-                      </div>
-                    ) : cell ? (
-                      <span
-                        style={{
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap',
-                          textOverflow: 'ellipsis',
-                          display: 'block',
-                          width: '100%',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {cell}
-                      </span>
-                    ) : (
-                      <span
-                        style={{
-                          color: '#9CA3AF',
-                          fontStyle: 'italic',
-                          fontWeight: 'normal',
-                        }}
-                      >
-                        Click to edit
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )
-        )}
+          <div
+            key={rowIndex}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              flexShrink: 0,
+              height: row.height,
+            }}
+          >
+            {row.cells.map((cell, colIndex) => {
+              const isEditingThis =
+                editingCell?.rowIndex === rowIndex && editingCell?.colIndex === colIndex
+              const colWidth = columnWidths[colIndex] ?? Math.round(width / columns)
+              const isLastCol = colIndex === columns - 1
+              const isLastRow = rowIndex === effectiveRows.length - 1
+              return (
+                <div
+                  key={colIndex}
+                  style={{
+                    // Explicit pixel dimensions — no '100%' to avoid rounding drift
+                    width: colWidth,
+                    minWidth: colWidth,
+                    maxWidth: colWidth,
+                    height: row.height,
+                    backgroundColor: row.isHeader ? '#F3F4F6' : '#FFFFFF',
+                    color: row.isHeader ? '#111827' : '#374151',
+                    fontWeight: row.isHeader ? 'bold' : 'normal',
+                    fontSize: 14,
+                    fontFamily: 'Inter, sans-serif',
+                    // Right + bottom only: outer container covers left/top edges.
+                    // No negative margins → no clipping.
+                    borderRight: isLastCol ? 'none' : '1px solid #E5E7EB',
+                    borderBottom: isLastRow ? 'none' : '1px solid #E5E7EB',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 8px',
+                    cursor: isEditingThis ? 'text' : undefined,
+                  }}
+                  onDoubleClick={(e) => handleCellDoubleClick(e, rowIndex, colIndex)}
+                >
+                  {isEditingThis ? (
+                    <div
+                      ref={(el) => {
+                        if (isEditingThis) editableRef.current = el
+                      }}
+                      contentEditable
+                      suppressContentEditableWarning
+                      style={{
+                        width: '100%',
+                        outline: 'none',
+                        cursor: 'text',
+                        textAlign: 'center',
+                        fontWeight: row.isHeader ? 'bold' : 'normal',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                      }}
+                      onBlur={(e) => handleCellBlur(e, rowIndex, colIndex)}
+                      onKeyDown={handleCellKeyDown}
+                      onClick={(e) => e.stopPropagation()}
+                      onDoubleClick={(e) => e.stopPropagation()}
+                    >
+                      {cell}
+                    </div>
+                  ) : cell ? (
+                    <span
+                      style={{
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {cell}
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        color: '#9CA3AF',
+                        fontStyle: 'italic',
+                        fontWeight: 'normal',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Click to edit
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ))}
       </div>
 
       {/* Corner handles */}
