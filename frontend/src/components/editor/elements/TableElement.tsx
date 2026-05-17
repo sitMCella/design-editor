@@ -392,7 +392,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
       onMouseDown={handleBodyMouseDown}
       onClick={handleClick}
     >
-      {/* Table content */}
+      {/* Table content — div-based layout for reliable html2canvas rendering */}
       <div
         style={{
           position: 'absolute',
@@ -400,98 +400,106 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
           overflow: 'hidden',
           border: '1px solid #D1D5DB',
           boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <table
-          style={{
-            width: '100%',
-            height: '100%',
-            borderCollapse: 'collapse',
-            tableLayout: 'fixed',
-          }}
-        >
-          <colgroup>
-            {columnWidths.map((cw, i) => (
-              <col key={i} style={{ width: `${((cw / width) * 100).toFixed(4)}%` }} />
-            ))}
-          </colgroup>
-          <tbody>
-            {effectiveRows.map((row, rowIndex) => (
-              <tr key={rowIndex} style={{ height: row.height }}>
-                {row.cells.map((cell, colIndex) => {
-                  const Tag = row.isHeader ? 'th' : 'td'
-                  const isEditingThis =
-                    editingCell?.rowIndex === rowIndex && editingCell?.colIndex === colIndex
-                  return (
-                    <Tag
-                      key={colIndex}
-                      style={{
-                        backgroundColor: row.isHeader ? '#F3F4F6' : '#FFFFFF',
-                        color: row.isHeader ? '#111827' : '#374151',
-                        fontWeight: row.isHeader ? 'bold' : 'normal',
-                        fontSize: 14,
-                        fontFamily: 'Inter, sans-serif',
-                        textAlign: 'center',
-                        verticalAlign: 'middle',
-                        // line-height matches row height for reliable single-line
-                        // vertical centering in html2canvas (vertical-align:middle
-                        // on <td> is not always honoured by html2canvas)
-                        lineHeight: isEditingThis ? 'normal' : `${row.height}px`,
-                        border: '1px solid #E5E7EB',
-                        padding: isEditingThis ? 0 : '0 8px',
-                        overflow: 'hidden',
-                        whiteSpace: isEditingThis ? 'normal' : 'nowrap',
-                        textOverflow: 'ellipsis',
-                        boxSizing: 'border-box',
-                      }}
-                      onDoubleClick={(e) => handleCellDoubleClick(e, rowIndex, colIndex)}
-                    >
-                      {isEditingThis ? (
-                        <div
-                          ref={(el) => {
-                            if (isEditingThis) editableRef.current = el
-                          }}
-                          contentEditable
-                          suppressContentEditableWarning
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            outline: 'none',
-                            padding: '0 8px',
-                            cursor: 'text',
-                            boxSizing: 'border-box',
-                            fontWeight: row.isHeader ? 'bold' : 'normal',
-                          }}
-                          onBlur={(e) => handleCellBlur(e, rowIndex, colIndex)}
-                          onKeyDown={handleCellKeyDown}
-                          onClick={(e) => e.stopPropagation()}
-                          onDoubleClick={(e) => e.stopPropagation()}
-                        >
-                          {cell}
-                        </div>
-                      ) : (
-                        cell || (
-                          <span
-                            style={{
-                              color: '#9CA3AF',
-                              fontStyle: 'italic',
-                              fontWeight: 'normal',
-                            }}
-                          >
-                            Click to edit
-                          </span>
-                        )
-                      )}
-                    </Tag>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {effectiveRows.map((row, rowIndex) => (
+            <div
+              key={rowIndex}
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexShrink: 0,
+                height: row.height,
+                minHeight: row.height,
+              }}
+            >
+              {row.cells.map((cell, colIndex) => {
+                const isEditingThis =
+                  editingCell?.rowIndex === rowIndex && editingCell?.colIndex === colIndex
+                const colWidth = columnWidths[colIndex] ?? Math.round(width / columns)
+                return (
+                  <div
+                    key={colIndex}
+                    style={{
+                      width: colWidth,
+                      minWidth: colWidth,
+                      maxWidth: colWidth,
+                      height: '100%',
+                      backgroundColor: row.isHeader ? '#F3F4F6' : '#FFFFFF',
+                      color: row.isHeader ? '#111827' : '#374151',
+                      fontWeight: row.isHeader ? 'bold' : 'normal',
+                      fontSize: 14,
+                      fontFamily: 'Inter, sans-serif',
+                      border: '1px solid #E5E7EB',
+                      // Negative margin collapses double borders with neighbours
+                      marginLeft: colIndex === 0 ? 0 : -1,
+                      marginTop: rowIndex === 0 ? 0 : -1,
+                      boxSizing: 'border-box',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 8px',
+                      cursor: isEditingThis ? 'text' : undefined,
+                      position: 'relative',
+                    }}
+                    onDoubleClick={(e) => handleCellDoubleClick(e, rowIndex, colIndex)}
+                  >
+                    {isEditingThis ? (
+                      <div
+                        ref={(el) => {
+                          if (isEditingThis) editableRef.current = el
+                        }}
+                        contentEditable
+                        suppressContentEditableWarning
+                        style={{
+                          width: '100%',
+                          outline: 'none',
+                          cursor: 'text',
+                          textAlign: 'center',
+                          fontWeight: row.isHeader ? 'bold' : 'normal',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                        }}
+                        onBlur={(e) => handleCellBlur(e, rowIndex, colIndex)}
+                        onKeyDown={handleCellKeyDown}
+                        onClick={(e) => e.stopPropagation()}
+                        onDoubleClick={(e) => e.stopPropagation()}
+                      >
+                        {cell}
+                      </div>
+                    ) : cell ? (
+                      <span
+                        style={{
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                          display: 'block',
+                          width: '100%',
+                          textAlign: 'center',
+                        }}
+                      >
+                        {cell}
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          color: '#9CA3AF',
+                          fontStyle: 'italic',
+                          fontWeight: 'normal',
+                        }}
+                      >
+                        Click to edit
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )
+        )}
       </div>
 
       {/* Corner handles */}
