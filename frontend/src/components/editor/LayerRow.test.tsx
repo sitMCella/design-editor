@@ -86,7 +86,7 @@ const makeTable = (overrides: Partial<TableElement> = {}): TableElement => ({
 
 // Default no-op callbacks
 const noop = () => {}
-const noopEvent = (_e: React.MouseEvent) => {}
+const noopEvent = () => {}
 
 // ---------------------------------------------------------------------------
 // AC5 — Each row shows element type icon, label, and visibility button
