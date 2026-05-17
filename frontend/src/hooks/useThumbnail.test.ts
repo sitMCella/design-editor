@@ -66,9 +66,7 @@ beforeEach(() => {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
     drawImage: vi.fn(),
   } as unknown as CanvasRenderingContext2D)
-  vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (
-    cb: BlobCallback,
-  ) {
+  vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (cb: BlobCallback) {
     cb(new Blob(['x'], { type: 'image/jpeg' }))
   })
 })
@@ -267,9 +265,7 @@ describe('AC6 — errors are swallowed silently', () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal('fetch', mockFetch)
     // Override the toBlob spy so croppedCanvas.toBlob passes null to the callback
-    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (
-      cb: BlobCallback,
-    ) {
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (cb: BlobCallback) {
       cb(null)
     })
     useCanvasStore.setState({ isDirty: true })
@@ -385,8 +381,8 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
     const captureW = fakeElement.width + 48
     const captureY = fakeElement.y - 24
     const captureH = fakeElement.height + 48
-    expect(opts.width).toBe(captureX + captureW)   // 324
-    expect(opts.height).toBe(captureY + captureH)  // 174
+    expect(opts.width).toBe(captureX + captureW) // 324
+    expect(opts.height).toBe(captureY + captureH) // 174
   })
 
   it('computes scale to fit within 320×180', async () => {

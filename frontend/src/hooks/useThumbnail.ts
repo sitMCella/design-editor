@@ -84,7 +84,7 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
             0,
             0,
             croppedW,
-            croppedH,
+            croppedH
           )
 
           croppedCanvas.toBlob(
@@ -102,7 +102,7 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
                 })
             },
             'image/jpeg',
-            0.7,
+            0.7
           )
         })
         .catch(() => {

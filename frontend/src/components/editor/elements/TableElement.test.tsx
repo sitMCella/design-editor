@@ -185,7 +185,9 @@ describe('AC6: equal cell dimensions', () => {
   it('header cells in the first row have the correct column widths', () => {
     const { container } = renderElement()
     // The implementation uses div cells with inline width style instead of <col>
-    const headerCells = container.querySelectorAll('[data-testid="table-row-0"] [data-cell-type="header"]')
+    const headerCells = container.querySelectorAll(
+      '[data-testid="table-row-0"] [data-cell-type="header"]'
+    )
     expect(headerCells).toHaveLength(baseElement.columns)
     headerCells.forEach((cell, i) => {
       expect((cell as HTMLElement).style.width).toBe(`${baseElement.columnWidths![i]}px`)

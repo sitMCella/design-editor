@@ -121,7 +121,7 @@ describe('downloadPng', () => {
       height: 0,
       getContext: vi.fn().mockReturnValue(mockCtx),
       toBlob: vi.fn((cb: (blob: Blob | null) => void) =>
-        cb(new Blob(['fake-png'], { type: 'image/png' })),
+        cb(new Blob(['fake-png'], { type: 'image/png' }))
       ),
     }
     mockAnchor = { href: '', download: '', click: vi.fn() }
@@ -167,7 +167,7 @@ describe('downloadPng', () => {
     it('throws "no-ref" when worldRef.current is null', async () => {
       const worldRef = { current: null }
       await expect(
-        downloadPng(worldRef as { current: HTMLDivElement | null }, [makeText()], 'My Design'),
+        downloadPng(worldRef as { current: HTMLDivElement | null }, [makeText()], 'My Design')
       ).rejects.toThrow('no-ref')
     })
 
@@ -176,7 +176,7 @@ describe('downloadPng', () => {
       const orphan = document.createElement('div')
       const worldRef = { current: orphan }
       await expect(
-        downloadPng(worldRef as { current: HTMLDivElement | null }, [makeText()], 'My Design'),
+        downloadPng(worldRef as { current: HTMLDivElement | null }, [makeText()], 'My Design')
       ).rejects.toThrow('no-ref')
     })
   })
@@ -259,7 +259,7 @@ describe('downloadPng', () => {
 
       expect(mockHtml2canvas).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ scale: 1, useCORS: true, logging: false }),
+        expect.objectContaining({ scale: 1, useCORS: true, logging: false })
       )
       cleanup()
     })
@@ -271,7 +271,7 @@ describe('downloadPng', () => {
 
       expect(mockHtml2canvas).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ backgroundColor: '#F3F4F6' }),
+        expect.objectContaining({ backgroundColor: '#F3F4F6' })
       )
       cleanup()
     })
@@ -283,7 +283,7 @@ describe('downloadPng', () => {
 
       expect(mockHtml2canvas).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ x: 0, y: 0 }),
+        expect.objectContaining({ x: 0, y: 0 })
       )
       cleanup()
     })
@@ -300,7 +300,7 @@ describe('downloadPng', () => {
 
       expect(mockHtml2canvas).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ width: 284, height: 164 }),
+        expect.objectContaining({ width: 284, height: 164 })
       )
       cleanup()
     })
@@ -339,7 +339,7 @@ describe('downloadPng', () => {
         0, // dest x
         0, // dest y
         208, // dest width
-        88, // dest height
+        88 // dest height
       )
       cleanup()
     })
@@ -355,12 +355,18 @@ describe('downloadPng', () => {
 
       expect(mockHtml2canvas).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ width: 324, height: 374 }),
+        expect.objectContaining({ width: 324, height: 374 })
       )
       expect(mockCtx.drawImage).toHaveBeenCalledWith(
         expect.anything(),
-        176, 276, 148, 98,
-        0, 0, 148, 98,
+        176,
+        276,
+        148,
+        98,
+        0,
+        0,
+        148,
+        98
       )
       cleanup()
     })
@@ -383,17 +389,14 @@ describe('downloadPng', () => {
       // nodeRight based only on visible element: 76+208=284
       expect(mockHtml2canvas).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ width: 284, height: 164 }),
+        expect.objectContaining({ width: 284, height: 164 })
       )
       cleanup()
     })
 
     it('throws "empty" when every element in the list is hidden', async () => {
       const { worldRef, cleanup } = makeWorldDom()
-      const elements = [
-        makeText({ id: 't1', hidden: true }),
-        makeText({ id: 't2', hidden: true }),
-      ]
+      const elements = [makeText({ id: 't1', hidden: true }), makeText({ id: 't2', hidden: true })]
 
       await expect(downloadPng(worldRef, elements, 'My Design')).rejects.toThrow('empty')
       cleanup()
@@ -401,10 +404,7 @@ describe('downloadPng', () => {
 
     it('proceeds normally when at least one element is visible', async () => {
       const { worldRef, cleanup } = makeWorldDom()
-      const elements = [
-        makeText({ id: 't1', hidden: true }),
-        makeText({ id: 't2', hidden: false }),
-      ]
+      const elements = [makeText({ id: 't1', hidden: true }), makeText({ id: 't2', hidden: false })]
 
       await expect(downloadPng(worldRef, elements, 'My Design')).resolves.toBeUndefined()
       cleanup()
@@ -499,12 +499,18 @@ describe('downloadPng', () => {
 
       expect(mockHtml2canvas).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ width: 304, height: 164 }),
+        expect.objectContaining({ width: 304, height: 164 })
       )
       expect(mockCtx.drawImage).toHaveBeenCalledWith(
         expect.anything(),
-        26, 26, 278, 138,
-        0, 0, 278, 138,
+        26,
+        26,
+        278,
+        138,
+        0,
+        0,
+        278,
+        138
       )
       cleanup()
     })

@@ -265,7 +265,9 @@ test.describe('18 – Download PNG', () => {
       HTMLCanvasElement.prototype.toBlob = function (
         this: HTMLCanvasElement,
         callback: BlobCallback,
-        ...args: Parameters<HTMLCanvasElement['toBlob']> extends [BlobCallback, ...infer R] ? R : never[]
+        ...args: Parameters<HTMLCanvasElement['toBlob']> extends [BlobCallback, ...infer R]
+          ? R
+          : never[]
       ) {
         callCount++
         if (callCount >= 1) {

@@ -75,7 +75,7 @@ function renderEditor() {
         ),
       },
     ],
-    { initialEntries: [`/editor/${storeDesignId}`] },
+    { initialEntries: [`/editor/${storeDesignId}`] }
   )
   render(<RouterProvider router={router} />)
 }
@@ -282,7 +282,7 @@ describe('AC8 — in-progress state', () => {
     })
 
     expect(screen.getByRole('button', { name: /download png/i })).not.toHaveTextContent(
-      'Download PNG',
+      'Download PNG'
     )
   })
 })
