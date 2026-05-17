@@ -478,7 +478,8 @@ test.describe('13 – Infinite Canvas', () => {
     await expect(el).toBeVisible()
 
     await el.click()
-    await expect(el).toHaveCSS('outline-style', 'solid')
+    // Selection outline lives on an inner div inside the arrow container
+    await expect(el.locator('div').first()).toHaveCSS('outline-style', 'solid')
 
     await clickBackground(page)
     await expect(el).not.toHaveCSS('outline-style', 'solid')
