@@ -72,7 +72,7 @@ export async function downloadPdf(
       0,
       0,
       captureW * CAPTURE_SCALE,
-      captureH * CAPTURE_SCALE,
+      captureH * CAPTURE_SCALE
     )
 
     const imgData = croppedCanvas.toDataURL('image/jpeg', 0.92)
