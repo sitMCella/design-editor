@@ -66,18 +66,22 @@ describe('SVG rendering', () => {
 
   it('line x1/y1 are relative to the bounding box left/top', () => {
     const { container } = renderElement()
-    // x1=540, x=539 → svgX1=1; y1=360, y=359 → svgY1=1
+    // x1=540, x=539 → rawX1=1; y1=360, y=359 → rawY1=1
+    // markerPadding = Math.ceil(8 * strokeWidth) = Math.ceil(8 * 2) = 16
+    // svgX1 = rawX1 + markerPadding = 17; svgY1 = rawY1 + markerPadding = 17
     const line = container.querySelector('line')!
-    expect(line.getAttribute('x1')).toBe('1')
-    expect(line.getAttribute('y1')).toBe('1')
+    expect(line.getAttribute('x1')).toBe('17')
+    expect(line.getAttribute('y1')).toBe('17')
   })
 
   it('line x2/y2 are relative to the bounding box left/top', () => {
     const { container } = renderElement()
-    // x2=740, x=539 → svgX2=201; y2=360, y=359 → svgY2=1
+    // x2=740, x=539 → rawX2=201; y2=360, y=359 → rawY2=1
+    // markerPadding = Math.ceil(8 * strokeWidth) = 16
+    // svgX2 = rawX2 + markerPadding = 217; svgY2 = rawY2 + markerPadding = 17
     const line = container.querySelector('line')!
-    expect(line.getAttribute('x2')).toBe('201')
-    expect(line.getAttribute('y2')).toBe('1')
+    expect(line.getAttribute('x2')).toBe('217')
+    expect(line.getAttribute('y2')).toBe('17')
   })
 
   it('line carries the stroke colour', () => {
@@ -137,14 +141,17 @@ describe('SVG rendering', () => {
 // ---------------------------------------------------------------------------
 
 describe('sizing', () => {
-  it('SVG width matches element width', () => {
+  it('SVG width matches element width plus marker padding on both sides', () => {
     const { container } = renderElement()
-    expect(container.querySelector('svg')?.getAttribute('width')).toBe('202')
+    // markerPadding = Math.ceil(8 * strokeWidth) = Math.ceil(8 * 2) = 16
+    // svgWidth = element.width + 2 * markerPadding = 202 + 32 = 234
+    expect(container.querySelector('svg')?.getAttribute('width')).toBe('234')
   })
 
-  it('SVG height matches element height', () => {
+  it('SVG height matches element height plus marker padding on both sides', () => {
     const { container } = renderElement()
-    expect(container.querySelector('svg')?.getAttribute('height')).toBe('2')
+    // markerPadding = 16; svgHeight = element.height + 2 * markerPadding = 2 + 32 = 34
+    expect(container.querySelector('svg')?.getAttribute('height')).toBe('34')
   })
 
   it('wrapper div width matches element width', () => {
@@ -267,18 +274,20 @@ describe('endpoint handles', () => {
 
   it('start handle is positioned at svgX1, svgY1', () => {
     const { getByTestId } = renderElement({}, { isSelected: true })
-    // svgX1 = x1 - x = 540 - 539 = 1; svgY1 = y1 - y = 360 - 359 = 1
+    // svgX1 = x1 - x + markerPadding = 540 - 539 + 16 = 17
+    // svgY1 = y1 - y + markerPadding = 360 - 359 + 16 = 17
     const handle = getByTestId('endpoint-start')
-    expect(handle.getAttribute('cx')).toBe('1')
-    expect(handle.getAttribute('cy')).toBe('1')
+    expect(handle.getAttribute('cx')).toBe('17')
+    expect(handle.getAttribute('cy')).toBe('17')
   })
 
   it('end handle is positioned at svgX2, svgY2', () => {
     const { getByTestId } = renderElement({}, { isSelected: true })
-    // svgX2 = x2 - x = 740 - 539 = 201; svgY2 = y2 - y = 360 - 359 = 1
+    // svgX2 = x2 - x + markerPadding = 740 - 539 + 16 = 217
+    // svgY2 = y2 - y + markerPadding = 360 - 359 + 16 = 17
     const handle = getByTestId('endpoint-end')
-    expect(handle.getAttribute('cx')).toBe('201')
-    expect(handle.getAttribute('cy')).toBe('1')
+    expect(handle.getAttribute('cx')).toBe('217')
+    expect(handle.getAttribute('cy')).toBe('17')
   })
 })
 

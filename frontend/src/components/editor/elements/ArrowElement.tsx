@@ -249,11 +249,20 @@ export function ArrowElement({
   const outline = isSelected ? '2px solid #3B82F6' : 'none'
   const cursor = isSelected ? 'grab' : 'default'
 
-  // Coordinates relative to the bounding box origin for SVG rendering
-  const svgX1 = x1 - x
-  const svgY1 = y1 - y
-  const svgX2 = x2 - x
-  const svgY2 = y2 - y
+  // Expand the SVG by markerPadding on all sides so arrowhead markers stay
+  // within the SVG's declared dimensions. html2canvas clips SVG content to the
+  // element's width/height even when overflow="visible" is set.
+  // We use direct coordinate offsets (not <g transform>) to avoid html2canvas
+  // mishandling SVG transform elements.
+  const markerPadding = Math.ceil(8 * strokeWidth)
+
+  // All SVG coordinates are offset by markerPadding so the origin of the
+  // expanded SVG (placed at left:-markerPadding, top:-markerPadding) maps the
+  // arrow's bounding-box top-left to SVG position (markerPadding, markerPadding).
+  const svgX1 = x1 - x + markerPadding
+  const svgY1 = y1 - y + markerPadding
+  const svgX2 = x2 - x + markerPadding
+  const svgY2 = y2 - y + markerPadding
 
   return (
     <div
@@ -276,10 +285,15 @@ export function ArrowElement({
       onMouseDown={handleBodyMouseDown}
     >
       <svg
-        width={width}
-        height={height}
-        overflow="visible"
-        style={{ display: 'block', overflow: 'visible' }}
+        width={width + markerPadding * 2}
+        height={height + markerPadding * 2}
+        style={{
+          position: 'absolute',
+          left: -markerPadding,
+          top: -markerPadding,
+          display: 'block',
+          overflow: 'visible',
+        }}
       >
         <ArrowMarkers id={id} stroke={stroke} arrowHead={arrowHead} />
 
@@ -341,8 +355,8 @@ export function ArrowElement({
         {snapTarget && (
           <circle
             data-testid="snap-indicator"
-            cx={snapTarget.x - x}
-            cy={snapTarget.y - y}
+            cx={snapTarget.x - x + markerPadding}
+            cy={snapTarget.y - y + markerPadding}
             r={5}
             fill="#3B82F6"
             style={{ pointerEvents: 'none' }}

@@ -21,6 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @specs/features/15-contextual-toolbar-pin.md
 @specs/features/16-delete-canvas-element.md
 @specs/features/17-layer-view.md
+@specs/features/18-download-png.md
 
 ## Project Overview
 

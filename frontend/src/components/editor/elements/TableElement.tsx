@@ -392,51 +392,53 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
       onMouseDown={handleBodyMouseDown}
       onClick={handleClick}
     >
-      {/* Table content */}
-      <div
+      {/* HTML table for semantic structure — tests query tr/th/td/col */}
+      <table
         style={{
-          position: 'absolute',
-          inset: 0,
-          overflow: 'hidden',
+          width: '100%',
+          height: '100%',
+          borderCollapse: 'collapse',
+          tableLayout: 'fixed',
+          fontSize: 14,
+          fontFamily: 'Inter, sans-serif',
           border: '1px solid #D1D5DB',
           boxSizing: 'border-box',
         }}
       >
-        <table
-          style={{
-            width: '100%',
-            height: '100%',
-            borderCollapse: 'collapse',
-            tableLayout: 'fixed',
-          }}
-        >
-          <colgroup>
-            {columnWidths.map((cw, i) => (
-              <col key={i} style={{ width: cw }} />
-            ))}
-          </colgroup>
-          <tbody>
-            {effectiveRows.map((row, rowIndex) => (
-              <tr key={rowIndex} style={{ height: row.height }}>
+        <colgroup>
+          {columnWidths.map((cw, i) => (
+            <col key={i} style={{ width: cw }} />
+          ))}
+        </colgroup>
+        <tbody>
+          {effectiveRows.map((row, rowIndex) => {
+            const CellTag: 'th' | 'td' = row.isHeader ? 'th' : 'td'
+            return (
+              <tr
+                key={rowIndex}
+                data-testid={`table-row-${rowIndex}`}
+                style={{ height: row.height }}
+              >
                 {row.cells.map((cell, colIndex) => {
-                  const Tag = row.isHeader ? 'th' : 'td'
                   const isEditingThis =
                     editingCell?.rowIndex === rowIndex && editingCell?.colIndex === colIndex
+                  const colWidth = columnWidths[colIndex] ?? Math.round(width / columns)
                   return (
-                    <Tag
+                    <CellTag
                       key={colIndex}
+                      data-cell-type={row.isHeader ? 'header' : 'data'}
                       style={{
+                        width: colWidth,
                         backgroundColor: row.isHeader ? '#F3F4F6' : '#FFFFFF',
                         color: row.isHeader ? '#111827' : '#374151',
                         fontWeight: row.isHeader ? 'bold' : 'normal',
-                        fontSize: 14,
-                        fontFamily: 'Inter, sans-serif',
+                        border: '1px solid #E5E7EB',
                         textAlign: 'center',
                         verticalAlign: 'middle',
-                        border: '1px solid #E5E7EB',
-                        padding: 0,
+                        padding: '0 8px',
                         overflow: 'hidden',
                         boxSizing: 'border-box',
+                        cursor: isEditingThis ? 'text' : undefined,
                       }}
                       onDoubleClick={(e) => handleCellDoubleClick(e, rowIndex, colIndex)}
                     >
@@ -449,15 +451,13 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
                           suppressContentEditableWarning
                           style={{
                             width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
                             outline: 'none',
-                            padding: '0 8px',
                             cursor: 'text',
-                            boxSizing: 'border-box',
+                            textAlign: 'center',
+                            lineHeight: 'normal',
                             fontWeight: row.isHeader ? 'bold' : 'normal',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
                           }}
                           onBlur={(e) => handleCellBlur(e, rowIndex, colIndex)}
                           onKeyDown={handleCellKeyDown}
@@ -466,36 +466,23 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
                         >
                           {cell}
                         </div>
+                      ) : cell ? (
+                        cell
                       ) : (
-                        <div
-                          style={{
-                            padding: '0 8px',
-                            overflow: 'hidden',
-                            whiteSpace: 'nowrap',
-                            textOverflow: 'ellipsis',
-                          }}
+                        <span
+                          style={{ color: '#9CA3AF', fontStyle: 'italic', fontWeight: 'normal' }}
                         >
-                          {cell || (
-                            <span
-                              style={{
-                                color: '#9CA3AF',
-                                fontStyle: 'italic',
-                                fontWeight: 'normal',
-                              }}
-                            >
-                              Click to edit
-                            </span>
-                          )}
-                        </div>
+                          Click to edit
+                        </span>
                       )}
-                    </Tag>
+                    </CellTag>
                   )
                 })}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            )
+          })}
+        </tbody>
+      </table>
 
       {/* Corner handles */}
       {isSelected &&
