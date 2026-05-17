@@ -38,6 +38,10 @@ export function EditorPage() {
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const exportErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Refs for synchronous guards — React state updates are async so a rapid
+  // second click (e.g. force-clicked in tests) can see the old state value.
+  const isExportingPngRef = useRef(false)
+  const isExportingPdfRef = useRef(false)
 
   const showExportError = (msg: string) => {
     setExportError(msg)
@@ -46,10 +50,12 @@ export function EditorPage() {
   }
 
   const handleDownloadPng = async () => {
-    if (isExportingPng) return
+    if (isExportingPngRef.current) return
+    isExportingPngRef.current = true
     const currentElements = useCanvasStore.getState().elements
     const visibleCount = currentElements.filter((el) => !el.hidden).length
     if (visibleCount === 0) {
+      isExportingPngRef.current = false
       showExportError('Nothing to export — add at least one visible element.')
       return
     }
@@ -59,15 +65,18 @@ export function EditorPage() {
     } catch {
       showExportError('Export failed. Please try again.')
     } finally {
+      isExportingPngRef.current = false
       setIsExportingPng(false)
     }
   }
 
   const handleDownloadPdf = async () => {
-    if (isExportingPdf) return
+    if (isExportingPdfRef.current) return
+    isExportingPdfRef.current = true
     const currentElements = useCanvasStore.getState().elements
     const visibleCount = currentElements.filter((el) => !el.hidden).length
     if (visibleCount === 0) {
+      isExportingPdfRef.current = false
       showExportError('Nothing to export — add at least one visible element.')
       return
     }
@@ -77,6 +86,7 @@ export function EditorPage() {
     } catch {
       showExportError('Export failed. Please try again.')
     } finally {
+      isExportingPdfRef.current = false
       setIsExportingPdf(false)
     }
   }
