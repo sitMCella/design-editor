@@ -232,9 +232,7 @@ test.describe('19 – Download PDF', () => {
     await downloadPromise
 
     await expect(downloadPdfBtn(page)).toBeEnabled()
-    await expect(
-      page.locator('button[aria-label="Download PDF"] .animate-spin')
-    ).not.toBeAttached()
+    await expect(page.locator('button[aria-label="Download PDF"] .animate-spin')).not.toBeAttached()
     await expect(downloadPdfBtn(page)).toContainText('Download PDF')
   })
 
@@ -320,9 +318,7 @@ test.describe('19 – Download PDF', () => {
 
     await expect(page.getByRole('alert')).toBeVisible({ timeout: 10_000 })
     await expect(downloadPdfBtn(page)).toBeEnabled()
-    await expect(
-      page.locator('button[aria-label="Download PDF"] .animate-spin')
-    ).not.toBeAttached()
+    await expect(page.locator('button[aria-label="Download PDF"] .animate-spin')).not.toBeAttached()
   })
 
   // =========================================================================

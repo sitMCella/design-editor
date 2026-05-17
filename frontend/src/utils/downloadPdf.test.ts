@@ -390,9 +390,7 @@ describe('downloadPdf', () => {
 
       await downloadPdf(worldRef, [el], 'My Design')
 
-      expect(MockJsPDF).toHaveBeenCalledWith(
-        expect.objectContaining({ orientation: 'landscape' })
-      )
+      expect(MockJsPDF).toHaveBeenCalledWith(expect.objectContaining({ orientation: 'landscape' }))
       cleanup()
     })
 
@@ -405,9 +403,7 @@ describe('downloadPdf', () => {
 
       await downloadPdf(worldRef, [el], 'My Design')
 
-      expect(MockJsPDF).toHaveBeenCalledWith(
-        expect.objectContaining({ orientation: 'portrait' })
-      )
+      expect(MockJsPDF).toHaveBeenCalledWith(expect.objectContaining({ orientation: 'portrait' }))
       cleanup()
     })
 
@@ -492,9 +488,7 @@ describe('downloadPdf', () => {
 
       await downloadPdf(worldRef, [el], 'Square')
 
-      expect(MockJsPDF).toHaveBeenCalledWith(
-        expect.objectContaining({ format: [336, 336] })
-      )
+      expect(MockJsPDF).toHaveBeenCalledWith(expect.objectContaining({ format: [336, 336] }))
       cleanup()
     })
   })
