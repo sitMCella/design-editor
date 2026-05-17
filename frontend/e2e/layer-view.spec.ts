@@ -214,9 +214,7 @@ test.describe('17 – Layer Panel', () => {
     await expect(layerRowByLabel(page, 'Text 2')).toBeVisible()
   })
 
-  test('AC6: sequence numbers are per-type (Text 1, Image 1 are independent)', async ({
-    page,
-  }) => {
+  test('AC6: sequence numbers are per-type (Text 1, Image 1 are independent)', async ({ page }) => {
     await addTextElement(page)
     await clickBackground(page)
     await addImageElement(page)
@@ -518,9 +516,7 @@ test.describe('17 – Layer Panel', () => {
   // AC20 – After reordering, z-order reflected on canvas
   // =========================================================================
 
-  test('AC20: reordering triggers auto-save PATCH with updated element order', async ({
-    page,
-  }) => {
+  test('AC20: reordering triggers auto-save PATCH with updated element order', async ({ page }) => {
     await addTextElement(page)
     await clickBackground(page)
     await addImageElement(page)
@@ -588,9 +584,7 @@ test.describe('17 – Layer Panel', () => {
 
     const listEl = page.locator('.overflow-y-auto').first()
     // scrollHeight must exceed clientHeight for overflow to be active
-    const isScrollable = await listEl.evaluate(
-      (el) => el.scrollHeight > el.clientHeight
-    )
+    const isScrollable = await listEl.evaluate((el) => el.scrollHeight > el.clientHeight)
     expect(isScrollable).toBe(true)
   })
 

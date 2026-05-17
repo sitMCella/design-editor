@@ -132,9 +132,7 @@ export const useCanvasStore = create<State & Actions>()(
 
     selectElements: (ids) =>
       set((state) => {
-        state.selectedIds = ids.filter(
-          (id) => !state.elements.find((el) => el.id === id)?.hidden,
-        )
+        state.selectedIds = ids.filter((id) => !state.elements.find((el) => el.id === id)?.hidden)
       }),
 
     toggleElementSelection: (id) =>

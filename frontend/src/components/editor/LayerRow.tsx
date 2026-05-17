@@ -147,11 +147,7 @@ export function LayerRow({
       </div>
 
       {/* Label */}
-      <span
-        className={`flex-1 truncate text-sm ${
-          isSelected ? 'text-blue-700' : 'text-gray-700'
-        }`}
-      >
+      <span className={`flex-1 truncate text-sm ${isSelected ? 'text-blue-700' : 'text-gray-700'}`}>
         {label}
       </span>
 

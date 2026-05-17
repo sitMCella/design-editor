@@ -102,7 +102,7 @@ describe('AC5 — row content: icon, label, visibility button', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(screen.getByText('Text 1')).toBeInTheDocument()
   })
@@ -116,7 +116,7 @@ describe('AC5 — row content: icon, label, visibility button', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(screen.getByRole('button')).toBeInTheDocument()
   })
@@ -130,7 +130,7 @@ describe('AC5 — row content: icon, label, visibility button', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     // The ElementIcon for text renders a bold 'T' span
     expect(container.querySelector('span.font-bold')).toHaveTextContent('T')
@@ -145,7 +145,7 @@ describe('AC5 — row content: icon, label, visibility button', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     // SVG is present for the image icon
     expect(container.querySelector('svg')).toBeInTheDocument()
@@ -161,7 +161,7 @@ describe('AC5 — row content: icon, label, visibility button', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(container.querySelector('span.font-bold')).toHaveTextContent('→')
   })
@@ -175,7 +175,7 @@ describe('AC5 — row content: icon, label, visibility button', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(container.querySelector('svg')).toBeInTheDocument()
     expect(screen.getByText('Table 1')).toBeInTheDocument()
@@ -196,7 +196,7 @@ describe('AC9 — selected row styling', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(container.firstChild).toHaveClass('bg-blue-50')
   })
@@ -210,7 +210,7 @@ describe('AC9 — selected row styling', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     const label = container.querySelector('.text-blue-700')
     expect(label).toBeInTheDocument()
@@ -225,7 +225,7 @@ describe('AC9 — selected row styling', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(container.firstChild).not.toHaveClass('bg-blue-50')
   })
@@ -245,7 +245,7 @@ describe('AC11 — hidden row styling and icon', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(container.firstChild).toHaveClass('opacity-50')
   })
@@ -259,7 +259,7 @@ describe('AC11 — hidden row styling and icon', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(container.firstChild).not.toHaveClass('opacity-50')
   })
@@ -273,7 +273,7 @@ describe('AC11 — hidden row styling and icon', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(screen.getByRole('button', { name: 'Show element' })).toBeInTheDocument()
   })
@@ -287,7 +287,7 @@ describe('AC11 — hidden row styling and icon', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     expect(screen.getByRole('button', { name: 'Hide element' })).toBeInTheDocument()
   })
@@ -308,7 +308,7 @@ describe('callback wiring', () => {
         onSelect={onSelect}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     fireEvent.click(container.firstChild as HTMLElement)
     expect(onSelect).toHaveBeenCalledOnce()
@@ -324,7 +324,7 @@ describe('callback wiring', () => {
         onSelect={noopEvent}
         onToggleVisibility={onToggleVisibility}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     fireEvent.click(screen.getByRole('button', { name: 'Hide element' }))
     expect(onToggleVisibility).toHaveBeenCalledOnce()
@@ -340,7 +340,7 @@ describe('callback wiring', () => {
         onSelect={onSelect}
         onToggleVisibility={noop}
         onDragHandleMouseDown={noopEvent}
-      />,
+      />
     )
     fireEvent.click(screen.getByRole('button', { name: 'Hide element' }))
     expect(onSelect).not.toHaveBeenCalled()
@@ -356,7 +356,7 @@ describe('callback wiring', () => {
         onSelect={noopEvent}
         onToggleVisibility={noop}
         onDragHandleMouseDown={onDragHandleMouseDown}
-      />,
+      />
     )
     const dragHandle = container.querySelector('[class*="cursor-grab"]')!
     fireEvent.mouseDown(dragHandle)
