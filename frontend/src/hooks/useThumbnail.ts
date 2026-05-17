@@ -25,11 +25,15 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
     if (!bbox) return
 
     generating.current = true
-    const node = worldRef.current
 
-    // Temporarily clear the CSS transform so html2canvas sees zoom=1 world coords
-    const prevTransform = node.style.transform
-    node.style.transform = 'none'
+    // worldRef is DesignSurface (no transform). The zoom/pan transform lives
+    // on the parent world-layer div. We must clear that, not the node itself.
+    const node = worldRef.current
+    const worldLayer = node.parentElement
+    if (!worldLayer) {
+      generating.current = false
+      return
+    }
 
     const captureX = bbox.x - THUMBNAIL_PADDING
     const captureY = bbox.y - THUMBNAIL_PADDING
@@ -37,21 +41,53 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
     const captureH = bbox.height + THUMBNAIL_PADDING * 2
     const scale = Math.min(THUMB_MAX_W / captureW, THUMB_MAX_H / captureH)
 
-    // Use rAF so the style change is applied before capture
+    const prevLayerTransform = worldLayer.style.transform
+    const prevNodeWidth = node.style.width
+    const prevNodeHeight = node.style.height
+
+    worldLayer.style.transform = 'none'
+
+    const nodeRight = captureX + captureW
+    const nodeBottom = captureY + captureH
+    node.style.width = `${nodeRight}px`
+    node.style.height = `${nodeBottom}px`
+
     requestAnimationFrame(() => {
       html2canvas(node, {
-        x: captureX,
-        y: captureY,
-        width: captureW,
-        height: captureH,
+        x: 0,
+        y: 0,
+        width: nodeRight,
+        height: nodeBottom,
         scale,
         useCORS: true,
         logging: false,
         backgroundColor: '#F3F4F6',
       })
-        .then((canvas) => {
-          node.style.transform = prevTransform
-          canvas.toBlob(
+        .then((fullCanvas) => {
+          worldLayer.style.transform = prevLayerTransform
+          node.style.width = prevNodeWidth
+          node.style.height = prevNodeHeight
+
+          // Crop to the desired region using 2D API.
+          const croppedW = Math.round(captureW * scale)
+          const croppedH = Math.round(captureH * scale)
+          const croppedCanvas = document.createElement('canvas')
+          croppedCanvas.width = croppedW
+          croppedCanvas.height = croppedH
+          const ctx = croppedCanvas.getContext('2d')!
+          ctx.drawImage(
+            fullCanvas,
+            Math.round(captureX * scale),
+            Math.round(captureY * scale),
+            croppedW,
+            croppedH,
+            0,
+            0,
+            croppedW,
+            croppedH,
+          )
+
+          croppedCanvas.toBlob(
             (blob) => {
               if (!blob) {
                 generating.current = false
@@ -66,11 +102,13 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
                 })
             },
             'image/jpeg',
-            0.7
+            0.7,
           )
         })
         .catch(() => {
-          node.style.transform = prevTransform
+          worldLayer.style.transform = prevLayerTransform
+          node.style.width = prevNodeWidth
+          node.style.height = prevNodeHeight
           generating.current = false
         })
     })
