@@ -286,23 +286,12 @@ test.describe('19 – Download PDF', () => {
   // AC14 — html2canvas / jsPDF failure: "Export failed" notification
   // =========================================================================
 
-  test('AC14: shows "Export failed" notification when toBlob returns null', async ({ page }) => {
+  test('AC14: shows "Export failed" notification when toDataURL throws', async ({ page }) => {
+    // downloadPdf.ts uses toDataURL (not toBlob) to produce the JPEG data URL for jsPDF.
+    // Patching it to throw simulates an html2canvas / canvas export failure.
     await page.addInitScript(() => {
-      let callCount = 0
-      HTMLCanvasElement.prototype.toBlob = function (
-        this: HTMLCanvasElement,
-        callback: BlobCallback,
-        ...args: Parameters<HTMLCanvasElement['toBlob']> extends [BlobCallback, ...infer R]
-          ? R
-          : never[]
-      ) {
-        callCount++
-        if (callCount >= 1) {
-          callback(null)
-          return
-        }
-        const orig = HTMLCanvasElement.prototype.toBlob
-        return orig.call(this, callback, ...args)
+      HTMLCanvasElement.prototype.toDataURL = function () {
+        throw new Error('toDataURL failed')
       }
     })
 
@@ -318,8 +307,8 @@ test.describe('19 – Download PDF', () => {
 
   test('AC14: button returns to idle after an export failure', async ({ page }) => {
     await page.addInitScript(() => {
-      HTMLCanvasElement.prototype.toBlob = function (callback: BlobCallback) {
-        callback(null)
+      HTMLCanvasElement.prototype.toDataURL = function () {
+        throw new Error('toDataURL failed')
       }
     })
 
