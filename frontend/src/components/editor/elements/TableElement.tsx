@@ -392,121 +392,97 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
       onMouseDown={handleBodyMouseDown}
       onClick={handleClick}
     >
-      {/* Table content.
-          Layout: flex-column of row divs, each a flex-row of cell divs.
-          The flex container has NO border so its height === element.height exactly —
-          a border with box-sizing:border-box would shrink the flex area by 2px and
-          cause rows to overflow + get clipped.
-          The outer frame is rendered by a separate pointer-events:none overlay.
-          Cell centering uses line-height (not align-items:center) because
-          html2canvas does not reliably implement flex cross-axis alignment. */}
-      <div
+      {/* HTML table for semantic structure — tests query tr/th/td/col */}
+      <table
         style={{
-          position: 'absolute',
-          inset: 0,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {effectiveRows.map((row, rowIndex) => {
-          const isLastRow = rowIndex === effectiveRows.length - 1
-          // Content-area height for line-height centering: row height minus any
-          // bottom border that box-sizing:border-box subtracts from height.
-          const contentH = row.height - (isLastRow ? 0 : 1)
-          return (
-            <div
-              key={rowIndex}
-              data-testid={`table-row-${rowIndex}`}
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                flexShrink: 0,
-                height: row.height,
-                minHeight: row.height,
-              }}
-            >
-              {row.cells.map((cell, colIndex) => {
-                const isEditingThis =
-                  editingCell?.rowIndex === rowIndex && editingCell?.colIndex === colIndex
-                const colWidth = columnWidths[colIndex] ?? Math.round(width / columns)
-                const isLastCol = colIndex === columns - 1
-                return (
-                  <div
-                    key={colIndex}
-                    data-cell-type={row.isHeader ? 'header' : 'data'}
-                    style={{
-                      width: colWidth,
-                      minWidth: colWidth,
-                      maxWidth: colWidth,
-                      height: row.height,
-                      backgroundColor: row.isHeader ? '#F3F4F6' : '#FFFFFF',
-                      color: row.isHeader ? '#111827' : '#374151',
-                      fontWeight: row.isHeader ? 'bold' : 'normal',
-                      fontSize: 14,
-                      fontFamily: 'Inter, sans-serif',
-                      // Right + bottom borders only; outer overlay provides left/top frame.
-                      borderRight: isLastCol ? 'none' : '1px solid #E5E7EB',
-                      borderBottom: isLastRow ? 'none' : '1px solid #E5E7EB',
-                      boxSizing: 'border-box',
-                      overflow: 'hidden',
-                      // line-height centering: universally supported in html2canvas.
-                      // align-items:center (flex) is NOT reliable in html2canvas.
-                      lineHeight: isEditingThis ? 'normal' : `${contentH}px`,
-                      textAlign: 'center',
-                      whiteSpace: isEditingThis ? 'normal' : 'nowrap',
-                      textOverflow: 'ellipsis',
-                      padding: '0 8px',
-                      cursor: isEditingThis ? 'text' : undefined,
-                    }}
-                    onDoubleClick={(e) => handleCellDoubleClick(e, rowIndex, colIndex)}
-                  >
-                    {isEditingThis ? (
-                      <div
-                        ref={(el) => {
-                          if (isEditingThis) editableRef.current = el
-                        }}
-                        contentEditable
-                        suppressContentEditableWarning
-                        style={{
-                          width: '100%',
-                          outline: 'none',
-                          cursor: 'text',
-                          textAlign: 'center',
-                          lineHeight: 'normal',
-                          fontWeight: row.isHeader ? 'bold' : 'normal',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
-                        }}
-                        onBlur={(e) => handleCellBlur(e, rowIndex, colIndex)}
-                        onKeyDown={handleCellKeyDown}
-                        onClick={(e) => e.stopPropagation()}
-                        onDoubleClick={(e) => e.stopPropagation()}
-                      >
-                        {cell}
-                      </div>
-                    ) : cell || (
-                      <span style={{ color: '#9CA3AF', fontStyle: 'italic', fontWeight: 'normal' }}>
-                        Click to edit
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })}
-      </div>
-      {/* Outer frame border — rendered on top, no effect on flex layout */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
+          width: '100%',
+          height: '100%',
+          borderCollapse: 'collapse',
+          tableLayout: 'fixed',
+          fontSize: 14,
+          fontFamily: 'Inter, sans-serif',
           border: '1px solid #D1D5DB',
           boxSizing: 'border-box',
-          pointerEvents: 'none',
         }}
-      />
+      >
+        <colgroup>
+          {columnWidths.map((cw, i) => (
+            <col key={i} style={{ width: cw }} />
+          ))}
+        </colgroup>
+        <tbody>
+          {effectiveRows.map((row, rowIndex) => {
+            const CellTag: 'th' | 'td' = row.isHeader ? 'th' : 'td'
+            return (
+              <tr
+                key={rowIndex}
+                data-testid={`table-row-${rowIndex}`}
+                style={{ height: row.height }}
+              >
+                {row.cells.map((cell, colIndex) => {
+                  const isEditingThis =
+                    editingCell?.rowIndex === rowIndex && editingCell?.colIndex === colIndex
+                  const colWidth = columnWidths[colIndex] ?? Math.round(width / columns)
+                  return (
+                    <CellTag
+                      key={colIndex}
+                      data-cell-type={row.isHeader ? 'header' : 'data'}
+                      style={{
+                        width: colWidth,
+                        backgroundColor: row.isHeader ? '#F3F4F6' : '#FFFFFF',
+                        color: row.isHeader ? '#111827' : '#374151',
+                        fontWeight: row.isHeader ? 'bold' : 'normal',
+                        border: '1px solid #E5E7EB',
+                        textAlign: 'center',
+                        verticalAlign: 'middle',
+                        padding: '0 8px',
+                        overflow: 'hidden',
+                        boxSizing: 'border-box',
+                        cursor: isEditingThis ? 'text' : undefined,
+                      }}
+                      onDoubleClick={(e) => handleCellDoubleClick(e, rowIndex, colIndex)}
+                    >
+                      {isEditingThis ? (
+                        <div
+                          ref={(el) => {
+                            if (isEditingThis) editableRef.current = el
+                          }}
+                          contentEditable
+                          suppressContentEditableWarning
+                          style={{
+                            width: '100%',
+                            outline: 'none',
+                            cursor: 'text',
+                            textAlign: 'center',
+                            lineHeight: 'normal',
+                            fontWeight: row.isHeader ? 'bold' : 'normal',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                          }}
+                          onBlur={(e) => handleCellBlur(e, rowIndex, colIndex)}
+                          onKeyDown={handleCellKeyDown}
+                          onClick={(e) => e.stopPropagation()}
+                          onDoubleClick={(e) => e.stopPropagation()}
+                        >
+                          {cell}
+                        </div>
+                      ) : cell ? (
+                        cell
+                      ) : (
+                        <span
+                          style={{ color: '#9CA3AF', fontStyle: 'italic', fontWeight: 'normal' }}
+                        >
+                          Click to edit
+                        </span>
+                      )}
+                    </CellTag>
+                  )
+                })}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
 
       {/* Corner handles */}
       {isSelected &&

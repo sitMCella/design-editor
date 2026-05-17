@@ -259,8 +259,8 @@ test.describe('18 – Download PNG', () => {
     // downloadPng.ts calls croppedCanvas.toBlob(…).
     await page.addInitScript(() => {
       const orig = HTMLCanvasElement.prototype.toBlob
-      // Allow the first call (used internally by html2canvas if at all) and
-      // make the second call — the one in downloadPng.ts — return null.
+      // Make the first call to toBlob (from downloadPng.ts) return null.
+      // html2canvas does not call toBlob internally, so callCount 1 is our target.
       let callCount = 0
       HTMLCanvasElement.prototype.toBlob = function (
         this: HTMLCanvasElement,
@@ -268,7 +268,7 @@ test.describe('18 – Download PNG', () => {
         ...args: Parameters<HTMLCanvasElement['toBlob']> extends [BlobCallback, ...infer R] ? R : never[]
       ) {
         callCount++
-        if (callCount >= 2) {
+        if (callCount >= 1) {
           // Return null blob to trigger the rejection inside downloadPng.ts
           callback(null)
           return
