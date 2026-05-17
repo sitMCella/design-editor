@@ -255,6 +255,12 @@ export function ArrowElement({
   const svgX2 = x2 - x
   const svgY2 = y2 - y
 
+  // Expand the SVG by markerPadding on all sides so arrowhead markers are
+  // contained within the SVG's declared dimensions. html2canvas clips SVG
+  // content to the element's width/height even when overflow="visible" is set,
+  // so the SVG must be large enough to include the marker geometry.
+  const markerPadding = Math.ceil(8 * strokeWidth)
+
   return (
     <div
       data-testid="arrow-element"
@@ -276,78 +282,85 @@ export function ArrowElement({
       onMouseDown={handleBodyMouseDown}
     >
       <svg
-        width={width}
-        height={height}
-        overflow="visible"
-        style={{ display: 'block', overflow: 'visible' }}
+        width={width + markerPadding * 2}
+        height={height + markerPadding * 2}
+        style={{
+          position: 'absolute',
+          left: -markerPadding,
+          top: -markerPadding,
+          display: 'block',
+          overflow: 'visible',
+        }}
       >
         <ArrowMarkers id={id} stroke={stroke} arrowHead={arrowHead} />
 
-        {/* Wide transparent path used as the click/drag target — using <path>
-            (not <line>) keeps el.locator('line') returning a single element,
-            while still providing a generous hit zone around the arrow */}
-        <path
-          d={`M${svgX1},${svgY1} L${svgX2},${svgY2}`}
-          stroke="transparent"
-          strokeWidth={Math.max(10, strokeWidth + 8)}
-          fill="none"
-          style={{ cursor, pointerEvents: 'stroke' }}
-          onClick={handleClick}
-          onMouseDown={handleBodyMouseDown}
-        />
+        <g transform={`translate(${markerPadding}, ${markerPadding})`}>
+          {/* Wide transparent path used as the click/drag target — using <path>
+              (not <line>) keeps el.locator('line') returning a single element,
+              while still providing a generous hit zone around the arrow */}
+          <path
+            d={`M${svgX1},${svgY1} L${svgX2},${svgY2}`}
+            stroke="transparent"
+            strokeWidth={Math.max(10, strokeWidth + 8)}
+            fill="none"
+            style={{ cursor, pointerEvents: 'stroke' }}
+            onClick={handleClick}
+            onMouseDown={handleBodyMouseDown}
+          />
 
-        <line
-          x1={svgX1}
-          y1={svgY1}
-          x2={svgX2}
-          y2={svgY2}
-          stroke={stroke}
-          strokeWidth={strokeWidth}
-          markerEnd={showEnd ? `url(#arrowhead-end-${id})` : undefined}
-          markerStart={showStart ? `url(#arrowhead-start-${id})` : undefined}
-          style={{ pointerEvents: 'none' }}
-        />
-
-        {/* Endpoint handles — only when selected */}
-        {isSelected && (
-          <>
-            {/* Start handle: hollow circle */}
-            <circle
-              data-testid="endpoint-start"
-              cx={svgX1}
-              cy={svgY1}
-              r={4}
-              fill="white"
-              stroke="#3B82F6"
-              strokeWidth={2}
-              style={{ cursor: 'crosshair', pointerEvents: 'auto' }}
-              onMouseDown={(e) => handleEndpointMouseDown(e, 'start')}
-            />
-            {/* End handle: filled circle */}
-            <circle
-              data-testid="endpoint-end"
-              cx={svgX2}
-              cy={svgY2}
-              r={4}
-              fill="#3B82F6"
-              stroke="none"
-              style={{ cursor: 'crosshair', pointerEvents: 'auto' }}
-              onMouseDown={(e) => handleEndpointMouseDown(e, 'end')}
-            />
-          </>
-        )}
-
-        {/* Snap indicator — relative to bounding box origin */}
-        {snapTarget && (
-          <circle
-            data-testid="snap-indicator"
-            cx={snapTarget.x - x}
-            cy={snapTarget.y - y}
-            r={5}
-            fill="#3B82F6"
+          <line
+            x1={svgX1}
+            y1={svgY1}
+            x2={svgX2}
+            y2={svgY2}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            markerEnd={showEnd ? `url(#arrowhead-end-${id})` : undefined}
+            markerStart={showStart ? `url(#arrowhead-start-${id})` : undefined}
             style={{ pointerEvents: 'none' }}
           />
-        )}
+
+          {/* Endpoint handles — only when selected */}
+          {isSelected && (
+            <>
+              {/* Start handle: hollow circle */}
+              <circle
+                data-testid="endpoint-start"
+                cx={svgX1}
+                cy={svgY1}
+                r={4}
+                fill="white"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                style={{ cursor: 'crosshair', pointerEvents: 'auto' }}
+                onMouseDown={(e) => handleEndpointMouseDown(e, 'start')}
+              />
+              {/* End handle: filled circle */}
+              <circle
+                data-testid="endpoint-end"
+                cx={svgX2}
+                cy={svgY2}
+                r={4}
+                fill="#3B82F6"
+                stroke="none"
+                style={{ cursor: 'crosshair', pointerEvents: 'auto' }}
+                onMouseDown={(e) => handleEndpointMouseDown(e, 'end')}
+              />
+            </>
+          )}
+
+          {/* Snap indicator — relative to bounding box origin */}
+          {snapTarget && (
+            <circle
+              data-testid="snap-indicator"
+              cx={snapTarget.x - x}
+              cy={snapTarget.y - y}
+              r={5}
+              fill="#3B82F6"
+              style={{ pointerEvents: 'none' }}
+            />
+          )}
+        </g>
       </svg>
     </div>
   )

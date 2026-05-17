@@ -412,7 +412,7 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
         >
           <colgroup>
             {columnWidths.map((cw, i) => (
-              <col key={i} style={{ width: cw }} />
+              <col key={i} style={{ width: `${((cw / width) * 100).toFixed(4)}%` }} />
             ))}
           </colgroup>
           <tbody>
@@ -469,23 +469,34 @@ export function TableElement({ element, isSelected, onSelect, onUpdate, onDragEn
                       ) : (
                         <div
                           style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            height: '100%',
                             padding: '0 8px',
                             overflow: 'hidden',
-                            whiteSpace: 'nowrap',
-                            textOverflow: 'ellipsis',
+                            boxSizing: 'border-box',
                           }}
                         >
-                          {cell || (
-                            <span
-                              style={{
-                                color: '#9CA3AF',
-                                fontStyle: 'italic',
-                                fontWeight: 'normal',
-                              }}
-                            >
-                              Click to edit
-                            </span>
-                          )}
+                          <span
+                            style={{
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              width: '100%',
+                            }}
+                          >
+                            {cell || (
+                              <span
+                                style={{
+                                  color: '#9CA3AF',
+                                  fontStyle: 'italic',
+                                  fontWeight: 'normal',
+                                }}
+                              >
+                                Click to edit
+                              </span>
+                            )}
+                          </span>
                         </div>
                       )}
                     </Tag>
