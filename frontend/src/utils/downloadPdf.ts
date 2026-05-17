@@ -5,6 +5,7 @@ import { elementsBBox } from './elementsBBox'
 
 const EXPORT_PADDING = 24
 const PX_TO_PT = 0.75
+const CAPTURE_SCALE = 2
 
 function toFilename(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, '-') + '.pdf'
@@ -52,17 +53,27 @@ export async function downloadPdf(
       y: 0,
       width: nodeRight,
       height: nodeBottom,
-      scale: 1,
+      scale: CAPTURE_SCALE,
       useCORS: true,
       logging: false,
       backgroundColor: '#F3F4F6',
     })
 
     const croppedCanvas = document.createElement('canvas')
-    croppedCanvas.width = captureW
-    croppedCanvas.height = captureH
+    croppedCanvas.width = captureW * CAPTURE_SCALE
+    croppedCanvas.height = captureH * CAPTURE_SCALE
     const ctx = croppedCanvas.getContext('2d')!
-    ctx.drawImage(fullCanvas, captureX, captureY, captureW, captureH, 0, 0, captureW, captureH)
+    ctx.drawImage(
+      fullCanvas,
+      captureX * CAPTURE_SCALE,
+      captureY * CAPTURE_SCALE,
+      captureW * CAPTURE_SCALE,
+      captureH * CAPTURE_SCALE,
+      0,
+      0,
+      captureW * CAPTURE_SCALE,
+      captureH * CAPTURE_SCALE,
+    )
 
     const imgData = croppedCanvas.toDataURL('image/jpeg', 0.92)
 
