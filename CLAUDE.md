@@ -23,6 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @specs/features/17-layer-view.md
 @specs/features/18-download-png.md
 @specs/features/19-download-pdf.md
+@specs/features/20-canvas-background.md
 
 ## Project Overview
 
