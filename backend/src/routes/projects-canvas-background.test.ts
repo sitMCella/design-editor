@@ -47,8 +47,8 @@ function extractCanvasFromPatch(): Record<string, unknown> | undefined {
   const args = (updateCall?.slice(1) ?? []) as unknown[];
   return args.find(
     (a): a is Record<string, unknown> =>
-      a !== null && typeof a === 'object' && ('elements' in (a as object) || 'backgroundColor' in (a as object)),
-  ) as Record<string, unknown> | undefined;
+      a !== null && typeof a === 'object' && ('elements' in a || 'backgroundColor' in a),
+  );
 }
 
 /** Mock PATCH: SELECT current row + UPDATE RETURNING. */
@@ -204,7 +204,7 @@ describe('Canvas Background Colour — project routes (feat20)', () => {
       expect(response.statusCode).toBe(200);
       const canvas = extractCanvasFromPatch();
       expect(canvas).toMatchObject({ backgroundColor: '#BAE6FD' });
-      expect((canvas?.elements as unknown[])?.length).toBe(2);
+      expect((canvas?.elements as unknown[]).length).toBe(2);
     });
 
     it('preserves elements verbatim when saving a new backgroundColor', async () => {
@@ -222,7 +222,7 @@ describe('Canvas Background Colour — project routes (feat20)', () => {
       });
 
       const canvas = extractCanvasFromPatch();
-      expect((canvas?.elements as unknown[])?.[0]).toMatchObject({
+      expect((canvas?.elements as unknown[])[0]).toMatchObject({
         id: 'txt-1',
         type: 'text',
         x: 560,
@@ -530,7 +530,7 @@ describe('Canvas Background Colour — project routes (feat20)', () => {
       // Background colour has changed
       expect(canvas).toMatchObject({ backgroundColor: '#BAE6FD' });
       // Elements are unchanged
-      expect((canvas?.elements as unknown[])?.[0]).toMatchObject({
+      expect((canvas?.elements as unknown[])[0]).toMatchObject({
         id: 'txt-1',
         x: 560,
         y: 320,
@@ -615,7 +615,7 @@ describe('Canvas Background Colour — project routes (feat20)', () => {
 
       const canvas = extractCanvasFromPatch();
       expect(canvas).toMatchObject({ backgroundColor: 'transparent' });
-      expect((canvas?.elements as unknown[])?.[0]).toMatchObject({ x: 1000, y: 500 });
+      expect((canvas?.elements as unknown[])[0]).toMatchObject({ x: 1000, y: 500 });
     });
   });
 
