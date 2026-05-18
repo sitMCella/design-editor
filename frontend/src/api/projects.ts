@@ -4,7 +4,7 @@ import type { CanvasElement } from '../types/canvas'
 export type Project = {
   id: string
   name: string
-  canvas: { elements: CanvasElement[] }
+  canvas: { elements: CanvasElement[]; backgroundColor?: string }
   createdAt: string
   updatedAt: string
 }
@@ -41,7 +41,7 @@ export function createProject(id: string, name: string): Promise<Project> {
 
 export function patchProject(
   id: string,
-  patch: { name?: string; canvas?: { elements: CanvasElement[] } }
+  patch: { name?: string; canvas?: { elements: CanvasElement[]; backgroundColor?: string } }
 ): Promise<PatchProjectResult> {
   return apiFetch<PatchProjectResult>(`/api/projects/${id}`, {
     method: 'PATCH',

@@ -5,6 +5,7 @@ import { Canvas } from '../components/editor/Canvas'
 import { ContextualToolbar } from '../components/editor/ContextualToolbar'
 import { LayerPanel } from '../components/editor/LayerPanel'
 import { Toolbar } from '../components/editor/Toolbar'
+import { BackgroundPicker } from '../components/editor/BackgroundPicker'
 import { useCanvasStore } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
 import { getProject, patchProject } from '../api/projects'
@@ -23,6 +24,7 @@ export function EditorPage() {
   const isDirty = useCanvasStore((s) => s.isDirty)
   const designId = useCanvasStore((s) => s.designId)
   const elements = useCanvasStore((s) => s.elements)
+  const backgroundColor = useCanvasStore((s) => s.backgroundColor)
   const markSaved = useCanvasStore((s) => s.markSaved)
   const loadDesign = useCanvasStore((s) => s.loadDesign)
   const zoom = useCanvasStore((s) => s.zoom)
@@ -37,6 +39,7 @@ export function EditorPage() {
   const [isExportingPng, setIsExportingPng] = useState(false)
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [isBgPickerOpen, setIsBgPickerOpen] = useState(false)
   const exportErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Refs for synchronous guards — React state updates are async so a rapid
   // second click (e.g. force-clicked in tests) can see the old state value.
@@ -61,7 +64,7 @@ export function EditorPage() {
     }
     setIsExportingPng(true)
     try {
-      await downloadPng(worldRef, currentElements, useCanvasStore.getState().name)
+      await downloadPng(worldRef, currentElements, useCanvasStore.getState().name, useCanvasStore.getState().backgroundColor)
     } catch {
       showExportError('Export failed. Please try again.')
     } finally {
@@ -82,7 +85,7 @@ export function EditorPage() {
     }
     setIsExportingPdf(true)
     try {
-      await downloadPdf(worldRef, currentElements, useCanvasStore.getState().name)
+      await downloadPdf(worldRef, currentElements, useCanvasStore.getState().name, useCanvasStore.getState().backgroundColor)
     } catch {
       showExportError('Export failed. Please try again.')
     } finally {
@@ -106,7 +109,7 @@ export function EditorPage() {
     getProject(routeDesignId)
       .then((project) => {
         if (cancelled) return
-        loadDesign(project.id, project.name, project.canvas.elements)
+        loadDesign(project.id, project.name, project.canvas.elements, project.canvas.backgroundColor)
         setStatus('ready')
       })
       .catch(() => {
@@ -126,12 +129,14 @@ export function EditorPage() {
   elementsRef.current = elements
   const isDirtyRef = useRef(isDirty)
   isDirtyRef.current = isDirty
+  const backgroundColorRef = useRef(backgroundColor)
+  backgroundColorRef.current = backgroundColor
 
   const { mutate: save } = useMutation({
     mutationFn: () =>
       patchProject(designIdRef.current, {
         name: nameRef.current,
-        canvas: { elements: elementsRef.current },
+        canvas: { elements: elementsRef.current, backgroundColor: backgroundColorRef.current },
       }),
     onSuccess: () => markSaved(),
   })
@@ -229,6 +234,47 @@ export function EditorPage() {
         <span className="text-sm font-medium text-gray-700">{name}</span>
         {isDirty && <span className="text-xs text-gray-400">Unsaved changes</span>}
         <div className="ml-auto flex items-center gap-1">
+          <div className="relative mr-1">
+            <button
+              type="button"
+              title="Canvas background"
+              aria-label="Canvas background"
+              onClick={() => setIsBgPickerOpen((v) => !v)}
+              className={`flex h-7 items-center gap-1.5 rounded border px-2.5 text-xs font-medium text-gray-700 ${
+                isBgPickerOpen
+                  ? 'border-gray-300 bg-gray-100'
+                  : 'border-gray-200 bg-white hover:bg-gray-50'
+              }`}
+            >
+              {backgroundColor === 'transparent' ? (
+                <span
+                  className="inline-block h-3.5 w-3.5 flex-shrink-0 rounded-sm border border-gray-300"
+                  style={{
+                    backgroundImage: [
+                      'repeating-linear-gradient(45deg, #d1d5db 25%, transparent 25%)',
+                      'repeating-linear-gradient(-45deg, #d1d5db 25%, transparent 25%)',
+                      'repeating-linear-gradient(45deg, transparent 75%, #d1d5db 75%)',
+                      'repeating-linear-gradient(-45deg, transparent 75%, #d1d5db 75%)',
+                    ].join(', '),
+                    backgroundSize: '6px 6px',
+                    backgroundPosition: '0 0, 0 3px, 3px -3px, -3px 0px',
+                    backgroundColor: '#ffffff',
+                  }}
+                  aria-hidden="true"
+                />
+              ) : (
+                <span
+                  className="inline-block h-3.5 w-3.5 flex-shrink-0 rounded-sm border border-gray-200"
+                  style={{ backgroundColor }}
+                  aria-hidden="true"
+                />
+              )}
+              Background
+            </button>
+            {isBgPickerOpen && (
+              <BackgroundPicker onClose={() => setIsBgPickerOpen(false)} />
+            )}
+          </div>
           <button
             onClick={handleZoomOut}
             disabled={zoom <= MIN_ZOOM}

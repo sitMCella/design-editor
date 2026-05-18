@@ -20,7 +20,7 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
     if (!wasTrue || isDirty) return
     if (!worldRef.current || generating.current) return
 
-    const elements = useCanvasStore.getState().elements
+    const { elements, backgroundColor } = useCanvasStore.getState()
     const bbox = elementsBBox(elements)
     if (!bbox) return
 
@@ -61,7 +61,7 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
         scale,
         useCORS: true,
         logging: false,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: backgroundColor === 'transparent' ? '#F3F4F6' : backgroundColor,
       })
         .then((fullCanvas) => {
           worldLayer.style.transform = prevLayerTransform

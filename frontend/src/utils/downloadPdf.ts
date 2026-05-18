@@ -14,7 +14,8 @@ function toFilename(name: string): string {
 export async function downloadPdf(
   worldRef: React.RefObject<HTMLDivElement | null>,
   elements: CanvasElement[],
-  designName: string
+  designName: string,
+  backgroundColor = '#F3F4F6'
 ): Promise<void> {
   const visibleElements = elements.filter((el) => !el.hidden)
   const bbox = elementsBBox(visibleElements)
@@ -56,7 +57,7 @@ export async function downloadPdf(
       scale: CAPTURE_SCALE,
       useCORS: true,
       logging: false,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: backgroundColor === 'transparent' ? '#FFFFFF' : backgroundColor,
     })
 
     const croppedCanvas = document.createElement('canvas')

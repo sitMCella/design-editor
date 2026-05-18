@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { RefObject } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { DesignSurface } from './DesignSurface'
 import { CanvasScrollbar, SCROLLBAR_SIZE } from './CanvasScrollbar'
@@ -19,6 +19,7 @@ export function Canvas({ worldRef }: Props) {
   const panX = useCanvasStore((s) => s.panX)
   const panY = useCanvasStore((s) => s.panY)
   const elements = useCanvasStore((s) => s.elements)
+  const backgroundColor = useCanvasStore((s) => s.backgroundColor)
   const setZoom = useCanvasStore((s) => s.setZoom)
   const setPan = useCanvasStore((s) => s.setPan)
   const clearSelection = useCanvasStore((s) => s.clearSelection)
@@ -441,11 +442,29 @@ export function Canvas({ worldRef }: Props) {
     [freshGeometry, setPan]
   )
 
+  const canvasBgStyle: CSSProperties =
+    backgroundColor === 'transparent'
+      ? {
+          backgroundImage: [
+            'repeating-linear-gradient(45deg, #d1d5db 25%, transparent 25%)',
+            'repeating-linear-gradient(-45deg, #d1d5db 25%, transparent 25%)',
+            'repeating-linear-gradient(45deg, transparent 75%, #d1d5db 75%)',
+            'repeating-linear-gradient(-45deg, transparent 75%, #d1d5db 75%)',
+          ].join(', '),
+          backgroundSize: '16px 16px',
+          backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+          backgroundColor: '#ffffff',
+        }
+      : { backgroundColor }
+
   return (
     <div
       ref={containerRef}
-      className="relative flex-1 overflow-hidden bg-gray-100"
-      style={{ cursor: spaceActive ? 'grab' : shiftActive ? 'crosshair' : undefined }}
+      className="relative flex-1 overflow-hidden"
+      style={{
+        cursor: spaceActive ? 'grab' : shiftActive ? 'crosshair' : undefined,
+        ...canvasBgStyle,
+      }}
       onMouseDown={handleMouseDown}
       onClick={handleClick}
       data-canvas-bg="true"
