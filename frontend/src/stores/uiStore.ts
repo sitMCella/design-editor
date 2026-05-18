@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
-type ActiveTool = 'select' | 'text' | 'image' | 'arrow' | 'table'
+type ActiveTool = 'select' | 'text' | 'image' | 'arrow' | 'table' | 'shape'
 type ActivePanel = 'layers' | 'assets' | 'templates' | null
 
 type State = {
