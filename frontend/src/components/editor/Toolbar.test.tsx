@@ -331,6 +331,119 @@ describe('multiple table elements', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// Shape tool — ACs from 21-toolbar-shape-element.md
+// ---------------------------------------------------------------------------
+
+// AC 1 — toolbar shows a shape button with tooltip "Shape"
+describe('shape tool button appearance', () => {
+  it('renders a button with title "Shape"', () => {
+    render(<Toolbar />)
+    expect(screen.getByTitle('Shape')).toBeInTheDocument()
+  })
+
+  it('the shape button contains an SVG icon', () => {
+    render(<Toolbar />)
+    expect(screen.getByTitle('Shape').querySelector('svg')).toBeInTheDocument()
+  })
+
+  it('the shape button is inside the aside', () => {
+    const { container } = render(<Toolbar />)
+    expect(container.querySelector('aside')).toContainElement(screen.getByTitle('Shape'))
+  })
+})
+
+// AC 2 — clicking the shape button inserts a shape element centred on the canvas viewport
+describe('shape tool insertion', () => {
+  it('adds exactly one shape element to the canvas store', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+
+  it('adds an element of type shape', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    expect(useCanvasStore.getState().elements[0].type).toBe('shape')
+  })
+
+  it('inserts a rect variant shape', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    const el = useCanvasStore.getState().elements[0] as import('../../types/canvas').ShapeElement
+    expect(el.shape).toBe('rect')
+  })
+
+  it('places the element at x:560', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    expect(useCanvasStore.getState().elements[0].x).toBe(560)
+  })
+
+  it('places the element at y:310', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    expect(useCanvasStore.getState().elements[0].y).toBe(310)
+  })
+
+  it('inserts the element with default 160 × 160 dimensions', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    const el = useCanvasStore.getState().elements[0]
+    expect(el.width).toBe(160)
+    expect(el.height).toBe(160)
+  })
+
+  // AC 3 — blue fill, no border
+  it('inserts the element with blue fill (#3B82F6)', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    const el = useCanvasStore.getState().elements[0] as import('../../types/canvas').ShapeElement
+    expect(el.fill).toBe('#3B82F6')
+  })
+
+  it('inserts the element with transparent stroke and strokeWidth 0', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    const el = useCanvasStore.getState().elements[0] as import('../../types/canvas').ShapeElement
+    expect(el.stroke).toBe('transparent')
+    expect(el.strokeWidth).toBe(0)
+  })
+
+  it('selects the newly added shape element', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    const el = useCanvasStore.getState().elements[0]
+    expect(useCanvasStore.getState().selectedIds).toContain(el.id)
+  })
+
+  // AC 7 — active tool reverts to select after insertion
+  it('resets the active tool to select after insertion', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    expect(useUIStore.getState().activeTool).toBe('select')
+  })
+})
+
+// AC 6 — multiple shape elements can be added independently
+describe('multiple shape elements', () => {
+  it('adds a new independent element on each click', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    fireEvent.click(screen.getByTitle('Shape'))
+    fireEvent.click(screen.getByTitle('Shape'))
+    expect(useCanvasStore.getState().elements).toHaveLength(3)
+  })
+
+  it('assigns a unique id to each shape element', () => {
+    render(<Toolbar />)
+    fireEvent.click(screen.getByTitle('Shape'))
+    fireEvent.click(screen.getByTitle('Shape'))
+    const [a, b] = useCanvasStore.getState().elements
+    expect(a.id).not.toBe(b.id)
+  })
+})
+
 // AC 9 — multiple text elements can be added independently
 describe('multiple elements', () => {
   it('adds a new independent element on each click', () => {
