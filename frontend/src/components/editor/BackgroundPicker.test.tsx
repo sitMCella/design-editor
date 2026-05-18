@@ -187,7 +187,7 @@ describe('AC9 — active swatch highlighting', () => {
     render(<BackgroundPicker onClose={vi.fn()} />)
     const transparentBtn = screen.getByLabelText('Set background to transparent')
     const swatch = transparentBtn.querySelector('span[aria-hidden="true"]')
-    expect(swatch!.style.boxShadow).not.toBe('0 0 0 2px #ffffff, 0 0 0 4px #3B82F6')
+    expect((swatch as HTMLElement).style.boxShadow).not.toBe('0 0 0 2px #ffffff, 0 0 0 4px #3B82F6')
   })
 
   it('moves the ring when a new preset is selected', () => {
