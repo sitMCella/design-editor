@@ -3,7 +3,11 @@ import { render, fireEvent } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DesignSurface } from './DesignSurface'
 import { useCanvasStore } from '../../stores/canvasStore'
-import type { TextElement, ArrowElement as ArrowElementType } from '../../types/canvas'
+import type {
+  TextElement,
+  ArrowElement as ArrowElementType,
+  ShapeElement,
+} from '../../types/canvas'
 
 const makeTextElement = (id: string, overrides: Partial<TextElement> = {}): TextElement => ({
   id,
@@ -334,5 +338,150 @@ describe('AC11/AC12 (feat17) — hidden elements are not rendered', () => {
     useCanvasStore.getState().toggleElementVisibility('t1')
     rerender(<DesignSurface />)
     expect(getDirectChildren(container)).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// feat21 — ShapeElement rendering and selection in DesignSurface
+// ---------------------------------------------------------------------------
+
+const makeShapeElement = (id: string, overrides: Partial<ShapeElement> = {}): ShapeElement => ({
+  id,
+  type: 'shape',
+  shape: 'rect',
+  x: 100,
+  y: 100,
+  width: 160,
+  height: 160,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  fill: '#3B82F6',
+  stroke: 'transparent',
+  strokeWidth: 0,
+  ...overrides,
+})
+
+describe('AC 4 (feat21) — shape element click-to-select', () => {
+  it('clicking a shape element selects it', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1')],
+      selectedIds: [],
+    })
+    const { container } = render(<DesignSurface />)
+    const child = getDirectChildren(container)[0]
+
+    fireEvent.click(child)
+
+    expect(useCanvasStore.getState().selectedIds).toContain('s1')
+  })
+
+  it('clicking a shape element with Shift toggles it into the selection', () => {
+    useCanvasStore.setState({
+      elements: [makeTextElement('t1'), makeShapeElement('s1', { x: 400 })],
+      selectedIds: ['t1'],
+    })
+    const { container } = render(<DesignSurface />)
+    const children = getDirectChildren(container)
+    // second child is the shape element
+    fireEvent.click(children[1], { shiftKey: true })
+
+    expect(useCanvasStore.getState().selectedIds).toContain('t1')
+    expect(useCanvasStore.getState().selectedIds).toContain('s1')
+  })
+
+  it('plain click on a shape element replaces the selection', () => {
+    useCanvasStore.setState({
+      elements: [makeTextElement('t1'), makeShapeElement('s1', { x: 400 })],
+      selectedIds: ['t1'],
+    })
+    const { container } = render(<DesignSurface />)
+    const children = getDirectChildren(container)
+    fireEvent.click(children[1], { shiftKey: false })
+
+    expect(useCanvasStore.getState().selectedIds).toEqual(['s1'])
+  })
+})
+
+describe('AC 3 (feat21) — selected shape shows blue outline', () => {
+  it('a selected shape element has the blue outline style', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1')],
+      selectedIds: ['s1'],
+    })
+    const { container } = render(<DesignSurface />)
+    const outlines = container.querySelectorAll('[style*="2px solid #3B82F6"]')
+    expect(outlines.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('an unselected shape element has no blue outline', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1')],
+      selectedIds: [],
+    })
+    const { container } = render(<DesignSurface />)
+    // outline style should be 'none'
+    const child = getDirectChildren(container)[0] as HTMLElement
+    expect(child.style.outline).toBe('none')
+  })
+})
+
+describe('feat21 — hidden shape elements are not rendered', () => {
+  it('a hidden shape element produces no child node in the surface', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { hidden: true })],
+      selectedIds: [],
+    })
+    const { container } = render(<DesignSurface />)
+    expect(getDirectChildren(container)).toHaveLength(0)
+  })
+
+  it('a visible shape element alongside a hidden one is still rendered', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1'), makeShapeElement('s2', { x: 400, hidden: true })],
+      selectedIds: [],
+    })
+    const { container } = render(<DesignSurface />)
+    expect(getDirectChildren(container)).toHaveLength(1)
+  })
+})
+
+describe('AC 6 (feat21) / AC 8 (feat14) — shape elements participate in multi-element selection', () => {
+  it('multiple shape elements can each be independently selected', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1'), makeShapeElement('s2', { x: 400 })],
+      selectedIds: [],
+    })
+    const { container } = render(<DesignSurface />)
+    const children = getDirectChildren(container)
+
+    fireEvent.click(children[0])
+    expect(useCanvasStore.getState().selectedIds).toEqual(['s1'])
+
+    fireEvent.click(children[1])
+    expect(useCanvasStore.getState().selectedIds).toEqual(['s2'])
+  })
+
+  it('dragging a selected shape element also moves other selected elements', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { x: 100, y: 100 }),
+        makeShapeElement('s2', { x: 400, y: 100 }),
+      ],
+      selectedIds: ['s1', 's2'],
+      zoom: 1,
+    })
+    const { container } = render(<DesignSurface />)
+    const wrappers = container.querySelectorAll('[style*="position: absolute"]')
+    const firstEl = wrappers[0] as HTMLElement
+
+    fireEvent.mouseDown(firstEl, { button: 0, clientX: 100, clientY: 100 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 150, clientY: 150, bubbles: true }))
+    window.dispatchEvent(new MouseEvent('mouseup', { clientX: 150, clientY: 150, bubbles: true }))
+
+    const elements = useCanvasStore.getState().elements
+    const s2 = elements.find((e) => e.id === 's2')!
+    expect(s2.x).toBe(450)
+    expect(s2.y).toBe(150)
   })
 })
