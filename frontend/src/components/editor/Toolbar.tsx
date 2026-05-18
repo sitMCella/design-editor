@@ -1,6 +1,6 @@
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
-import type { TextElement, ImageElement, ArrowElement, TableElement } from '../../types/canvas'
+import type { TextElement, ImageElement, ArrowElement, TableElement, ShapeElement } from '../../types/canvas'
 
 function LayersIcon() {
   return (
@@ -128,6 +128,30 @@ export function Toolbar() {
     setActiveTool('select')
   }
 
+  const handleShapeTool = () => {
+    setActiveTool('shape')
+
+    const element: ShapeElement = {
+      id: crypto.randomUUID(),
+      type: 'shape',
+      shape: 'rect',
+      x: 560,
+      y: 310,
+      width: 160,
+      height: 160,
+      rotation: 0,
+      opacity: 1,
+      locked: false,
+      fill: '#3B82F6',
+      stroke: 'transparent',
+      strokeWidth: 0,
+    }
+
+    addElement(element)
+    selectElements([element.id])
+    setActiveTool('select')
+  }
+
   const handleTableTool = () => {
     setActiveTool('table')
 
@@ -223,6 +247,23 @@ export function Toolbar() {
           <line x1="2" y1="7" x2="18" y2="7" />
           <line x1="2" y1="13" x2="18" y2="13" />
           <line x1="10" y1="2" x2="10" y2="18" />
+        </svg>
+      </button>
+      <button
+        onClick={handleShapeTool}
+        title="Shape"
+        className={`flex h-10 w-10 items-center justify-center rounded transition-colors ${
+          activeTool === 'shape' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'
+        }`}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="14" height="14" rx="1" />
         </svg>
       </button>
       <div className="mt-1 w-8 border-t border-gray-200" />

@@ -48,6 +48,20 @@ function ElementIcon({ type }: { type: CanvasElement['type'] }) {
       </svg>
     )
   }
+  if (type === 'shape') {
+    return (
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        className="text-gray-500"
+        aria-hidden="true"
+      >
+        <rect x="3" y="3" width="14" height="14" rx="1" />
+      </svg>
+    )
+  }
   return null
 }
 

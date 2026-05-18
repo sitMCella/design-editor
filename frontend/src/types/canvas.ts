@@ -64,4 +64,12 @@ export type TableElement = BaseElement & {
   rows: TableRow[]
 }
 
-export type CanvasElement = TextElement | ImageElement | ArrowElement | TableElement
+export type ShapeElement = BaseElement & {
+  type: 'shape'
+  shape: 'rect' | 'ellipse' | 'triangle'
+  fill: string
+  stroke: string
+  strokeWidth: number
+}
+
+export type CanvasElement = TextElement | ImageElement | ArrowElement | TableElement | ShapeElement
