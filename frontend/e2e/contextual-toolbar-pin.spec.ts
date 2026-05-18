@@ -157,7 +157,10 @@ test.describe('15 – Contextual Toolbar Pin', () => {
     await addTextElement(page)
     await pinToolbar(page)
 
-    const canvasBefore = await page.locator('[data-testid="canvas-container"]').first().boundingBox()
+    const canvasBefore = await page
+      .locator('[data-testid="canvas-container"]')
+      .first()
+      .boundingBox()
     await clickBackground(page)
     const canvasAfter = await page.locator('[data-testid="canvas-container"]').first().boundingBox()
 

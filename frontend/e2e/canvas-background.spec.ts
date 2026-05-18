@@ -161,9 +161,7 @@ test.describe('20 – Canvas Background Colour', () => {
 
   test('AC5: popover contains a Transparent swatch button', async ({ page }) => {
     await openPicker(page)
-    await expect(
-      backgroundPopover(page).getByLabel('Set background to transparent')
-    ).toBeVisible()
+    await expect(backgroundPopover(page).getByLabel('Set background to transparent')).toBeVisible()
   })
 
   test('AC5: popover contains a custom colour <input type="color">', async ({ page }) => {
@@ -263,7 +261,9 @@ test.describe('20 – Canvas Background Colour', () => {
     await selectPreset(page, '#FFFFFF')
 
     const activeBtn = backgroundPopover(page).getByLabel('Set background to #FFFFFF')
-    const shadow = await activeBtn.evaluate((el: HTMLElement) => window.getComputedStyle(el).boxShadow)
+    const shadow = await activeBtn.evaluate(
+      (el: HTMLElement) => window.getComputedStyle(el).boxShadow
+    )
     expect(shadow).toContain('59, 130, 246') // blue-500 in RGB
   })
 
@@ -280,7 +280,9 @@ test.describe('20 – Canvas Background Colour', () => {
     expect(shadow).not.toContain('59, 130, 246')
   })
 
-  test('AC9: transparent swatch is highlighted when background is transparent', async ({ page }) => {
+  test('AC9: transparent swatch is highlighted when background is transparent', async ({
+    page,
+  }) => {
     await openPicker(page)
     await backgroundPopover(page).getByLabel('Set background to transparent').click()
 
@@ -314,7 +316,9 @@ test.describe('20 – Canvas Background Colour', () => {
     await expect(page.getByText(/unsaved changes/i)).toBeVisible()
   })
 
-  test('AC10: auto-save PATCH request includes backgroundColor in canvas JSON', async ({ page }) => {
+  test('AC10: auto-save PATCH request includes backgroundColor in canvas JSON', async ({
+    page,
+  }) => {
     let capturedBody: Record<string, unknown> | null = null
 
     // Override the project route to capture the PATCH body while still serving GET
@@ -633,7 +637,9 @@ test.describe('20 – Canvas Background Colour', () => {
   // AC17 — changing the background does not affect elements, selection, zoom, pan
   // =========================================================================
 
-  test('AC17: changing background colour does not deselect a selected element', async ({ page }) => {
+  test('AC17: changing background colour does not deselect a selected element', async ({
+    page,
+  }) => {
     await addTextElement(page)
     // The text element is selected after insertion; verify the toolbar is visible
     await expect(page.getByTestId('contextual-toolbar')).toBeVisible()

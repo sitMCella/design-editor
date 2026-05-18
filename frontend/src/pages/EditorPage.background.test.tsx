@@ -153,7 +153,9 @@ describe('AC2 — Button swatch reflects backgroundColor', () => {
     const btn = screen.getByRole('button', { name: /canvas background/i })
     const swatch = btn.querySelector('span[aria-hidden="true"]')
     // The checkerboard is implemented with repeating-linear-gradient background-image
-    expect(swatch).toHaveStyle({ backgroundImage: expect.stringContaining('repeating-linear-gradient') })
+    expect(swatch).toHaveStyle({
+      backgroundImage: expect.stringContaining('repeating-linear-gradient'),
+    })
   })
 })
 
@@ -164,13 +166,17 @@ describe('AC2 — Button swatch reflects backgroundColor', () => {
 describe('AC3 — Toggle popover', () => {
   it('does not show the BackgroundPicker popover initially', () => {
     renderEditor()
-    expect(screen.queryByRole('dialog', { name: /canvas background colour picker/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('dialog', { name: /canvas background colour picker/i })
+    ).not.toBeInTheDocument()
   })
 
   it('opens the BackgroundPicker popover when the Background button is clicked', () => {
     renderEditor()
     fireEvent.click(screen.getByRole('button', { name: /canvas background/i }))
-    expect(screen.getByRole('dialog', { name: /canvas background colour picker/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('dialog', { name: /canvas background colour picker/i })
+    ).toBeInTheDocument()
   })
 
   it('closes the popover when the Background button is clicked a second time', () => {
@@ -178,7 +184,9 @@ describe('AC3 — Toggle popover', () => {
     const btn = screen.getByRole('button', { name: /canvas background/i })
     fireEvent.click(btn)
     fireEvent.click(btn)
-    expect(screen.queryByRole('dialog', { name: /canvas background colour picker/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('dialog', { name: /canvas background colour picker/i })
+    ).not.toBeInTheDocument()
   })
 
   it('closes the popover when Escape is pressed while it is open', () => {

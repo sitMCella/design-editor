@@ -55,9 +55,7 @@ beforeEach(() => {
   })
 
   mockHtml2canvas.mockResolvedValue({
-    toBlob: vi.fn((cb: (b: Blob | null) => void) =>
-      cb(new Blob(['x'], { type: 'image/jpeg' }))
-    ),
+    toBlob: vi.fn((cb: (b: Blob | null) => void) => cb(new Blob(['x'], { type: 'image/jpeg' }))),
   } as unknown as HTMLCanvasElement)
 
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))

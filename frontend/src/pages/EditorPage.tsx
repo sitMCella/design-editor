@@ -64,7 +64,12 @@ export function EditorPage() {
     }
     setIsExportingPng(true)
     try {
-      await downloadPng(worldRef, currentElements, useCanvasStore.getState().name, useCanvasStore.getState().backgroundColor)
+      await downloadPng(
+        worldRef,
+        currentElements,
+        useCanvasStore.getState().name,
+        useCanvasStore.getState().backgroundColor
+      )
     } catch {
       showExportError('Export failed. Please try again.')
     } finally {
@@ -85,7 +90,12 @@ export function EditorPage() {
     }
     setIsExportingPdf(true)
     try {
-      await downloadPdf(worldRef, currentElements, useCanvasStore.getState().name, useCanvasStore.getState().backgroundColor)
+      await downloadPdf(
+        worldRef,
+        currentElements,
+        useCanvasStore.getState().name,
+        useCanvasStore.getState().backgroundColor
+      )
     } catch {
       showExportError('Export failed. Please try again.')
     } finally {
@@ -109,7 +119,12 @@ export function EditorPage() {
     getProject(routeDesignId)
       .then((project) => {
         if (cancelled) return
-        loadDesign(project.id, project.name, project.canvas.elements, project.canvas.backgroundColor)
+        loadDesign(
+          project.id,
+          project.name,
+          project.canvas.elements,
+          project.canvas.backgroundColor
+        )
         setStatus('ready')
       })
       .catch(() => {
@@ -272,9 +287,7 @@ export function EditorPage() {
               )}
               Background
             </button>
-            {isBgPickerOpen && (
-              <BackgroundPicker onClose={() => setIsBgPickerOpen(false)} />
-            )}
+            {isBgPickerOpen && <BackgroundPicker onClose={() => setIsBgPickerOpen(false)} />}
           </div>
           <button
             onClick={handleZoomOut}

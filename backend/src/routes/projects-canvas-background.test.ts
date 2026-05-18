@@ -249,9 +249,18 @@ describe('Canvas Background Colour — project routes (feat20)', () => {
 
     it('saves any valid preset colour from the palette', async () => {
       const presets = [
-        '#F3F4F6', '#FFFFFF', '#E5E7EB', '#64748B', '#111827',
-        '#BAE6FD', '#BFDBFE', '#C7D2FE', '#E9D5FF', '#FECDD3',
-        '#FDE68A', '#A7F3D0',
+        '#F3F4F6',
+        '#FFFFFF',
+        '#E5E7EB',
+        '#64748B',
+        '#111827',
+        '#BAE6FD',
+        '#BFDBFE',
+        '#C7D2FE',
+        '#E9D5FF',
+        '#FECDD3',
+        '#FDE68A',
+        '#A7F3D0',
       ];
 
       for (const color of presets) {
@@ -284,7 +293,10 @@ describe('Canvas Background Colour — project routes (feat20)', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      const body = response.json<{ ok: boolean; data: { id: string; name: string; updatedAt: string } }>();
+      const body = response.json<{
+        ok: boolean;
+        data: { id: string; name: string; updatedAt: string };
+      }>();
       expect(body.ok).toBe(true);
       expect(body.data.id).toBe('proj-bg-resp');
       expect(body.data.updatedAt).toBe(updatedAt.toISOString());
@@ -348,7 +360,7 @@ describe('Canvas Background Colour — project routes (feat20)', () => {
 
       expect(response.statusCode).toBe(200);
       const body = response.json<{
-        data: { canvas: { elements: typeof textElement[]; backgroundColor: string } };
+        data: { canvas: { elements: (typeof textElement)[]; backgroundColor: string } };
       }>();
       expect(body.data.canvas.backgroundColor).toBe('#BAE6FD');
       expect(body.data.canvas.elements[0]).toMatchObject({

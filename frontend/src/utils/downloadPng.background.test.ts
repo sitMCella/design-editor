@@ -51,9 +51,7 @@ beforeEach(() => {
   })
 
   mockHtml2canvas.mockResolvedValue({
-    toBlob: vi.fn((cb: (b: Blob | null) => void) =>
-      cb(new Blob(['x'], { type: 'image/png' }))
-    ),
+    toBlob: vi.fn((cb: (b: Blob | null) => void) => cb(new Blob(['x'], { type: 'image/png' }))),
   } as unknown as HTMLCanvasElement)
 
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({

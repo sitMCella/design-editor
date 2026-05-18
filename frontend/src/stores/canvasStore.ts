@@ -17,7 +17,12 @@ type State = {
 
 type Actions = {
   initDesign: (id: string, name: string) => void
-  loadDesign: (id: string, name: string, elements: CanvasElement[], backgroundColor?: string) => void
+  loadDesign: (
+    id: string,
+    name: string,
+    elements: CanvasElement[],
+    backgroundColor?: string
+  ) => void
   setBackgroundColor: (color: string) => void
   addElement: (element: CanvasElement) => void
   updateElement: (id: string, patch: Partial<CanvasElement>) => void

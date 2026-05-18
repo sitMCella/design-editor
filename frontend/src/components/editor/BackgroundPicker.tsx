@@ -93,10 +93,7 @@ export function BackgroundPicker({ onClose }: Props) {
             backgroundSize: '8px 8px',
             backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
             backgroundColor: '#ffffff',
-            boxShadow:
-              isActive('transparent')
-                ? '0 0 0 2px #ffffff, 0 0 0 4px #3B82F6'
-                : undefined,
+            boxShadow: isActive('transparent') ? '0 0 0 2px #ffffff, 0 0 0 4px #3B82F6' : undefined,
           }}
           aria-hidden="true"
         />

@@ -24,7 +24,9 @@ async function setImageUrl(page: Page, url: string) {
 }
 
 async function clickCanvasBackground(page: Page) {
-  await page.locator('[data-testid="canvas-container"]').click({ position: { x: 10, y: 10 }, force: true })
+  await page
+    .locator('[data-testid="canvas-container"]')
+    .click({ position: { x: 10, y: 10 }, force: true })
 }
 
 // ---------------------------------------------------------------------------
