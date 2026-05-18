@@ -13,7 +13,7 @@ async function addTextElement(page: Page) {
 
 /** Returns the "Background" header button. */
 function backgroundBtn(page: Page) {
-  return page.getByLabel('Canvas background')
+  return page.getByLabel('Canvas background', { exact: true })
 }
 
 /** Returns the colour-picker popover dialog. */
@@ -317,8 +317,9 @@ test.describe('20 – Canvas Background Colour', () => {
   test('AC10: auto-save PATCH request includes backgroundColor in canvas JSON', async ({ page }) => {
     let capturedBody: Record<string, unknown> | null = null
 
-    // Override the PATCH handler to capture the request body
+    // Override the project route to capture the PATCH body while still serving GET
     await page.route(/\/api\/projects\/[^/]+$/, async (route) => {
+      const id = new URL(route.request().url()).pathname.split('/').pop()!
       if (route.request().method() === 'PATCH') {
         capturedBody = (await route.request().postDataJSON()) as Record<string, unknown>
         await route.fulfill({
@@ -326,7 +327,24 @@ test.describe('20 – Canvas Background Colour', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             ok: true,
-            data: { id: 'test-design', updatedAt: new Date().toISOString() },
+            data: { id, updatedAt: new Date().toISOString() },
+          }),
+        })
+        return
+      }
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            data: {
+              id,
+              name: 'Test Design',
+              canvas: { elements: [] },
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
           }),
         })
         return

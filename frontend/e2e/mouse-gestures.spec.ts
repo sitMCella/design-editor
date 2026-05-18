@@ -21,7 +21,7 @@ function parseTransform(transform: string): { panX: number; panY: number; zoom: 
 /** Click a safe corner of the canvas background (far from any element) to deselect. */
 async function clickBackground(page: Page) {
   await page
-    .locator('.bg-gray-100')
+    .locator('[data-testid="canvas-container"]')
     .first()
     .click({ position: { x: 10, y: 10 }, force: true })
 }
@@ -45,7 +45,7 @@ async function dragBy(
 
 /** Pan via Space+drag. */
 async function spacePan(page: Page, dx: number, dy: number) {
-  const canvas = page.locator('.bg-gray-100').first()
+  const canvas = page.locator('[data-testid="canvas-container"]').first()
   const box = await canvas.boundingBox()
   const cx = box!.x + box!.width / 2
   const cy = box!.y + box!.height / 2
@@ -128,7 +128,7 @@ test.describe('14 – Mouse Gestures', () => {
   test('AC1: dragging the canvas background ≥ 4 px pans the viewport', async ({ page }) => {
     const before = parseTransform(await getWorldTransform(page))
 
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const cx = box!.x + box!.width / 2
     const cy = box!.y + box!.height / 2
@@ -166,7 +166,7 @@ test.describe('14 – Mouse Gestures', () => {
   test('AC3: grabbing cursor is set on body during background drag and restored on mouseup', async ({
     page,
   }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const cx = box!.x + box!.width / 2
     const cy = box!.y + box!.height / 2
@@ -204,7 +204,7 @@ test.describe('14 – Mouse Gestures', () => {
   // =========================================================================
 
   test('AC5: scroll-wheel zoom still works after mouse-gesture changes', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const cx = box!.x + box!.width / 2
     const cy = box!.y + box!.height / 2
@@ -287,7 +287,7 @@ test.describe('14 – Mouse Gestures', () => {
 
     // Shift+click the far corner of the canvas background
     await page
-      .locator('.bg-gray-100')
+      .locator('[data-testid="canvas-container"]')
       .first()
       .click({ position: { x: 10, y: 10 }, modifiers: ['Shift'], force: true })
 
@@ -517,7 +517,7 @@ test.describe('14 – Mouse Gestures', () => {
   test('AC19: Shift+drag on background draws a dashed marquee rectangle with a faint blue fill', async ({
     page,
   }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const startX = box!.x + 50
     const startY = box!.y + 50
@@ -541,7 +541,7 @@ test.describe('14 – Mouse Gestures', () => {
   // =========================================================================
 
   test('AC20: marquee correctly tracks a top-right direction drag', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const startX = box!.x + 250
     const startY = box!.y + 200
@@ -562,7 +562,7 @@ test.describe('14 – Mouse Gestures', () => {
   })
 
   test('AC20: marquee correctly tracks a bottom-left direction drag', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const startX = box!.x + 350
     const startY = box!.y + 150
@@ -583,7 +583,7 @@ test.describe('14 – Mouse Gestures', () => {
   })
 
   test('AC20: marquee correctly tracks a top-left direction drag', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const startX = box!.x + 350
     const startY = box!.y + 200
@@ -614,7 +614,7 @@ test.describe('14 – Mouse Gestures', () => {
     await clickBackground(page)
 
     const elBox = await textEl.boundingBox()
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const canvasBox = await canvas.boundingBox()
 
     // Marquee starts 20 px before the element's top-left and ends 20 px past its bottom-right.
@@ -637,7 +637,7 @@ test.describe('14 – Mouse Gestures', () => {
     await clickBackground(page)
 
     const elBox = await textEl.boundingBox()
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const canvasBox = await canvas.boundingBox()
 
     // Marquee starts at the canvas top-left, ends at the horizontal midpoint of the element.
@@ -672,7 +672,7 @@ test.describe('14 – Mouse Gestures', () => {
     await textEl.click()
     await expect(textEl).toHaveCSS('outline-style', 'solid')
 
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const canvasBox = await canvas.boundingBox()
 
     // Draw a small marquee at the very top-left corner — far from the text element at (560, 320)
@@ -688,7 +688,7 @@ test.describe('14 – Mouse Gestures', () => {
   // =========================================================================
 
   test('AC24: the marquee rectangle is removed immediately on mouseup', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const startX = box!.x + 50
     const startY = box!.y + 50
@@ -720,7 +720,7 @@ test.describe('14 – Mouse Gestures', () => {
     await textEl.click()
     await expect(textEl).toHaveCSS('outline-style', 'solid')
 
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const startX = box!.x + 20
     const startY = box!.y + 20
@@ -745,7 +745,7 @@ test.describe('14 – Mouse Gestures', () => {
   // =========================================================================
 
   test('AC26: canvas background shows crosshair cursor while Shift is held', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
 
@@ -760,7 +760,7 @@ test.describe('14 – Mouse Gestures', () => {
   })
 
   test('AC26: cursor is crosshair during an active marquee drag', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const startX = box!.x + 50
     const startY = box!.y + 50

@@ -25,7 +25,7 @@ async function addTableElement(page: Page) {
 
 async function clickBackground(page: Page) {
   await page
-    .locator('.bg-gray-100')
+    .locator('[data-testid="canvas-container"]')
     .first()
     .click({ position: { x: 10, y: 10 }, force: true })
 }
@@ -355,7 +355,7 @@ test.describe('19 – Download PDF', () => {
   test('AC16: download works after the viewport has been panned', async ({ page }) => {
     await addTextElement(page)
 
-    const canvasArea = page.locator('.bg-gray-100').first()
+    const canvasArea = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvasArea.boundingBox()
     if (box) {
       await page.keyboard.down('Space')

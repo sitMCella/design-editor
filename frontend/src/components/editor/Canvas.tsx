@@ -461,6 +461,7 @@ export function Canvas({ worldRef }: Props) {
     <div
       ref={containerRef}
       className="relative flex-1 overflow-hidden"
+      data-testid="canvas-container"
       style={{
         cursor: spaceActive ? 'grab' : shiftActive ? 'crosshair' : undefined,
         ...canvasBgStyle,

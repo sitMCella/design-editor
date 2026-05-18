@@ -32,7 +32,10 @@ export function BackgroundPicker({ onClose }: Props) {
       }
     }
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
     }
     document.addEventListener('mousedown', handler)
     document.addEventListener('keydown', onKeyDown)
