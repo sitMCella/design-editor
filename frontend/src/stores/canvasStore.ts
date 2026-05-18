@@ -12,11 +12,18 @@ type State = {
   panX: number
   panY: number
   isDirty: boolean
+  backgroundColor: string
 }
 
 type Actions = {
   initDesign: (id: string, name: string) => void
-  loadDesign: (id: string, name: string, elements: CanvasElement[]) => void
+  loadDesign: (
+    id: string,
+    name: string,
+    elements: CanvasElement[],
+    backgroundColor?: string
+  ) => void
+  setBackgroundColor: (color: string) => void
   addElement: (element: CanvasElement) => void
   updateElement: (id: string, patch: Partial<CanvasElement>) => void
   removeElements: (ids: string[]) => void
@@ -41,6 +48,7 @@ export const useCanvasStore = create<State & Actions>()(
     panX: 0,
     panY: 0,
     isDirty: false,
+    backgroundColor: '#F3F4F6',
 
     initDesign: (id, name) =>
       set((state) => {
@@ -52,9 +60,10 @@ export const useCanvasStore = create<State & Actions>()(
         state.panX = 0
         state.panY = 0
         state.isDirty = false
+        state.backgroundColor = '#F3F4F6'
       }),
 
-    loadDesign: (id, name, elements) =>
+    loadDesign: (id, name, elements, backgroundColor) =>
       set((state) => {
         state.designId = id
         state.name = name
@@ -64,6 +73,13 @@ export const useCanvasStore = create<State & Actions>()(
         state.panX = 0
         state.panY = 0
         state.isDirty = false
+        state.backgroundColor = backgroundColor ?? '#F3F4F6'
+      }),
+
+    setBackgroundColor: (color) =>
+      set((state) => {
+        state.backgroundColor = color
+        state.isDirty = true
       }),
 
     addElement: (element) =>

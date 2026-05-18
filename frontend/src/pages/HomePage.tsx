@@ -55,7 +55,12 @@ export function HomePage() {
     setLoadingCardId(id)
     try {
       const project = await getProject(id)
-      loadDesign(project.id, project.name, project.canvas?.elements ?? [])
+      loadDesign(
+        project.id,
+        project.name,
+        project.canvas?.elements ?? [],
+        project.canvas?.backgroundColor
+      )
       void navigate(`/editor/${project.id}`)
     } catch {
       setLoadError('Failed to load project. Please try again.')

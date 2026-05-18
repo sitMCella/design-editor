@@ -25,7 +25,7 @@ async function addTableElement(page: Page) {
 
 async function clickBackground(page: Page) {
   await page
-    .locator('.bg-gray-100')
+    .locator('[data-testid="canvas-container"]')
     .first()
     .click({ position: { x: 10, y: 10 }, force: true })
 }

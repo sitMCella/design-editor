@@ -11,7 +11,8 @@ export function toFilename(name: string): string {
 export async function downloadPng(
   worldRef: React.RefObject<HTMLDivElement | null>,
   elements: CanvasElement[],
-  designName: string
+  designName: string,
+  backgroundColor = '#F3F4F6'
 ): Promise<void> {
   const visibleElements = elements.filter((el) => !el.hidden)
   const bbox = elementsBBox(visibleElements)
@@ -67,7 +68,7 @@ export async function downloadPng(
       scale: 1,
       useCORS: true,
       logging: false,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: backgroundColor === 'transparent' ? null : backgroundColor,
     })
 
     // 4. Crop to the desired region (bounding box + padding) using the 2D API.

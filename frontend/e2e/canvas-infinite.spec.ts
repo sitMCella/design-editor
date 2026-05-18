@@ -24,7 +24,7 @@ function parseTransform(transform: string): { panX: number; panY: number; zoom: 
 /** Click a safe spot on the canvas background to deselect everything. */
 async function clickBackground(page: Page) {
   await page
-    .locator('.bg-gray-100')
+    .locator('[data-testid="canvas-container"]')
     .first()
     .click({ position: { x: 10, y: 10 }, force: true })
 }
@@ -48,7 +48,7 @@ async function dragBy(
 
 /** Pan via Space+drag: hold Space, drag the canvas centre by (dx, dy). */
 async function spacePan(page: Page, dx: number, dy: number) {
-  const canvas = page.locator('.bg-gray-100').first()
+  const canvas = page.locator('[data-testid="canvas-container"]').first()
   const box = await canvas.boundingBox()
   const cx = box!.x + box!.width / 2
   const cy = box!.y + box!.height / 2
@@ -83,7 +83,7 @@ test.describe('13 – Infinite Canvas', () => {
     page,
   }) => {
     // Gray canvas background must exist
-    await expect(page.locator('.bg-gray-100')).toBeVisible()
+    await expect(page.locator('[data-testid="canvas-container"]')).toBeVisible()
 
     // The world layer (with transform-origin) must be present
     const worldLayer = page.locator('[style*="transform-origin"]').first()
@@ -108,7 +108,7 @@ test.describe('13 – Infinite Canvas', () => {
   // =========================================================================
 
   test('AC2: scrolling up on the canvas zooms in', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const cx = box!.x + box!.width / 2
     const cy = box!.y + box!.height / 2
@@ -124,7 +124,7 @@ test.describe('13 – Infinite Canvas', () => {
   })
 
   test('AC2: scrolling down on the canvas zooms out', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const cx = box!.x + box!.width / 2
     const cy = box!.y + box!.height / 2
@@ -142,7 +142,7 @@ test.describe('13 – Infinite Canvas', () => {
   test('AC2: zoom toward cursor keeps the world point under the cursor roughly stationary', async ({
     page,
   }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     // Offset cursor from canvas origin so we can detect the zoom-toward-point effect
     const cx = box!.x + 200
@@ -285,7 +285,7 @@ test.describe('13 – Infinite Canvas', () => {
   })
 
   test('AC6: scroll-wheel zoom cannot exceed 500%', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const box = await canvas.boundingBox()
     const cx = box!.x + box!.width / 2
     const cy = box!.y + box!.height / 2
