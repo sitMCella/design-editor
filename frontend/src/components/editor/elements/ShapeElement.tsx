@@ -19,8 +19,6 @@ export function ShapeElement({ element, isSelected, onSelect, onDragEnd }: Props
 
     const startX = e.clientX
     const startY = e.clientY
-    const startElemX = element.x
-    const startElemY = element.y
     let isDragging = false
 
     const onMouseMove = (ev: MouseEvent) => {
