@@ -17,7 +17,7 @@ async function addArrowElement(page: Page) {
 
 async function clickBackground(page: Page) {
   await page
-    .locator('.bg-gray-100')
+    .locator('[data-testid="canvas-container"]')
     .first()
     .click({ position: { x: 10, y: 10 }, force: true })
 }
@@ -157,9 +157,9 @@ test.describe('15 – Contextual Toolbar Pin', () => {
     await addTextElement(page)
     await pinToolbar(page)
 
-    const canvasBefore = await page.locator('.bg-gray-100').first().boundingBox()
+    const canvasBefore = await page.locator('[data-testid="canvas-container"]').first().boundingBox()
     await clickBackground(page)
-    const canvasAfter = await page.locator('.bg-gray-100').first().boundingBox()
+    const canvasAfter = await page.locator('[data-testid="canvas-container"]').first().boundingBox()
 
     expect(canvasAfter!.y).toBe(canvasBefore!.y)
   })

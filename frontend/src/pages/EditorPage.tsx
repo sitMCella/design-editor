@@ -239,6 +239,7 @@ export function EditorPage() {
               type="button"
               title="Canvas background"
               aria-label="Canvas background"
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={() => setIsBgPickerOpen((v) => !v)}
               className={`flex h-7 items-center gap-1.5 rounded border px-2.5 text-xs font-medium text-gray-700 ${
                 isBgPickerOpen

@@ -35,7 +35,7 @@ async function addTableElement(page: Page) {
 
 async function clickBackground(page: Page) {
   await page
-    .locator('.bg-gray-100')
+    .locator('[data-testid="canvas-container"]')
     .first()
     .click({ position: { x: 10, y: 10 }, force: true })
 }
@@ -110,7 +110,7 @@ test.describe('17 – Layer Panel', () => {
   test('AC2: layer panel pushes the canvas area (canvas is narrower when panel is open)', async ({
     page,
   }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const widthBefore = (await canvas.boundingBox())!.width
 
     await openLayerPanel(page)
@@ -130,7 +130,7 @@ test.describe('17 – Layer Panel', () => {
   })
 
   test('AC3: closing the panel restores the canvas width', async ({ page }) => {
-    const canvas = page.locator('.bg-gray-100').first()
+    const canvas = page.locator('[data-testid="canvas-container"]').first()
     const widthBefore = (await canvas.boundingBox())!.width
 
     await openLayerPanel(page)

@@ -24,7 +24,7 @@ async function enterEditMode(page: Page) {
 }
 
 async function clickCanvasBackground(page: Page) {
-  await page.locator('.bg-gray-100').click({ position: { x: 10, y: 10 }, force: true })
+  await page.locator('[data-testid="canvas-container"]').click({ position: { x: 10, y: 10 }, force: true })
 }
 
 /** Drag from the centre of `from` by (dx, dy) screen pixels. */

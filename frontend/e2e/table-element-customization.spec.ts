@@ -16,7 +16,7 @@ async function getTableElement(page: Page, nth = 0) {
 }
 
 async function clickCanvasBackground(page: Page) {
-  await page.locator('.bg-gray-100').click({ position: { x: 10, y: 10 }, force: true })
+  await page.locator('[data-testid="canvas-container"]').click({ position: { x: 10, y: 10 }, force: true })
 }
 
 /** Returns the centre of a locator's bounding box in screen coordinates. */
