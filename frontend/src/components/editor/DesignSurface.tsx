@@ -114,6 +114,7 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
               element={element as ShapeElementType}
               isSelected={selectedIds.includes(element.id)}
               onSelect={(e) => handleSelect(element.id, e)}
+              onUpdate={(patch) => updateElement(element.id, patch)}
               onDragEnd={(delta) => handleDragEnd(element.id, delta)}
             />
           )

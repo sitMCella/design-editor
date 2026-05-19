@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import { ShapeElement } from './ShapeElement'
 import type { ShapeElement as ShapeElementType } from '../../../types/canvas'
@@ -32,7 +32,7 @@ afterEach(() => {
 describe('rendering', () => {
   it('renders a div with the element fill colour as background', () => {
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
     expect(el.style.backgroundColor).toBe('rgb(59, 130, 246)') // #3B82F6
@@ -40,7 +40,7 @@ describe('rendering', () => {
 
   it('renders with the correct position (left / top)', () => {
     const { container } = render(
-      <ShapeElement element={makeShape({ x: 50, y: 75 })} isSelected={false} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape({ x: 50, y: 75 })} isSelected={false} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
     expect(el.style.left).toBe('50px')
@@ -52,7 +52,7 @@ describe('rendering', () => {
       <ShapeElement
         element={makeShape({ width: 200, height: 100 })}
         isSelected={false}
-        onSelect={vi.fn()}
+        onSelect={vi.fn()} onUpdate={vi.fn()}
       />,
     )
     const el = container.firstChild as HTMLElement
@@ -65,7 +65,7 @@ describe('rendering', () => {
       <ShapeElement
         element={makeShape({ strokeWidth: 0 })}
         isSelected={false}
-        onSelect={vi.fn()}
+        onSelect={vi.fn()} onUpdate={vi.fn()}
       />,
     )
     const el = container.firstChild as HTMLElement
@@ -78,7 +78,7 @@ describe('rendering', () => {
       <ShapeElement
         element={makeShape({ stroke: '#000000', strokeWidth: 2 })}
         isSelected={false}
-        onSelect={vi.fn()}
+        onSelect={vi.fn()} onUpdate={vi.fn()}
       />,
     )
     const el = container.firstChild as HTMLElement
@@ -90,7 +90,7 @@ describe('rendering', () => {
       <ShapeElement
         element={makeShape({ opacity: 0.5 })}
         isSelected={false}
-        onSelect={vi.fn()}
+        onSelect={vi.fn()} onUpdate={vi.fn()}
       />,
     )
     const el = container.firstChild as HTMLElement
@@ -99,7 +99,7 @@ describe('rendering', () => {
 
   it('renders absolutely positioned', () => {
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
     expect(el.style.position).toBe('absolute')
@@ -113,7 +113,7 @@ describe('rendering', () => {
 describe('selected state', () => {
   it('shows blue outline when selected', () => {
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
     expect(el.style.outline).toBe('2px solid #3B82F6')
@@ -121,7 +121,7 @@ describe('selected state', () => {
 
   it('shows no outline when not selected', () => {
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
     expect(el.style.outline).toBe('none')
@@ -129,7 +129,7 @@ describe('selected state', () => {
 
   it('uses grab cursor when selected', () => {
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
     expect(el.style.cursor).toBe('grab')
@@ -137,7 +137,7 @@ describe('selected state', () => {
 
   it('uses default cursor when not selected', () => {
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
     expect(el.style.cursor).toBe('default')
@@ -152,7 +152,7 @@ describe('click to select', () => {
   it('calls onSelect when clicked', () => {
     const onSelect = vi.fn()
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={false} onSelect={onSelect} />,
+      <ShapeElement element={makeShape()} isSelected={false} onSelect={onSelect} onUpdate={vi.fn()} />,
     )
     fireEvent.click(container.firstChild as HTMLElement)
     expect(onSelect).toHaveBeenCalledOnce()
@@ -161,7 +161,7 @@ describe('click to select', () => {
   it('passes the mouse event to onSelect', () => {
     const onSelect = vi.fn()
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={false} onSelect={onSelect} />,
+      <ShapeElement element={makeShape()} isSelected={false} onSelect={onSelect} onUpdate={vi.fn()} />,
     )
     fireEvent.click(container.firstChild as HTMLElement)
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ type: 'click' }))
@@ -171,7 +171,7 @@ describe('click to select', () => {
     const parentHandler = vi.fn()
     const { container } = render(
       <div onClick={parentHandler}>
-        <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} />
+        <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} onUpdate={vi.fn()} />
       </div>,
     )
     fireEvent.click(container.firstChild!.firstChild as HTMLElement)
@@ -190,7 +190,7 @@ describe('drag interaction', () => {
       <ShapeElement
         element={makeShape()}
         isSelected={false}
-        onSelect={vi.fn()}
+        onSelect={vi.fn()} onUpdate={vi.fn()}
         onDragEnd={onDragEnd}
       />,
     )
@@ -209,7 +209,7 @@ describe('drag interaction', () => {
       <ShapeElement
         element={makeShape()}
         isSelected={true}
-        onSelect={vi.fn()}
+        onSelect={vi.fn()} onUpdate={vi.fn()}
         onDragEnd={onDragEnd}
       />,
     )
@@ -228,7 +228,7 @@ describe('drag interaction', () => {
       <ShapeElement
         element={makeShape()}
         isSelected={true}
-        onSelect={vi.fn()}
+        onSelect={vi.fn()} onUpdate={vi.fn()}
         onDragEnd={onDragEnd}
       />,
     )
@@ -247,7 +247,7 @@ describe('drag interaction', () => {
       <ShapeElement
         element={makeShape()}
         isSelected={true}
-        onSelect={vi.fn()}
+        onSelect={vi.fn()} onUpdate={vi.fn()}
         onDragEnd={onDragEnd}
       />,
     )
@@ -262,7 +262,7 @@ describe('drag interaction', () => {
 
   it('sets grabbing cursor on body during drag', () => {
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
 
@@ -278,7 +278,7 @@ describe('drag interaction', () => {
   it('cleans up window listeners after drag ends', () => {
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
 
@@ -299,7 +299,7 @@ describe('drag interaction', () => {
 describe('box-sizing', () => {
   it('uses border-box sizing', () => {
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={false} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
     expect(el.style.boxSizing).toBe('border-box')
@@ -313,7 +313,7 @@ describe('box-sizing', () => {
 describe('optional onDragEnd', () => {
   it('does not throw when onDragEnd is not provided and a drag occurs', () => {
     const { container } = render(
-      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} />,
+      <ShapeElement element={makeShape()} isSelected={true} onSelect={vi.fn()} onUpdate={vi.fn()} />,
     )
     const el = container.firstChild as HTMLElement
 
