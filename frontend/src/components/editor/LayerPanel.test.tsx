@@ -3,7 +3,7 @@ import { fireEvent } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LayerPanel } from './LayerPanel'
 import { useCanvasStore } from '../../stores/canvasStore'
-import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
+import type { TextElement, ImageElement, ArrowElement, ShapeElement } from '../../types/canvas'
 
 // ---------------------------------------------------------------------------
 // Factories
@@ -646,5 +646,129 @@ describe('AC22 — panel list has independent scroll', () => {
     const { container } = render(<LayerPanel />)
     const scrollable = container.querySelector('.overflow-y-auto')
     expect(scrollable).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC27 (feat22) — Shape elements appear in the layer panel with label "Shape N"
+// ---------------------------------------------------------------------------
+
+const makeShape = (id: string, overrides: Partial<ShapeElement> = {}): ShapeElement => ({
+  id,
+  type: 'shape',
+  shape: 'rect',
+  x: 560,
+  y: 310,
+  width: 160,
+  height: 160,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  fill: '#3B82F6',
+  stroke: 'transparent',
+  strokeWidth: 0,
+  ...overrides,
+})
+
+describe('AC27 (feat22) — shape elements labelled "Shape N" in the layer panel', () => {
+  it('a single shape element is listed as "Shape 1"', () => {
+    useCanvasStore.setState({ elements: [makeShape('s1')], selectedIds: [] })
+    render(<LayerPanel />)
+    expect(screen.getByText('Shape 1')).toBeInTheDocument()
+  })
+
+  it('two shape elements are labelled "Shape 1" and "Shape 2"', () => {
+    useCanvasStore.setState({
+      elements: [makeShape('s1'), makeShape('s2', { x: 400 })],
+      selectedIds: [],
+    })
+    render(<LayerPanel />)
+    expect(screen.getByText('Shape 1')).toBeInTheDocument()
+    expect(screen.getByText('Shape 2')).toBeInTheDocument()
+  })
+
+  it('shape sequence numbers are independent from other element types', () => {
+    useCanvasStore.setState({
+      elements: [makeText('t1'), makeShape('s1'), makeShape('s2', { x: 400 })],
+      selectedIds: [],
+    })
+    render(<LayerPanel />)
+    expect(screen.getByText('Text 1')).toBeInTheDocument()
+    expect(screen.getByText('Shape 1')).toBeInTheDocument()
+    expect(screen.getByText('Shape 2')).toBeInTheDocument()
+  })
+
+  it('shape elements are reorderable — moveElementToIndex updates the z-order', () => {
+    // Panel shows [s2 (top), s1 (bottom)]; drag s2 below s1
+    useCanvasStore.setState({
+      elements: [makeShape('s1'), makeShape('s2', { x: 400 })],
+      selectedIds: [],
+    })
+    const { container } = render(<LayerPanel />)
+
+    const dragHandles = container.querySelectorAll('[class*="cursor-grab"]')
+    fireEvent.mouseDown(dragHandles[0], { button: 0, clientY: 10 })
+
+    act(() => {
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+    })
+    act(() => {
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+    })
+
+    // s2 moved to panelIndex=1 → elementsIndex=0 (bottom of stack)
+    const elements = useCanvasStore.getState().elements
+    expect(elements[0].id).toBe('s2')
+    expect(elements[1].id).toBe('s1')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC28 (feat22) — Hiding / showing a shape element via the layer panel
+// ---------------------------------------------------------------------------
+
+describe('AC28 (feat22) — hiding and showing shape elements via the layer panel', () => {
+  it('clicking the eye button on a visible shape element hides it', () => {
+    useCanvasStore.setState({ elements: [makeShape('s1')], selectedIds: [] })
+    render(<LayerPanel />)
+
+    const hideBtn = screen.getByRole('button', { name: 'Hide element' })
+    fireEvent.click(hideBtn)
+
+    expect(useCanvasStore.getState().elements[0].hidden).toBe(true)
+  })
+
+  it('clicking the eye button on a hidden shape element shows it again', () => {
+    useCanvasStore.setState({
+      elements: [makeShape('s1', { hidden: true })],
+      selectedIds: [],
+    })
+    render(<LayerPanel />)
+
+    const showBtn = screen.getByRole('button', { name: 'Show element' })
+    fireEvent.click(showBtn)
+
+    expect(useCanvasStore.getState().elements[0].hidden).toBe(false)
+  })
+
+  it('a hidden shape element row has reduced opacity (opacity-50)', () => {
+    useCanvasStore.setState({
+      elements: [makeShape('s1', { hidden: true })],
+      selectedIds: [],
+    })
+    const { container } = render(<LayerPanel />)
+
+    expect(container.querySelector('.opacity-50')).toBeInTheDocument()
+  })
+
+  it('hiding a selected shape removes it from selectedIds', () => {
+    useCanvasStore.setState({ elements: [makeShape('s1')], selectedIds: ['s1'] })
+    render(<LayerPanel />)
+
+    const hideBtn = screen.getByRole('button', { name: 'Hide element' })
+    fireEvent.click(hideBtn)
+
+    expect(useCanvasStore.getState().selectedIds).not.toContain('s1')
+    expect(useCanvasStore.getState().elements[0].hidden).toBe(true)
   })
 })

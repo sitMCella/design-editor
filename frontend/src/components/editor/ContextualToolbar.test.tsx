@@ -10,6 +10,7 @@ import type {
   ImageElement as ImageElementType,
   ArrowElement as ArrowElementType,
   TableElement as TableElementType,
+  ShapeElement as ShapeElementType,
   CanvasElement,
 } from '../../types/canvas'
 
@@ -1948,5 +1949,544 @@ describe('AC18 (feat16): delete button is present but non-interactive when pinne
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
 
     expect(useCanvasStore.getState().elements).toHaveLength(1)
+  })
+})
+
+// ===========================================================================
+// Feature 22 — Shape element customisation (spec 22-shape-element-customization.md)
+// ===========================================================================
+
+const asShape = (el: CanvasElement) => el as ShapeElementType
+
+const makeShapeElement = (
+  id: string,
+  overrides: Partial<ShapeElementType> = {}
+): ShapeElementType => ({
+  id,
+  type: 'shape',
+  shape: 'rect',
+  x: 560,
+  y: 310,
+  width: 160,
+  height: 160,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  fill: '#3B82F6',
+  stroke: 'transparent',
+  strokeWidth: 0,
+  ...overrides,
+})
+
+// ---------------------------------------------------------------------------
+// AC 6 — shape toolbar visibility
+// ---------------------------------------------------------------------------
+
+describe('AC6 (feat22): shape toolbar visibility', () => {
+  it('renders the contextual toolbar when a shape element is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1')],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    expect(screen.getByTestId('contextual-toolbar')).toBeInTheDocument()
+  })
+
+  it('renders shape variant buttons when a shape element is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1')],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Rectangle')).toBeInTheDocument()
+    expect(screen.getByLabelText('Ellipse')).toBeInTheDocument()
+    expect(screen.getByLabelText('Triangle')).toBeInTheDocument()
+  })
+
+  it('does not render text formatting controls when a shape is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1')],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    expect(screen.queryByLabelText('Font family')).toBeNull()
+    expect(screen.queryByLabelText('Font size')).toBeNull()
+  })
+
+  it('renders nothing when no element is selected', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1')],
+      selectedIds: [],
+    })
+    const { container } = renderToolbar()
+    expect(container.firstChild).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 7 — variant buttons change the rendered shape; active button is highlighted
+// ---------------------------------------------------------------------------
+
+describe('AC7 (feat22): shape variant picker', () => {
+  it('clicking Ellipse changes shape to ellipse', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { shape: 'rect' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Ellipse'))
+    expect(asShape(useCanvasStore.getState().elements[0]).shape).toBe('ellipse')
+  })
+
+  it('clicking Triangle changes shape to triangle', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { shape: 'rect' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Triangle'))
+    expect(asShape(useCanvasStore.getState().elements[0]).shape).toBe('triangle')
+  })
+
+  it('clicking Rectangle changes shape to rect', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { shape: 'ellipse' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Rectangle'))
+    expect(asShape(useCanvasStore.getState().elements[0]).shape).toBe('rect')
+  })
+
+  it('marks the active variant button as pressed', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { shape: 'ellipse' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Ellipse')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Rectangle')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('Triangle')).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('reflects the current shape in the active button', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { shape: 'triangle' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Triangle')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Rectangle')).toHaveAttribute('aria-pressed', 'false')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 8 — fill colour picker updates shape fill in real time
+// ---------------------------------------------------------------------------
+
+describe('AC8 (feat22): fill colour picker', () => {
+  it('updates fill when the fill colour input changes', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { fill: '#3B82F6' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Fill'), { target: { value: '#ff0000' } })
+    expect(asShape(useCanvasStore.getState().elements[0]).fill).toBe('#ff0000')
+  })
+
+  it('reflects the current fill colour in the input', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { fill: '#00ff00' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    expect((screen.getByLabelText('Fill') as HTMLInputElement).value).toBe('#00ff00')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 9 — ⊘ fill toggle sets fill to 'transparent'
+// ---------------------------------------------------------------------------
+
+describe('AC9 (feat22): fill transparency toggle', () => {
+  it('clicking the fill transparency toggle sets fill to transparent', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { fill: '#3B82F6' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Toggle Fill transparency'))
+    expect(asShape(useCanvasStore.getState().elements[0]).fill).toBe('transparent')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 10 — clicking ⊘ again restores the last non-transparent fill
+// ---------------------------------------------------------------------------
+
+describe('AC10 (feat22): fill transparency restore', () => {
+  it('clicking the toggle again when fill is transparent restores the previous fill', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { fill: '#3B82F6' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    // First click: set transparent
+    fireEvent.click(screen.getByLabelText('Toggle Fill transparency'))
+    expect(asShape(useCanvasStore.getState().elements[0]).fill).toBe('transparent')
+    // Second click: restore
+    fireEvent.click(screen.getByLabelText('Toggle Fill transparency'))
+    expect(asShape(useCanvasStore.getState().elements[0]).fill).toBe('#3B82F6')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 11 — stroke colour picker updates border colour in real time
+// ---------------------------------------------------------------------------
+
+describe('AC11 (feat22): stroke colour picker', () => {
+  it('updates stroke when the stroke colour input changes', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { stroke: '#111827', strokeWidth: 2 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Stroke'), { target: { value: '#ff0000' } })
+    expect(asShape(useCanvasStore.getState().elements[0]).stroke).toBe('#ff0000')
+  })
+
+  it('reflects the current stroke colour in the input', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { stroke: '#abcdef', strokeWidth: 2 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    expect((screen.getByLabelText('Stroke') as HTMLInputElement).value).toBe('#abcdef')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 12 — stroke ⊘ toggle behaves symmetrically to fill controls
+// ---------------------------------------------------------------------------
+
+describe('AC12 (feat22): stroke transparency toggle', () => {
+  it('clicking the stroke transparency toggle sets stroke to transparent', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { stroke: '#111827', strokeWidth: 2 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Toggle Stroke transparency'))
+    expect(asShape(useCanvasStore.getState().elements[0]).stroke).toBe('transparent')
+  })
+
+  it('clicking the toggle again restores the previous stroke colour', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { stroke: '#111827', strokeWidth: 2 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Toggle Stroke transparency'))
+    fireEvent.click(screen.getByLabelText('Toggle Stroke transparency'))
+    expect(asShape(useCanvasStore.getState().elements[0]).stroke).toBe('#111827')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 13 — stroke colour control is dimmed when strokeWidth is 0
+// ---------------------------------------------------------------------------
+
+describe('AC13 (feat22): stroke control dimmed when strokeWidth is 0', () => {
+  it('the container wrapping the stroke control has pointer-events-none when strokeWidth is 0', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { strokeWidth: 0 })],
+      selectedIds: ['s1'],
+    })
+    const { container } = renderToolbar()
+    // The Stroke toggle button should still be in the DOM but its parent is non-interactive
+    const strokeToggle = screen.getByLabelText('Toggle Stroke transparency')
+    const wrapper = strokeToggle.closest('[class*="pointer-events-none"]')
+    expect(wrapper).not.toBeNull()
+  })
+
+  it('stroke colour toggle is present but its parent is not interactive when strokeWidth is 0', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { strokeWidth: 0 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    // The toggle exists in the DOM even when dimmed
+    expect(screen.getByLabelText('Toggle Stroke transparency')).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 14 — stroke width input and ±buttons; clamped to 0–20
+// ---------------------------------------------------------------------------
+
+describe('AC14 (feat22): stroke width', () => {
+  it('updates strokeWidth when the input changes', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { strokeWidth: 2, stroke: '#000000' })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Stroke width'), { target: { value: '5' } })
+    expect(asShape(useCanvasStore.getState().elements[0]).strokeWidth).toBe(5)
+  })
+
+  it('reflects the current strokeWidth in the input', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { strokeWidth: 4 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    expect((screen.getByLabelText('Stroke width') as HTMLInputElement).value).toBe('4')
+  })
+
+  it('increments strokeWidth by 1 when + is clicked', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { strokeWidth: 3 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Increase stroke width'))
+    expect(asShape(useCanvasStore.getState().elements[0]).strokeWidth).toBe(4)
+  })
+
+  it('decrements strokeWidth by 1 when − is clicked', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { strokeWidth: 3 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Decrease stroke width'))
+    expect(asShape(useCanvasStore.getState().elements[0]).strokeWidth).toBe(2)
+  })
+
+  it('does not go below the minimum of 0', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { strokeWidth: 0 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Decrease stroke width'))
+    expect(asShape(useCanvasStore.getState().elements[0]).strokeWidth).toBe(0)
+  })
+
+  it('does not exceed the maximum of 20', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1', { strokeWidth: 20 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Increase stroke width'))
+    expect(asShape(useCanvasStore.getState().elements[0]).strokeWidth).toBe(20)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 21 — multi-selection same variant: toolbar shows live controls
+// ---------------------------------------------------------------------------
+
+describe('AC21 (feat22): multi-selection same variant shows live controls', () => {
+  it('renders shape toolbar when two shape elements of the same variant are selected', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { shape: 'rect' }),
+        makeShapeElement('s2', { shape: 'rect', x: 400 }),
+      ],
+      selectedIds: ['s1', 's2'],
+    })
+    renderToolbar()
+    expect(screen.getByTestId('contextual-toolbar')).toBeInTheDocument()
+    expect(screen.getByLabelText('Rectangle')).toBeInTheDocument()
+  })
+
+  it('fill colour change applies to all selected shapes', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { fill: '#3B82F6' }),
+        makeShapeElement('s2', { fill: '#3B82F6', x: 400 }),
+      ],
+      selectedIds: ['s1', 's2'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Fill'), { target: { value: '#ff0000' } })
+
+    const elements = useCanvasStore.getState().elements
+    expect(asShape(elements.find((e) => e.id === 's1')!).fill).toBe('#ff0000')
+    expect(asShape(elements.find((e) => e.id === 's2')!).fill).toBe('#ff0000')
+  })
+
+  it('stroke width change applies to all selected shapes', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { strokeWidth: 2 }),
+        makeShapeElement('s2', { strokeWidth: 2, x: 400 }),
+      ],
+      selectedIds: ['s1', 's2'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Stroke width'), { target: { value: '8' } })
+
+    const elements = useCanvasStore.getState().elements
+    expect(asShape(elements.find((e) => e.id === 's1')!).strokeWidth).toBe(8)
+    expect(asShape(elements.find((e) => e.id === 's2')!).strokeWidth).toBe(8)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 22 — clicking a variant button applies to all selected shapes
+// ---------------------------------------------------------------------------
+
+describe('AC22 (feat22): variant change applies to all selected shapes', () => {
+  it('changing variant applies to all selected shape elements', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { shape: 'rect' }),
+        makeShapeElement('s2', { shape: 'rect', x: 400 }),
+      ],
+      selectedIds: ['s1', 's2'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByLabelText('Ellipse'))
+
+    const elements = useCanvasStore.getState().elements
+    expect(asShape(elements.find((e) => e.id === 's1')!).shape).toBe('ellipse')
+    expect(asShape(elements.find((e) => e.id === 's2')!).shape).toBe('ellipse')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 23 — different variants hide the variant buttons; other controls remain
+// ---------------------------------------------------------------------------
+
+describe('AC23 (feat22): different variants hide variant buttons', () => {
+  it('variant buttons are hidden when selected shapes have different shape values', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { shape: 'rect' }),
+        makeShapeElement('s2', { shape: 'ellipse', x: 400 }),
+      ],
+      selectedIds: ['s1', 's2'],
+    })
+    renderToolbar()
+    expect(screen.queryByLabelText('Rectangle')).toBeNull()
+    expect(screen.queryByLabelText('Ellipse')).toBeNull()
+    expect(screen.queryByLabelText('Triangle')).toBeNull()
+  })
+
+  it('fill colour control remains visible even when shapes have different variants', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { shape: 'rect' }),
+        makeShapeElement('s2', { shape: 'triangle', x: 400 }),
+      ],
+      selectedIds: ['s1', 's2'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Fill')).toBeInTheDocument()
+  })
+
+  it('stroke width control remains visible even when shapes have different variants', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { shape: 'rect' }),
+        makeShapeElement('s2', { shape: 'ellipse', x: 400 }),
+      ],
+      selectedIds: ['s1', 's2'],
+    })
+    renderToolbar()
+    expect(screen.getByLabelText('Stroke width')).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 25 — trash button removes selected shape elements
+// ---------------------------------------------------------------------------
+
+describe('AC25 (feat22): delete button removes selected shape elements', () => {
+  it('clicking Delete removes the selected shape element', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1')],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('clicking Delete clears selectedIds', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1')],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('clicking Delete with a multi-shape selection removes all selected shapes', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1'),
+        makeShapeElement('s2', { x: 400 }),
+        makeShapeElement('s3', { x: 800 }),
+      ],
+      selectedIds: ['s1', 's2'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    const remaining = useCanvasStore.getState().elements
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0].id).toBe('s3')
+  })
+
+  it('leaves non-selected elements untouched after deletion', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('s1'), makeShapeElement('s2', { x: 400 })],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    const remaining = useCanvasStore.getState().elements
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0].id).toBe('s2')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC 29 — independent per-element customisations
+// ---------------------------------------------------------------------------
+
+describe('AC29 (feat22): independent shape element customisations', () => {
+  it('updating fill of one shape does not affect another', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { fill: '#3B82F6' }),
+        makeShapeElement('s2', { fill: '#3B82F6', x: 400 }),
+      ],
+      selectedIds: ['s1'],
+    })
+    renderToolbar()
+    fireEvent.change(screen.getByLabelText('Fill'), { target: { value: '#ff0000' } })
+
+    const elements = useCanvasStore.getState().elements
+    expect(asShape(elements.find((e) => e.id === 's1')!).fill).toBe('#ff0000')
+    expect(asShape(elements.find((e) => e.id === 's2')!).fill).toBe('#3B82F6')
+  })
+
+  it('toolbar shows properties of the selected shape', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('s1', { strokeWidth: 3, stroke: '#000000' }),
+        makeShapeElement('s2', { strokeWidth: 10, stroke: '#000000', x: 400 }),
+      ],
+      selectedIds: ['s2'],
+    })
+    renderToolbar()
+    expect((screen.getByLabelText('Stroke width') as HTMLInputElement).value).toBe('10')
   })
 })
