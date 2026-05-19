@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { render, fireEvent, act } from '@testing-library/react'
 import { Canvas } from './Canvas'
 import { useCanvasStore } from '../../stores/canvasStore'
-import type { TextElement, ImageElement, ArrowElement } from '../../types/canvas'
+import type { TextElement, ImageElement, ArrowElement, ShapeElement } from '../../types/canvas'
 
 const makeTextElement = (id: string): TextElement => ({
   id,
@@ -1434,5 +1434,94 @@ describe('AC10–13 (feat16) — Delete/Backspace suppressed in text-entry conte
 
     expect(useCanvasStore.getState().elements).toHaveLength(1)
     document.body.removeChild(input)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC24 (feat22) — Delete / Backspace remove selected shape elements
+// ---------------------------------------------------------------------------
+
+const makeShapeElement = (id: string, overrides: Partial<ShapeElement> = {}): ShapeElement => ({
+  id,
+  type: 'shape',
+  shape: 'rect',
+  x: 560,
+  y: 310,
+  width: 160,
+  height: 160,
+  rotation: 0,
+  opacity: 1,
+  locked: false,
+  fill: '#3B82F6',
+  stroke: 'transparent',
+  strokeWidth: 0,
+  ...overrides,
+})
+
+describe('AC24 (feat22) — Delete/Backspace removes selected shape elements', () => {
+  it('Delete removes a selected shape element from the canvas', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('shape-1')],
+      selectedIds: ['shape-1'],
+    })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('Backspace removes a selected shape element from the canvas', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('shape-1')],
+      selectedIds: ['shape-1'],
+    })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Backspace' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(0)
+  })
+
+  it('clears selectedIds after deleting a shape element', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('shape-1')],
+      selectedIds: ['shape-1'],
+    })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().selectedIds).toHaveLength(0)
+  })
+
+  it('removes multiple selected shape elements at once', () => {
+    useCanvasStore.setState({
+      elements: [
+        makeShapeElement('shape-1'),
+        makeShapeElement('shape-2', { x: 300 }),
+        makeShapeElement('shape-3', { x: 500 }),
+      ],
+      selectedIds: ['shape-1', 'shape-3'],
+    })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    const remaining = useCanvasStore.getState().elements
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0].id).toBe('shape-2')
+  })
+
+  it('does not delete shape elements when no text-entry context is focused but selectedIds is empty', () => {
+    useCanvasStore.setState({
+      elements: [makeShapeElement('shape-1')],
+      selectedIds: [],
+    })
+    render(<Canvas />)
+
+    fireEvent.keyDown(window, { key: 'Delete' })
+
+    expect(useCanvasStore.getState().elements).toHaveLength(1)
   })
 })
