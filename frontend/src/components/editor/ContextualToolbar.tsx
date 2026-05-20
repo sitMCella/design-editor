@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
-import type { TextElement, ImageElement, ArrowElement, TableElement } from '../../types/canvas'
+import type {
+  TextElement,
+  ImageElement,
+  ArrowElement,
+  TableElement,
+  ShapeElement,
+} from '../../types/canvas'
 import { fetchAssetFromUrl } from '../../api/assets'
 
 const DEFAULT_ROW_HEIGHT = 40
@@ -487,6 +493,265 @@ function TableToolbar({
 }
 
 // ---------------------------------------------------------------------------
+// Shape toolbar
+// ---------------------------------------------------------------------------
+
+const SHAPE_VARIANTS: Array<{ value: ShapeElement['shape']; label: string; title: string }> = [
+  { value: 'rect', label: '■', title: 'Rectangle' },
+  { value: 'ellipse', label: '●', title: 'Ellipse' },
+  { value: 'triangle', label: '▲', title: 'Triangle' },
+]
+
+function CheckerboardSwatch({ size = 20 }: { size?: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 2,
+        backgroundImage:
+          'repeating-linear-gradient(45deg,#d1d5db 25%,transparent 25%),' +
+          'repeating-linear-gradient(-45deg,#d1d5db 25%,transparent 25%),' +
+          'repeating-linear-gradient(45deg,transparent 75%,#d1d5db 75%),' +
+          'repeating-linear-gradient(-45deg,transparent 75%,#d1d5db 75%)',
+        backgroundSize: '8px 8px',
+        backgroundPosition: '0 0,0 4px,4px -4px,-4px 0',
+        backgroundColor: '#fff',
+        border: '1px solid #e5e7eb',
+      }}
+    />
+  )
+}
+
+function ColourControl({
+  label,
+  value,
+  onChange,
+  lastNonTransparentRef,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  lastNonTransparentRef: React.MutableRefObject<string>
+}) {
+  const colorInputRef = useRef<HTMLInputElement>(null)
+  const inputId = `colour-input-${label.toLowerCase().replace(/\s+/g, '-')}`
+  const isTransparent = value === 'transparent'
+
+  // Stable ref so the effect closure always calls the latest onChange without
+  // needing to re-register the native listener on every render.
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+
+  // Keep the DOM value in sync when the prop changes (e.g. reselecting an element).
+  useEffect(() => {
+    const input = colorInputRef.current
+    if (!input) return
+    input.value = isTransparent ? '#000000' : value
+  }, [value, isTransparent])
+
+  // Use native event listeners so that both user interaction (native picker)
+  // and programmatic dispatch (tests doing `el.dispatchEvent(new Event('change'))`)
+  // are handled. React 19's synthetic onChange is not reliably triggered by
+  // programmatically dispatched events on controlled color inputs.
+  useEffect(() => {
+    const input = colorInputRef.current
+    if (!input) return
+    const handler = (e: Event) => {
+      const target = e.target as HTMLInputElement
+      lastNonTransparentRef.current = target.value
+      onChangeRef.current(target.value)
+    }
+    input.addEventListener('change', handler)
+    input.addEventListener('input', handler)
+    return () => {
+      input.removeEventListener('change', handler)
+      input.removeEventListener('input', handler)
+    }
+  }, [lastNonTransparentRef])
+
+  const toggleTransparent = () => {
+    if (isTransparent) {
+      onChange(lastNonTransparentRef.current)
+    } else {
+      lastNonTransparentRef.current = value
+      onChange('transparent')
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {/* Visually-hidden label associates with the color input via htmlFor so
+          getByLabel(label) resolves unambiguously to the <input> element. */}
+      <label
+        htmlFor={inputId}
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+          whiteSpace: 'nowrap',
+          borderWidth: 0,
+        }}
+      >
+        {label}
+      </label>
+      <button
+        aria-label={`${label} colour picker`}
+        title={label}
+        onClick={() => !isTransparent && colorInputRef.current?.click()}
+        className="relative flex h-5 w-5 items-center justify-center overflow-hidden rounded-sm border border-gray-200"
+        style={{ cursor: isTransparent ? 'default' : 'pointer' }}
+      >
+        {isTransparent ? (
+          <CheckerboardSwatch size={18} />
+        ) : (
+          <div style={{ width: 18, height: 18, backgroundColor: value, borderRadius: 1 }} />
+        )}
+        <input
+          id={inputId}
+          ref={colorInputRef}
+          type="color"
+          defaultValue={isTransparent ? '#000000' : value}
+          tabIndex={-1}
+          style={{
+            position: 'absolute',
+            opacity: 0,
+            width: 0,
+            height: 0,
+            pointerEvents: 'none',
+          }}
+        />
+      </button>
+      <button
+        aria-label={`Toggle ${label} transparency`}
+        title={isTransparent ? `Restore ${label}` : `Remove ${label}`}
+        onClick={toggleTransparent}
+        className={`flex h-5 w-5 items-center justify-center rounded text-xs ${isTransparent ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
+      >
+        ⊘
+      </button>
+    </div>
+  )
+}
+
+function ShapeToolbar({
+  elements,
+  update,
+  showVariant,
+}: {
+  elements: ShapeElement[]
+  update: (patch: Partial<ShapeElement>) => void
+  showVariant: boolean
+}) {
+  const first = elements[0]
+  const lastFillRef = useRef(first.fill === 'transparent' ? '#3B82F6' : first.fill)
+  const lastStrokeRef = useRef(first.stroke === 'transparent' ? '#111827' : first.stroke)
+
+  const strokeDisabled = first.strokeWidth === 0
+
+  return (
+    <>
+      {showVariant && (
+        <div className="flex items-center gap-0.5">
+          {SHAPE_VARIANTS.map(({ value, label, title }) => (
+            <button
+              key={value}
+              aria-label={title}
+              aria-pressed={first.shape === value}
+              onClick={() => update({ shape: value })}
+              className={`flex h-6 w-6 items-center justify-center rounded text-sm ${
+                first.shape === value ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mx-1 h-4 w-px bg-gray-200" />
+
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-gray-500">Fill</span>
+        <ColourControl
+          label="Fill"
+          value={first.fill}
+          onChange={(v) => update({ fill: v })}
+          lastNonTransparentRef={lastFillRef}
+        />
+      </div>
+
+      <div className="mx-1 h-4 w-px bg-gray-200" />
+
+      <div
+        className={`flex items-center gap-1 ${strokeDisabled ? 'opacity-50 pointer-events-none' : ''}`}
+      >
+        <span className="text-xs text-gray-500">Stroke</span>
+        <ColourControl
+          label="Stroke"
+          value={first.stroke}
+          onChange={(v) => update({ stroke: v })}
+          lastNonTransparentRef={lastStrokeRef}
+        />
+      </div>
+
+      <div className="mx-1 h-4 w-px bg-gray-200" />
+
+      <div className="flex items-center gap-0.5">
+        {/* Visually-hidden label so getByLabel('Stroke width') resolves to this
+            input only, not the increment/decrement buttons. */}
+        <label
+          htmlFor="shape-stroke-width"
+          style={{
+            position: 'absolute',
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: 'hidden',
+            clip: 'rect(0,0,0,0)',
+            whiteSpace: 'nowrap',
+            borderWidth: 0,
+          }}
+        >
+          Stroke width
+        </label>
+        <button
+          aria-label="Decrease stroke width"
+          onClick={() => update({ strokeWidth: Math.max(0, first.strokeWidth - 1) })}
+          className="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-gray-100"
+        >
+          −
+        </button>
+        <input
+          id="shape-stroke-width"
+          type="number"
+          min={0}
+          max={20}
+          value={first.strokeWidth}
+          onChange={(e) =>
+            update({ strokeWidth: Math.max(0, Math.min(20, Number(e.target.value))) })
+          }
+          className="w-10 rounded border border-gray-200 px-1 py-0.5 text-center text-sm"
+        />
+        <button
+          aria-label="Increase stroke width"
+          onClick={() => update({ strokeWidth: Math.min(20, first.strokeWidth + 1) })}
+          className="flex h-6 w-6 items-center justify-center rounded text-sm hover:bg-gray-100"
+        >
+          +
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Trash icon
 // ---------------------------------------------------------------------------
 
@@ -527,7 +792,7 @@ function PinIcon() {
 // Shell
 // ---------------------------------------------------------------------------
 
-type Snapshot = TextElement | ImageElement | ArrowElement | TableElement
+type Snapshot = TextElement | ImageElement | ArrowElement | TableElement | ShapeElement
 
 export function ContextualToolbar() {
   const elements = useCanvasStore((s) => s.elements)
@@ -582,6 +847,16 @@ export function ContextualToolbar() {
   } else if (displayElement?.type === 'table') {
     controls = (
       <TableToolbar element={displayElement} update={(p) => updateAll(p as Partial<Snapshot>)} />
+    )
+  } else if (displayElement?.type === 'shape') {
+    const shapeEls = selectedElements.filter((el): el is ShapeElement => el.type === 'shape')
+    const allSameVariant = shapeEls.every((el) => el.shape === shapeEls[0].shape)
+    controls = (
+      <ShapeToolbar
+        elements={shapeEls.length > 0 ? shapeEls : [displayElement as ShapeElement]}
+        update={(p) => updateAll(p as Partial<Snapshot>)}
+        showVariant={allSameVariant}
+      />
     )
   }
 

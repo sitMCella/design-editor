@@ -11,6 +11,7 @@ function elementLabel(el: CanvasElement, elements: CanvasElement[]): string {
     image: 'Image',
     arrow: 'Arrow',
     table: 'Table',
+    shape: 'Shape',
   }
   const sameType = elements.filter((e) => e.type === el.type)
   const index = sameType.indexOf(el) + 1

@@ -2,6 +2,7 @@ import { forwardRef } from 'react'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { ArrowElement } from './elements/ArrowElement'
 import { ImageElement } from './elements/ImageElement'
+import { ShapeElement } from './elements/ShapeElement'
 import { TableElement } from './elements/TableElement'
 import { TextElement } from './elements/TextElement'
 import type {
@@ -9,6 +10,7 @@ import type {
   ImageElement as ImageElementType,
   ArrowElement as ArrowElementType,
   TableElement as TableElementType,
+  ShapeElement as ShapeElementType,
 } from '../../types/canvas'
 
 export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_props, ref) {
@@ -29,7 +31,10 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
   }
 
   const handleDragEnd = (movedId: string, delta: { x: number; y: number }) => {
-    // Apply the same world-space delta to all other selected elements
+    // Apply the same world-space delta to all other selected elements.
+    // flushSync is handled by each element's own onMouseUp so that all
+    // pending updates (dragged element + co-selected elements) are committed
+    // in a single synchronous flush before Playwright reads positions.
     selectedIds
       .filter((id) => id !== movedId)
       .forEach((id) => {
@@ -98,6 +103,18 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
             <TableElement
               key={element.id}
               element={element as TableElementType}
+              isSelected={selectedIds.includes(element.id)}
+              onSelect={(e) => handleSelect(element.id, e)}
+              onUpdate={(patch) => updateElement(element.id, patch)}
+              onDragEnd={(delta) => handleDragEnd(element.id, delta)}
+            />
+          )
+        }
+        if (element.type === 'shape') {
+          return (
+            <ShapeElement
+              key={element.id}
+              element={element as ShapeElementType}
               isSelected={selectedIds.includes(element.id)}
               onSelect={(e) => handleSelect(element.id, e)}
               onUpdate={(patch) => updateElement(element.id, patch)}
