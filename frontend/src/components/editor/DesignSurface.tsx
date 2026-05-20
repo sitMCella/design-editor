@@ -1,5 +1,4 @@
 import { forwardRef } from 'react'
-import { flushSync } from 'react-dom'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { ArrowElement } from './elements/ArrowElement'
 import { ImageElement } from './elements/ImageElement'
@@ -33,29 +32,28 @@ export const DesignSurface = forwardRef<HTMLDivElement>(function DesignSurface(_
 
   const handleDragEnd = (movedId: string, delta: { x: number; y: number }) => {
     // Apply the same world-space delta to all other selected elements.
-    // flushSync ensures React commits the updates synchronously so that
-    // Playwright (especially Firefox) sees the new positions immediately.
-    flushSync(() => {
-      selectedIds
-        .filter((id) => id !== movedId)
-        .forEach((id) => {
-          const el = elements.find((e) => e.id === id)
-          if (!el) return
-          if (el.type === 'arrow') {
-            const arr = el as ArrowElementType
-            updateElement(id, {
-              x1: arr.x1 + delta.x,
-              y1: arr.y1 + delta.y,
-              x2: arr.x2 + delta.x,
-              y2: arr.y2 + delta.y,
-              startAnchor: undefined,
-              endAnchor: undefined,
-            })
-          } else {
-            updateElement(id, { x: el.x + delta.x, y: el.y + delta.y })
-          }
-        })
-    })
+    // flushSync is handled by each element's own onMouseUp so that all
+    // pending updates (dragged element + co-selected elements) are committed
+    // in a single synchronous flush before Playwright reads positions.
+    selectedIds
+      .filter((id) => id !== movedId)
+      .forEach((id) => {
+        const el = elements.find((e) => e.id === id)
+        if (!el) return
+        if (el.type === 'arrow') {
+          const arr = el as ArrowElementType
+          updateElement(id, {
+            x1: arr.x1 + delta.x,
+            y1: arr.y1 + delta.y,
+            x2: arr.x2 + delta.x,
+            y2: arr.y2 + delta.y,
+            startAnchor: undefined,
+            endAnchor: undefined,
+          })
+        } else {
+          updateElement(id, { x: el.x + delta.x, y: el.y + delta.y })
+        }
+      })
   }
 
   return (

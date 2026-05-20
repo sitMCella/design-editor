@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { flushSync } from 'react-dom'
 import type { ShapeElement as ShapeElementType } from '../../../types/canvas'
 import { useCanvasStore } from '../../../stores/canvasStore'
 
@@ -23,6 +24,11 @@ const handlePositions: Record<Handle, React.CSSProperties> = {
 }
 
 export function ShapeElement({ element, isSelected, onSelect, onUpdate, onDragEnd }: Props) {
+  // Keep a ref so the native mouseup closure always calls the latest onDragEnd,
+  // avoiding stale-closure bugs when DesignSurface re-renders mid-drag.
+  const onDragEndRef = useRef(onDragEnd)
+  onDragEndRef.current = onDragEnd
+
   const dragStartRef = useRef<{
     mouseX: number
     mouseY: number
@@ -77,7 +83,12 @@ export function ShapeElement({ element, isSelected, onSelect, onUpdate, onDragEn
         const zoom = useCanvasStore.getState().zoom
         const deltaX = (me.clientX - dragStartRef.current.mouseX) / zoom
         const deltaY = (me.clientY - dragStartRef.current.mouseY) / zoom
-        onDragEnd?.({ x: deltaX, y: deltaY })
+        // flushSync forces React to commit all pending updates (the dragged
+        // element's position + all co-selected elements) synchronously so
+        // Playwright (especially Firefox) sees the new positions immediately.
+        flushSync(() => {
+          onDragEndRef.current?.({ x: deltaX, y: deltaY })
+        })
       }
       dragStartRef.current = null
       window.removeEventListener('mousemove', onMouseMove)
