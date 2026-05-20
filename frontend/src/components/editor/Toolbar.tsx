@@ -131,19 +131,28 @@ export function Toolbar() {
   const handleShapeTool = () => {
     setActiveTool('shape')
 
+    const existingShapeCount = useCanvasStore
+      .getState()
+      .elements.filter((e) => e.type === 'shape').length
+    // Step must exceed the default shape dimension (160px) so successive shapes
+    // don't overlap and pointer events can reach each independently.
+    const SHAPE_CASCADE_STEP = 200
+    const SHAPE_CASCADE_MAX = 6
+    const cascade = (existingShapeCount % SHAPE_CASCADE_MAX) * SHAPE_CASCADE_STEP
+
     const element: ShapeElement = {
       id: crypto.randomUUID(),
       type: 'shape',
       shape: 'rect',
-      x: 560,
-      y: 310,
+      x: 560 + cascade,
+      y: 310 + cascade,
       width: 160,
       height: 160,
       rotation: 0,
       opacity: 1,
       locked: false,
       fill: '#3B82F6',
-      stroke: 'transparent',
+      stroke: '#000000',
       strokeWidth: 0,
     }
 

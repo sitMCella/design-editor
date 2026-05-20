@@ -530,6 +530,7 @@ function ColourControl({
   lastNonTransparentRef: React.MutableRefObject<string>
 }) {
   const colorInputRef = useRef<HTMLInputElement>(null)
+  const inputId = `colour-input-${label.toLowerCase().replace(/\s+/g, '-')}`
 
   const isTransparent = value === 'transparent'
 
@@ -549,6 +550,14 @@ function ColourControl({
 
   return (
     <div className="flex items-center gap-0.5">
+      {/* Visually-hidden label associates with the color input via htmlFor so
+          getByLabel(label) resolves unambiguously to the <input> element. */}
+      <label
+        htmlFor={inputId}
+        style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+      >
+        {label}
+      </label>
       <button
         aria-label={`${label} colour picker`}
         title={label}
@@ -562,8 +571,8 @@ function ColourControl({
           <div style={{ width: 18, height: 18, backgroundColor: value, borderRadius: 1 }} />
         )}
         <input
+          id={inputId}
           ref={colorInputRef}
-          aria-label={label}
           type="color"
           value={isTransparent ? '#000000' : value}
           onChange={handlePickerChange}
@@ -651,6 +660,14 @@ function ShapeToolbar({
       <div className="mx-1 h-4 w-px bg-gray-200" />
 
       <div className="flex items-center gap-0.5">
+        {/* Visually-hidden label so getByLabel('Stroke width') resolves to this
+            input only, not the increment/decrement buttons. */}
+        <label
+          htmlFor="shape-stroke-width"
+          style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+        >
+          Stroke width
+        </label>
         <button
           aria-label="Decrease stroke width"
           onClick={() => update({ strokeWidth: Math.max(0, first.strokeWidth - 1) })}
@@ -659,7 +676,7 @@ function ShapeToolbar({
           −
         </button>
         <input
-          aria-label="Stroke width"
+          id="shape-stroke-width"
           type="number"
           min={0}
           max={20}
