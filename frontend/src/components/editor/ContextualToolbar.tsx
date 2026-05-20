@@ -531,8 +531,39 @@ function ColourControl({
 }) {
   const colorInputRef = useRef<HTMLInputElement>(null)
   const inputId = `colour-input-${label.toLowerCase().replace(/\s+/g, '-')}`
-
   const isTransparent = value === 'transparent'
+
+  // Stable ref so the effect closure always calls the latest onChange without
+  // needing to re-register the native listener on every render.
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+
+  // Keep the DOM value in sync when the prop changes (e.g. reselecting an element).
+  useEffect(() => {
+    const input = colorInputRef.current
+    if (!input) return
+    input.value = isTransparent ? '#000000' : value
+  }, [value, isTransparent])
+
+  // Use native event listeners so that both user interaction (native picker)
+  // and programmatic dispatch (tests doing `el.dispatchEvent(new Event('change'))`)
+  // are handled. React 19's synthetic onChange is not reliably triggered by
+  // programmatically dispatched events on controlled color inputs.
+  useEffect(() => {
+    const input = colorInputRef.current
+    if (!input) return
+    const handler = (e: Event) => {
+      const target = e.target as HTMLInputElement
+      lastNonTransparentRef.current = target.value
+      onChangeRef.current(target.value)
+    }
+    input.addEventListener('change', handler)
+    input.addEventListener('input', handler)
+    return () => {
+      input.removeEventListener('change', handler)
+      input.removeEventListener('input', handler)
+    }
+  }, [lastNonTransparentRef])
 
   const toggleTransparent = () => {
     if (isTransparent) {
@@ -541,11 +572,6 @@ function ColourControl({
       lastNonTransparentRef.current = value
       onChange('transparent')
     }
-  }
-
-  const handlePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    lastNonTransparentRef.current = e.target.value
-    onChange(e.target.value)
   }
 
   return (
@@ -574,8 +600,7 @@ function ColourControl({
           id={inputId}
           ref={colorInputRef}
           type="color"
-          value={isTransparent ? '#000000' : value}
-          onChange={handlePickerChange}
+          defaultValue={isTransparent ? '#000000' : value}
           tabIndex={-1}
           style={{
             position: 'absolute',
