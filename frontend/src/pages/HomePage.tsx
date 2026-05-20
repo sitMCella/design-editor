@@ -6,7 +6,8 @@ import { NewDesignModal } from '../components/NewDesignModal'
 import { ProjectCard } from '../components/ProjectCard'
 import { ProjectCardSkeleton } from '../components/ProjectCardSkeleton'
 import { AllDesignsModal } from '../components/AllDesignsModal'
-import { createProject, getProject, getProjects } from '../api/projects'
+import { RenameModal } from '../components/RenameModal'
+import { createProject, getProject, getProjects, patchProject } from '../api/projects'
 
 const RECENT_LIMIT = 6
 
@@ -16,6 +17,11 @@ export function HomePage() {
   const [createError, setCreateError] = useState<string | null>(null)
   const [loadingCardId, setLoadingCardId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [renameTarget, setRenameTarget] = useState<{ id: string; currentName: string } | null>(
+    null
+  )
+  const [renameError, setRenameError] = useState<string | null>(null)
   const navigate = useNavigate()
   const initDesign = useCanvasStore((s) => s.initDesign)
   const loadDesign = useCanvasStore((s) => s.loadDesign)
@@ -44,6 +50,18 @@ export function HomePage() {
     },
   })
 
+  const { mutate: renameProject, isPending: isRenaming } = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => patchProject(id, { name }),
+    onSuccess: () => {
+      setRenameTarget(null)
+      setRenameError(null)
+      void queryClient.invalidateQueries({ queryKey: ['designs'] })
+    },
+    onError: (err) => {
+      setRenameError(err instanceof Error ? err.message : 'Failed to rename project')
+    },
+  })
+
   const handleCreate = (name: string) => {
     setCreateError(null)
     const id = crypto.randomUUID()
@@ -67,6 +85,12 @@ export function HomePage() {
     } finally {
       setLoadingCardId(null)
     }
+  }
+
+  const handleRename = (name: string) => {
+    if (!renameTarget) return
+    setRenameError(null)
+    renameProject({ id: renameTarget.id, name })
   }
 
   return (
@@ -121,6 +145,12 @@ export function HomePage() {
                   project={project}
                   isLoading={loadingCardId === project.id}
                   onClick={() => void handleOpenProject(project.id)}
+                  onRename={() => {
+                    setOpenMenuId(null)
+                    setRenameTarget({ id: project.id, currentName: project.name })
+                  }}
+                  isMenuOpen={openMenuId === project.id}
+                  onMenuOpenChange={(open) => setOpenMenuId(open ? project.id : null)}
                 />
               ))}
             </div>
@@ -154,6 +184,19 @@ export function HomePage() {
           loadingCardId={loadingCardId}
           onCardClick={(id) => void handleOpenProject(id)}
           onClose={() => setIsAllDesignsOpen(false)}
+        />
+      )}
+
+      {renameTarget && (
+        <RenameModal
+          currentName={renameTarget.currentName}
+          onConfirm={handleRename}
+          onClose={() => {
+            setRenameTarget(null)
+            setRenameError(null)
+          }}
+          isLoading={isRenaming}
+          error={renameError}
         />
       )}
     </main>
