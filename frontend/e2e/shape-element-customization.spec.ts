@@ -169,7 +169,7 @@ test.describe('22 – Shape Element Customisation', () => {
     await expect(page.getByLabel('Ellipse')).toBeVisible()
     await expect(page.getByLabel('Triangle')).toBeVisible()
     await expect(page.getByLabel('Fill colour picker')).toBeVisible()
-    await expect(page.getByLabel('Stroke width')).toBeVisible()
+    await expect(page.getByLabel('Stroke width', { exact: true })).toBeVisible()
   })
 
   test('AC6: contextual toolbar hides when the selection is cleared', async ({ page }) => {
@@ -241,7 +241,7 @@ test.describe('22 – Shape Element Customisation', () => {
   test('AC8: fill colour picker reflects the current fill colour', async ({ page }) => {
     await addShapeElement(page)
     // Default fill is #3B82F6
-    const value = await page.getByLabel('Fill').inputValue()
+    const value = await page.getByLabel('Fill', { exact: true }).inputValue()
     expect(value.toLowerCase()).toBe('#3b82f6')
   })
 
@@ -249,7 +249,7 @@ test.describe('22 – Shape Element Customisation', () => {
     page,
   }) => {
     await addShapeElement(page)
-    await page.getByLabel('Fill').evaluate((el: HTMLInputElement) => {
+    await page.getByLabel('Fill', { exact: true }).evaluate((el: HTMLInputElement) => {
       el.value = '#ff0000'
       el.dispatchEvent(new Event('change', { bubbles: true }))
     })
@@ -279,7 +279,7 @@ test.describe('22 – Shape Element Customisation', () => {
     await addShapeElement(page)
 
     // First change fill to a known colour
-    await page.getByLabel('Fill').evaluate((el: HTMLInputElement) => {
+    await page.getByLabel('Fill', { exact: true }).evaluate((el: HTMLInputElement) => {
       el.value = '#00ff00'
       el.dispatchEvent(new Event('change', { bubbles: true }))
     })
@@ -306,7 +306,7 @@ test.describe('22 – Shape Element Customisation', () => {
     await page.getByLabel('Increase stroke width').click()
     await page.getByLabel('Increase stroke width').click()
 
-    await page.getByLabel('Stroke').evaluate((el: HTMLInputElement) => {
+    await page.getByLabel('Stroke', { exact: true }).evaluate((el: HTMLInputElement) => {
       el.value = '#ff0000'
       el.dispatchEvent(new Event('change', { bubbles: true }))
     })
@@ -358,7 +358,7 @@ test.describe('22 – Shape Element Customisation', () => {
 
   test('AC14: "+" button increments stroke width by 1', async ({ page }) => {
     await addShapeElement(page)
-    const input = page.getByLabel('Stroke width')
+    const input = page.getByLabel('Stroke width', { exact: true })
     const before = Number(await input.inputValue())
     await page.getByLabel('Increase stroke width').click()
     expect(Number(await input.inputValue())).toBe(before + 1)
@@ -369,7 +369,7 @@ test.describe('22 – Shape Element Customisation', () => {
     // First increment so decrement is not clamped at 0
     await page.getByLabel('Increase stroke width').click()
     await page.getByLabel('Increase stroke width').click()
-    const input = page.getByLabel('Stroke width')
+    const input = page.getByLabel('Stroke width', { exact: true })
     const before = Number(await input.inputValue())
     await page.getByLabel('Decrease stroke width').click()
     expect(Number(await input.inputValue())).toBe(before - 1)
@@ -379,15 +379,15 @@ test.describe('22 – Shape Element Customisation', () => {
     await addShapeElement(page)
     await page.getByLabel('Decrease stroke width').click()
     await page.getByLabel('Decrease stroke width').click()
-    expect(await page.getByLabel('Stroke width').inputValue()).toBe('0')
+    expect(await page.getByLabel('Stroke width', { exact: true }).inputValue()).toBe('0')
   })
 
   test('AC14: stroke width does not exceed 20', async ({ page }) => {
     await addShapeElement(page)
-    await page.getByLabel('Stroke width').fill('20')
+    await page.getByLabel('Stroke width', { exact: true }).fill('20')
     await page.keyboard.press('Tab')
     await page.getByLabel('Increase stroke width').click()
-    expect(await page.getByLabel('Stroke width').inputValue()).toBe('20')
+    expect(await page.getByLabel('Stroke width', { exact: true }).inputValue()).toBe('20')
   })
 
   test('AC14: changing stroke width updates the element border thickness immediately', async ({
@@ -583,7 +583,7 @@ test.describe('22 – Shape Element Customisation', () => {
 
   test('AC29: fill colour persists after deselecting and reselecting', async ({ page }) => {
     await addShapeElement(page)
-    await page.getByLabel('Fill').evaluate((el: HTMLInputElement) => {
+    await page.getByLabel('Fill', { exact: true }).evaluate((el: HTMLInputElement) => {
       el.value = '#ff00ff'
       el.dispatchEvent(new Event('change', { bubbles: true }))
     })
@@ -592,7 +592,7 @@ test.describe('22 – Shape Element Customisation', () => {
     const el = await getShapeElement(page)
     await el.click()
 
-    expect((await page.getByLabel('Fill').inputValue()).toLowerCase()).toBe('#ff00ff')
+    expect((await page.getByLabel('Fill', { exact: true }).inputValue()).toLowerCase()).toBe('#ff00ff')
   })
 
   test('AC29: shape variant persists after deselecting and reselecting', async ({ page }) => {
@@ -616,7 +616,7 @@ test.describe('22 – Shape Element Customisation', () => {
     const el = await getShapeElement(page)
     await el.click()
 
-    expect(await page.getByLabel('Stroke width').inputValue()).toBe('3')
+    expect(await page.getByLabel('Stroke width', { exact: true }).inputValue()).toBe('3')
   })
 
   // =========================================================================
