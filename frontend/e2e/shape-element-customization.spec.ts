@@ -319,12 +319,15 @@ test.describe('22 – Shape Element Customisation', () => {
   test('AC12: clicking the stroke ⊘ toggle sets stroke to transparent', async ({ page }) => {
     await addShapeElement(page)
 
-    // Give it a stroke width so the control is active
+    // Give it a stroke width so the stroke controls become active.
     await page.getByLabel('Increase stroke width').click()
-
+    // Default stroke is 'transparent', so the first toggle restores to the last
+    // non-transparent value — making the border visible (solid).
+    await page.getByLabel('Toggle Stroke transparency').click()
+    // A second toggle now sets stroke back to transparent, collapsing the border.
     await page.getByLabel('Toggle Stroke transparency').click()
 
-    // After toggling, stroke is transparent — the element border should collapse
+    // After toggling to transparent, the element border should collapse.
     const el = await getShapeElement(page)
     const borderStyle = await el.evaluate((node) => getComputedStyle(node).borderStyle)
     expect(borderStyle).toBe('none')
