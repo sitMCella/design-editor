@@ -152,7 +152,7 @@ export function Toolbar() {
       opacity: 1,
       locked: false,
       fill: '#3B82F6',
-      stroke: '#000000',
+      stroke: 'transparent',
       strokeWidth: 0,
     }
 

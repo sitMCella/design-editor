@@ -26,7 +26,7 @@ const handlePositions: Record<Handle, React.CSSProperties> = {
   br: { bottom: -5, right: -5, cursor: 'nwse-resize' },
 }
 
-export function ShapeElement({ element, isSelected, onSelect, onUpdate }: Props) {
+export function ShapeElement({ element, isSelected, onSelect, onUpdate, onDragEnd }: Props) {
   const dragStartRef = useRef<{
     mouseX: number
     mouseY: number
@@ -131,8 +131,14 @@ export function ShapeElement({ element, isSelected, onSelect, onUpdate }: Props)
       }
     }
 
-    const onMouseUp = () => {
+    const onMouseUp = (me: MouseEvent) => {
       document.body.style.cursor = ''
+      if (isDraggingRef.current && dragStartRef.current) {
+        const zoom = useCanvasStore.getState().zoom
+        const worldDX = (me.clientX - dragStartRef.current.mouseX) / zoom
+        const worldDY = (me.clientY - dragStartRef.current.mouseY) / zoom
+        onDragEnd?.({ x: worldDX, y: worldDY })
+      }
       dragStartRef.current = null
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
