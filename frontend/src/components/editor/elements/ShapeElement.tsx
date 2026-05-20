@@ -1,5 +1,8 @@
 import { useRef } from 'react'
-import type { ShapeElement as ShapeElementType, ArrowElement as ArrowElementType } from '../../../types/canvas'
+import type {
+  ShapeElement as ShapeElementType,
+  ArrowElement as ArrowElementType,
+} from '../../../types/canvas'
 import { useCanvasStore } from '../../../stores/canvasStore'
 
 type Props = {
@@ -60,33 +63,33 @@ export function ShapeElement({ element, isSelected, onSelect, onUpdate, onDragEn
     // This avoids relying on onMouseUp which Firefox resolves before the handler fires.
     const { selectedIds, elements: allElements } = useCanvasStore.getState()
     const coSelected: CoSnap[] = selectedIds
-  .filter((id) => id !== element.id)
-  .map((id): CoSnap | null => {
-    const el = allElements.find((e) => e.id === id)
+      .filter((id) => id !== element.id)
+      .map((id): CoSnap | null => {
+        const el = allElements.find((e) => e.id === id)
 
-    if (!el) return null
+        if (!el) return null
 
-    if (el.type === 'arrow') {
-      const arr = el as ArrowElementType
+        if (el.type === 'arrow') {
+          const arr = el as ArrowElementType
 
-      return {
-        id: el.id,
-        isArrow: true,
-        x1: arr.x1,
-        y1: arr.y1,
-        x2: arr.x2,
-        y2: arr.y2,
-      }
-    }
+          return {
+            id: el.id,
+            isArrow: true,
+            x1: arr.x1,
+            y1: arr.y1,
+            x2: arr.x2,
+            y2: arr.y2,
+          }
+        }
 
-    return {
-      id: el.id,
-      isArrow: false,
-      x: el.x,
-      y: el.y,
-    }
-  })
-  .filter((v): v is CoSnap => v !== null)
+        return {
+          id: el.id,
+          isArrow: false,
+          x: el.x,
+          y: el.y,
+        }
+      })
+      .filter((v): v is CoSnap => v !== null)
 
     dragStartRef.current = {
       mouseX: e.clientX,

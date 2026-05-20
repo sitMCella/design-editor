@@ -33,7 +33,7 @@ async function dragBy(
   from: ReturnType<Page['locator']>,
   dx: number,
   dy: number,
-  steps = 15,
+  steps = 15
 ) {
   const { x, y } = await centre(from)
   await page.mouse.move(x, y)
@@ -206,7 +206,9 @@ test.describe('22 – Shape Element Customisation', () => {
     expect(borderRadius).toBe('50%')
   })
 
-  test('AC7: clicking "Triangle" changes the shape and renders an SVG polygon', async ({ page }) => {
+  test('AC7: clicking "Triangle" changes the shape and renders an SVG polygon', async ({
+    page,
+  }) => {
     await addShapeElement(page)
     await page.getByLabel('Triangle').click()
 
@@ -599,7 +601,9 @@ test.describe('22 – Shape Element Customisation', () => {
     const el = await getShapeElement(page)
     await el.click()
 
-    expect((await page.getByLabel('Fill', { exact: true }).inputValue()).toLowerCase()).toBe('#ff00ff')
+    expect((await page.getByLabel('Fill', { exact: true }).inputValue()).toLowerCase()).toBe(
+      '#ff00ff'
+    )
   })
 
   test('AC29: shape variant persists after deselecting and reselecting', async ({ page }) => {

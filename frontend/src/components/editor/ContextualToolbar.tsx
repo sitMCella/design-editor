@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
-import type { TextElement, ImageElement, ArrowElement, TableElement, ShapeElement } from '../../types/canvas'
+import type {
+  TextElement,
+  ImageElement,
+  ArrowElement,
+  TableElement,
+  ShapeElement,
+} from '../../types/canvas'
 import { fetchAssetFromUrl } from '../../api/assets'
 
 const DEFAULT_ROW_HEIGHT = 40
@@ -580,7 +586,17 @@ function ColourControl({
           getByLabel(label) resolves unambiguously to the <input> element. */}
       <label
         htmlFor={inputId}
-        style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+          whiteSpace: 'nowrap',
+          borderWidth: 0,
+        }}
       >
         {label}
       </label>
@@ -672,7 +688,9 @@ function ShapeToolbar({
 
       <div className="mx-1 h-4 w-px bg-gray-200" />
 
-      <div className={`flex items-center gap-1 ${strokeDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div
+        className={`flex items-center gap-1 ${strokeDisabled ? 'opacity-50 pointer-events-none' : ''}`}
+      >
         <span className="text-xs text-gray-500">Stroke</span>
         <ColourControl
           label="Stroke"
@@ -689,7 +707,17 @@ function ShapeToolbar({
             input only, not the increment/decrement buttons. */}
         <label
           htmlFor="shape-stroke-width"
-          style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+          style={{
+            position: 'absolute',
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: 'hidden',
+            clip: 'rect(0,0,0,0)',
+            whiteSpace: 'nowrap',
+            borderWidth: 0,
+          }}
         >
           Stroke width
         </label>

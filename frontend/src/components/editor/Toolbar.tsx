@@ -1,6 +1,12 @@
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
-import type { TextElement, ImageElement, ArrowElement, TableElement, ShapeElement } from '../../types/canvas'
+import type {
+  TextElement,
+  ImageElement,
+  ArrowElement,
+  TableElement,
+  ShapeElement,
+} from '../../types/canvas'
 
 function LayersIcon() {
   return (
@@ -265,13 +271,7 @@ export function Toolbar() {
           activeTool === 'shape' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:bg-gray-100'
         }`}
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          aria-hidden="true"
-        >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <rect x="3" y="3" width="14" height="14" rx="1" />
         </svg>
       </button>
