@@ -394,7 +394,11 @@ test.describe('22 – Shape Element Customisation', () => {
     page,
   }) => {
     await addShapeElement(page)
+    // Increment once so the stroke controls become active (strokeWidth > 0),
+    // then toggle transparency off so the border is actually visible.
     await page.getByLabel('Increase stroke width').click()
+    await page.getByLabel('Toggle Stroke transparency').click()
+    // Now increment to reach strokeWidth 3.
     await page.getByLabel('Increase stroke width').click()
     await page.getByLabel('Increase stroke width').click()
 
