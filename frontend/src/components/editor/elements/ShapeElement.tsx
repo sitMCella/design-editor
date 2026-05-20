@@ -26,7 +26,7 @@ const handlePositions: Record<Handle, React.CSSProperties> = {
   br: { bottom: -5, right: -5, cursor: 'nwse-resize' },
 }
 
-export function ShapeElement({ element, isSelected, onSelect, onUpdate, onDragEnd }: Props) {
+export function ShapeElement({ element, isSelected, onSelect, onUpdate }: Props) {
   const dragStartRef = useRef<{
     mouseX: number
     mouseY: number
@@ -60,16 +60,33 @@ export function ShapeElement({ element, isSelected, onSelect, onUpdate, onDragEn
     // This avoids relying on onMouseUp which Firefox resolves before the handler fires.
     const { selectedIds, elements: allElements } = useCanvasStore.getState()
     const coSelected: CoSnap[] = selectedIds
-      .filter((id) => id !== element.id)
-      .flatMap((id) => {
-        const el = allElements.find((e) => e.id === id)
-        if (!el) return []
-        if (el.type === 'arrow') {
-          const arr = el as ArrowElementType
-          return [{ id: el.id, isArrow: true as const, x1: arr.x1, y1: arr.y1, x2: arr.x2, y2: arr.y2 }]
-        }
-        return [{ id: el.id, isArrow: false as const, x: el.x, y: el.y }]
-      })
+  .filter((id) => id !== element.id)
+  .map((id): CoSnap | null => {
+    const el = allElements.find((e) => e.id === id)
+
+    if (!el) return null
+
+    if (el.type === 'arrow') {
+      const arr = el as ArrowElementType
+
+      return {
+        id: el.id,
+        isArrow: true,
+        x1: arr.x1,
+        y1: arr.y1,
+        x2: arr.x2,
+        y2: arr.y2,
+      }
+    }
+
+    return {
+      id: el.id,
+      isArrow: false,
+      x: el.x,
+      y: el.y,
+    }
+  })
+  .filter((v): v is CoSnap => v !== null)
 
     dragStartRef.current = {
       mouseX: e.clientX,

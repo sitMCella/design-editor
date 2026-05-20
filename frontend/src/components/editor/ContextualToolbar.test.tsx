@@ -2203,7 +2203,7 @@ describe('AC13 (feat22): stroke control dimmed when strokeWidth is 0', () => {
       elements: [makeShapeElement('s1', { strokeWidth: 0 })],
       selectedIds: ['s1'],
     })
-    const { container } = renderToolbar()
+    renderToolbar()
     // The Stroke toggle button should still be in the DOM but its parent is non-interactive
     const strokeToggle = screen.getByLabelText('Toggle Stroke transparency')
     const wrapper = strokeToggle.closest('[class*="pointer-events-none"]')
