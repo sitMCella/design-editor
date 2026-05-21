@@ -34,14 +34,14 @@ Add a kebab menu (`⋮`) to the info bar of every project card on the home page.
 ┌──────────────────────────────────┐
 │  [thumbnail area]                │
 ├──────────────────────────────────┤
-│  Project Name              [⋮]  │  ← ⋮ always visible
-│  3 elements · 2 days ago         │
+│  Project Name              ║    │  ← ⋮ spans full info-bar height
+│  3 elements · 2 days ago   ║⋮║  │
 └──────────────────────────────────┘
 ```
 
-- The info bar (`px-3 py-2`) gains `flex items-start justify-between` layout.
+- The info bar (`px-3 py-2`) uses `flex items-stretch justify-between` layout.
 - Left side: existing name + subtitle stack (unchanged).
-- Right side: the `⋮` button — `20 × 20 px`, `text-gray-400`, rounded; hover: `bg-gray-100 text-gray-600`.
+- Right side: the `⋮` button — `20px` wide, full height of the info bar (spanning both the name and subtitle rows), `text-gray-400`, rounded; hover: `bg-gray-100 text-gray-600`. The icon is vertically centred within this tall hit area.
 - The `⋮` button does **not** open the project; it stops event propagation so clicking it never triggers the card's open action.
 
 ### Kebab dropdown
@@ -132,7 +132,7 @@ The card is restructured to:
   </div>
 
   {/* Info bar */}
-  <div className="flex items-start justify-between px-3 py-2">
+  <div className="flex items-stretch justify-between px-3 py-2">
     {/* Left: name + subtitle */}
     <div
       role="button"

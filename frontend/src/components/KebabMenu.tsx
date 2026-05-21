@@ -59,7 +59,7 @@ export function KebabMenu({ isOpen, onOpen, onClose, onRename }: Props) {
         ref={buttonRef}
         aria-label="Project options"
         onClick={handleButtonClick}
-        className="ml-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+        className="ml-1 flex w-5 flex-shrink-0 items-center justify-center self-stretch rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600"
       >
         ⋮
       </button>
