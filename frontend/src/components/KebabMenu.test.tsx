@@ -28,6 +28,15 @@ describe('button rendering', () => {
     setup({ isOpen: true })
     expect(screen.getByRole('button', { name: /project options/i })).toBeInTheDocument()
   })
+
+  // The ⋮ button uses self-stretch (not a fixed h-5) so it fills the full
+  // height of the flex container (the info bar), giving a larger hit area.
+  it('uses self-stretch so it fills the container height instead of a fixed 20px', () => {
+    setup()
+    const button = screen.getByRole('button', { name: /project options/i })
+    expect(button).toHaveClass('self-stretch')
+    expect(button).not.toHaveClass('h-5')
+  })
 })
 
 // ---------------------------------------------------------------------------
