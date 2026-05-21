@@ -117,6 +117,20 @@ describe('close behaviours', () => {
     fireEvent.mouseDown(screen.getByText('Design Alpha'))
     expect(onClose).not.toHaveBeenCalled()
   })
+
+  // Regression: the KebabMenu dropdown is rendered via createPortal to
+  // document.body, outside the panelRef in the DOM. Without the fix the
+  // overlay's onMouseDown handler received the mousedown event (via React's
+  // synthetic event propagation through the React tree), saw the target was
+  // outside panelRef, and called onClose — closing the modal before the rename
+  // modal could open. The fix adds e.stopPropagation() to the dropdown div.
+  it('does not call onClose when mousedown occurs on the Rename button inside the open dropdown', () => {
+    const { onClose } = setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.mouseDown(screen.getByRole('button', { name: /rename/i }))
+    expect(onClose).not.toHaveBeenCalled()
+  })
 })
 
 // ---------------------------------------------------------------------------

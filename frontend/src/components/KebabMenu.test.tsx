@@ -90,6 +90,20 @@ describe('dropdown portal', () => {
     setup({ isOpen: false })
     expect(screen.queryByRole('button', { name: /rename/i })).not.toBeInTheDocument()
   })
+
+  // The dropdown div calls e.stopPropagation() on mousedown so that ancestor
+  // React onMouseDown handlers (e.g. the AllDesignsModal overlay's outside-click
+  // guard) are not triggered when the user clicks inside the dropdown.
+  it('does not propagate mousedown to a parent React onMouseDown handler', () => {
+    const parentMouseDown = vi.fn()
+    render(
+      <div onMouseDown={parentMouseDown}>
+        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} />
+      </div>
+    )
+    fireEvent.mouseDown(screen.getByRole('button', { name: /rename/i }))
+    expect(parentMouseDown).not.toHaveBeenCalled()
+  })
 })
 
 // ---------------------------------------------------------------------------
