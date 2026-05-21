@@ -67,6 +67,7 @@ export function KebabMenu({ isOpen, onOpen, onClose, onRename }: Props) {
         createPortal(
           <div
             ref={dropdownRef}
+            onMouseDown={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
               top: posRef.current.top,
