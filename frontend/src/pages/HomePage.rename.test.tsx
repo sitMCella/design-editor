@@ -283,7 +283,9 @@ describe('AC16 — successful rename', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
 
-    await waitFor(() => expect(mockPatchProject).toHaveBeenCalledWith('proj-1', { name: 'Trimmed Name' }))
+    await waitFor(() =>
+      expect(mockPatchProject).toHaveBeenCalledWith('proj-1', { name: 'Trimmed Name' })
+    )
   })
 })
 
@@ -322,9 +324,7 @@ describe('AC17 — API error on rename', () => {
     fireEvent.change(screen.getByLabelText(/design name/i), { target: { value: 'New Name' } })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
 
-    await waitFor(() =>
-      expect(screen.getByText(/server unavailable/i)).toBeInTheDocument()
-    )
+    await waitFor(() => expect(screen.getByText(/server unavailable/i)).toBeInTheDocument())
   })
 
   it('keeps the rename modal open after a failed save', async () => {

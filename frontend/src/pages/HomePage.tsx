@@ -18,9 +18,7 @@ export function HomePage() {
   const [loadingCardId, setLoadingCardId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [renameTarget, setRenameTarget] = useState<{ id: string; currentName: string } | null>(
-    null
-  )
+  const [renameTarget, setRenameTarget] = useState<{ id: string; currentName: string } | null>(null)
   const [renameError, setRenameError] = useState<string | null>(null)
   const navigate = useNavigate()
   const initDesign = useCanvasStore((s) => s.initDesign)

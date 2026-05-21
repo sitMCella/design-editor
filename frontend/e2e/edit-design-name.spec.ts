@@ -50,11 +50,7 @@ async function mockProjectsList(page: Page, projects: ProjectSummary[]) {
   })
 }
 
-async function mockPatchProject(
-  page: Page,
-  projectId: string,
-  opts: { fail?: boolean } = {},
-) {
+async function mockPatchProject(page: Page, projectId: string, opts: { fail?: boolean } = {}) {
   await page.route(new RegExp(`/api/projects/${projectId}$`), async (route) => {
     if (route.request().method() !== 'PATCH') {
       await route.continue()
@@ -64,7 +60,10 @@ async function mockPatchProject(
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
-        body: JSON.stringify({ ok: false, error: { code: 'INTERNAL_ERROR', message: 'Server error' } }),
+        body: JSON.stringify({
+          ok: false,
+          error: { code: 'INTERNAL_ERROR', message: 'Server error' },
+        }),
       })
       return
     }
@@ -500,10 +499,17 @@ test.describe('AC16 – successful rename updates the card', () => {
     await mockPatchProject(page, PROJECT_A.id)
     let callCount = 0
     await page.route(/\/api\/projects$/, async (route) => {
-      if (route.request().method() !== 'GET') { await route.continue(); return }
+      if (route.request().method() !== 'GET') {
+        await route.continue()
+        return
+      }
       callCount++
       const project = callCount === 1 ? PROJECT_A : { ...PROJECT_A, name: 'Renamed Alpha' }
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: [project] }) })
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, data: [project] }),
+      })
     })
     await page.goto('/')
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
@@ -522,10 +528,17 @@ test.describe('AC16 – successful rename updates the card', () => {
     await mockPatchProject(page, PROJECT_A.id)
     let callCount = 0
     await page.route(/\/api\/projects$/, async (route) => {
-      if (route.request().method() !== 'GET') { await route.continue(); return }
+      if (route.request().method() !== 'GET') {
+        await route.continue()
+        return
+      }
       callCount++
       const project = callCount === 1 ? PROJECT_A : { ...PROJECT_A, name: 'Renamed Alpha' }
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: [project] }) })
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, data: [project] }),
+      })
     })
     await page.goto('/')
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
@@ -561,9 +574,7 @@ test.describe('AC17 – API error shows inline error in modal', () => {
     await expect(page.getByRole('dialog')).toBeVisible()
   })
 
-  test('AC17: an error message is shown below the input after a failed save', async ({
-    page,
-  }) => {
+  test('AC17: an error message is shown below the input after a failed save', async ({ page }) => {
     await mockPatchProject(page, PROJECT_A.id, { fail: true })
     await gotoHomeWithProjects(page, [PROJECT_A])
 
@@ -575,9 +586,7 @@ test.describe('AC17 – API error shows inline error in modal', () => {
     await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible()
   })
 
-  test('AC17: Save is re-enabled after a failed save so the user can retry', async ({
-    page,
-  }) => {
+  test('AC17: Save is re-enabled after a failed save so the user can retry', async ({ page }) => {
     await mockPatchProject(page, PROJECT_A.id, { fail: true })
     await gotoHomeWithProjects(page, [PROJECT_A])
 
@@ -637,7 +646,10 @@ test.describe('AC18 – rename flow inside the All Designs modal', () => {
     await expect(allDesignsModal).toBeVisible()
 
     // Click the ⋮ on the first card inside the modal
-    await allDesignsModal.getByRole('button', { name: /project options/i }).first().click()
+    await allDesignsModal
+      .getByRole('button', { name: /project options/i })
+      .first()
+      .click()
     await page.getByRole('button', { name: /^rename$/i }).click()
 
     // Rename modal should open pre-filled with that card's name
@@ -653,10 +665,20 @@ test.describe('AC18 – rename flow inside the All Designs modal', () => {
     await mockPatchProject(page, projects[0].id)
     let callCount = 0
     await page.route(/\/api\/projects$/, async (route) => {
-      if (route.request().method() !== 'GET') { await route.continue(); return }
+      if (route.request().method() !== 'GET') {
+        await route.continue()
+        return
+      }
       callCount++
-      const list = callCount === 1 ? projects : [{ ...projects[0], name: 'Modal Renamed' }, ...projects.slice(1)]
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: list }) })
+      const list =
+        callCount === 1
+          ? projects
+          : [{ ...projects[0], name: 'Modal Renamed' }, ...projects.slice(1)]
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, data: list }),
+      })
     })
     await page.goto('/')
 
@@ -664,7 +686,10 @@ test.describe('AC18 – rename flow inside the All Designs modal', () => {
     const allDesignsModal = page.getByRole('dialog', { name: /all designs/i })
     await expect(allDesignsModal).toBeVisible()
 
-    await allDesignsModal.getByRole('button', { name: /project options/i }).first().click()
+    await allDesignsModal
+      .getByRole('button', { name: /project options/i })
+      .first()
+      .click()
     await page.getByRole('button', { name: /^rename$/i }).click()
 
     await page.getByLabel(/design name/i).fill('Modal Renamed')
@@ -687,17 +712,27 @@ test.describe('AC19 – rename only affects the targeted project', () => {
     await mockPatchProject(page, PROJECT_A.id)
     let callCount = 0
     await page.route(/\/api\/projects$/, async (route) => {
-      if (route.request().method() !== 'GET') { await route.continue(); return }
+      if (route.request().method() !== 'GET') {
+        await route.continue()
+        return
+      }
       callCount++
       const aName = callCount === 1 ? PROJECT_A.name : 'Renamed Alpha'
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: [{ ...PROJECT_A, name: aName }, PROJECT_B] }) })
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, data: [{ ...PROJECT_A, name: aName }, PROJECT_B] }),
+      })
     })
     await page.goto('/')
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
     await expect(page.getByText(PROJECT_B.name)).toBeVisible()
 
     const cards = page.locator('[data-testid="project-card"]')
-    await cards.first().getByRole('button', { name: /project options/i }).click()
+    await cards
+      .first()
+      .getByRole('button', { name: /project options/i })
+      .click()
     await page.getByRole('button', { name: /^rename$/i }).click()
     await page.getByLabel(/design name/i).fill('Renamed Alpha')
     await page.getByRole('button', { name: /^save$/i }).click()

@@ -15,9 +15,7 @@ type Props = {
 export function AllDesignsModal({ projects, loadingCardId, onCardClick, onClose }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [renameTarget, setRenameTarget] = useState<{ id: string; currentName: string } | null>(
-    null
-  )
+  const [renameTarget, setRenameTarget] = useState<{ id: string; currentName: string } | null>(null)
   const [renameError, setRenameError] = useState<string | null>(null)
   const queryClient = useQueryClient()
 

@@ -141,7 +141,9 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const card = page.locator('[data-testid="project-card"]').filter({ hasText: 'Design With Thumb' })
+    const card = page
+      .locator('[data-testid="project-card"]')
+      .filter({ hasText: 'Design With Thumb' })
     await expect(card.locator('img')).toBeVisible()
   })
 
@@ -162,7 +164,9 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const card = page.locator('[data-testid="project-card"]').filter({ hasText: 'Design With Thumb' })
+    const card = page
+      .locator('[data-testid="project-card"]')
+      .filter({ hasText: 'Design With Thumb' })
     await expect(card.locator('img')).toHaveAttribute('src', '/api/projects/proj-1/thumbnail')
   })
 
@@ -276,7 +280,10 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const img = page.locator('[data-testid="project-card"]').filter({ hasText: 'Thumb Design' }).locator('img')
+    const img = page
+      .locator('[data-testid="project-card"]')
+      .filter({ hasText: 'Thumb Design' })
+      .locator('img')
     await expect(img).toHaveClass(/object-cover/)
   })
 
@@ -487,7 +494,10 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
     await page.goto('/')
 
     await expect(
-      page.locator('[data-testid="project-card"]').filter({ hasText: 'Design Alpha' }).locator('img')
+      page
+        .locator('[data-testid="project-card"]')
+        .filter({ hasText: 'Design Alpha' })
+        .locator('img')
     ).toBeVisible()
     await expect(
       page.locator('[data-testid="project-card"]').filter({ hasText: 'Design Beta' }).locator('img')

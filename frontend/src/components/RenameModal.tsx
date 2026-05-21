@@ -55,7 +55,11 @@ export function RenameModal({ currentName, onConfirm, onClose, isLoading, error 
           onKeyDown={handleKeyDown}
           className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-2 text-sm text-red-500">
+            {error}
+          </p>
+        )}
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onClose}
