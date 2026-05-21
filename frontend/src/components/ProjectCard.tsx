@@ -46,7 +46,7 @@ export function ProjectCard({
       </div>
 
       {/* Info bar */}
-      <div className="flex items-start justify-between px-3 py-2">
+      <div className="flex items-stretch justify-between px-3 py-2">
         {/* Left: name + subtitle — click to open */}
         <div
           role="button"
