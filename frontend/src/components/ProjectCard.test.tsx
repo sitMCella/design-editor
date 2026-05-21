@@ -202,4 +202,20 @@ describe('AC1 (feat23) — kebab menu button', () => {
     fireEvent.click(screen.getByRole('button', { name: /project options/i }))
     expect(onMenuOpenChange).toHaveBeenCalledWith(false)
   })
+
+  // The ⋮ button stretches to the full info-bar height (self-stretch), giving
+  // it a hit area that spans both the name and subtitle rows. The info-bar
+  // flex container must use items-stretch to enable this.
+  it('⋮ button has self-stretch so it spans the full info-bar height', () => {
+    render(<ProjectCard {...defaultProps} />)
+    const kebab = screen.getByRole('button', { name: /project options/i })
+    expect(kebab).toHaveClass('self-stretch')
+    expect(kebab).not.toHaveClass('h-5')
+  })
+
+  it('info-bar container uses items-stretch so the ⋮ button fills the full row height', () => {
+    render(<ProjectCard {...defaultProps} />)
+    const kebab = screen.getByRole('button', { name: /project options/i })
+    expect(kebab.parentElement).toHaveClass('items-stretch')
+  })
 })
