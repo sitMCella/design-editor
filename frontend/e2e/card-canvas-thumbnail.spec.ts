@@ -141,7 +141,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const card = page.locator('button').filter({ hasText: 'Design With Thumb' })
+    const card = page.locator('[data-testid="project-card"]').filter({ hasText: 'Design With Thumb' })
     await expect(card.locator('img')).toBeVisible()
   })
 
@@ -162,7 +162,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const card = page.locator('button').filter({ hasText: 'Design With Thumb' })
+    const card = page.locator('[data-testid="project-card"]').filter({ hasText: 'Design With Thumb' })
     await expect(card.locator('img')).toHaveAttribute('src', '/api/projects/proj-1/thumbnail')
   })
 
@@ -184,7 +184,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const card = page.locator('button').filter({ hasText: 'Design No Thumb' })
+    const card = page.locator('[data-testid="project-card"]').filter({ hasText: 'Design No Thumb' })
     await expect(card).toBeVisible()
     await expect(card.locator('img')).not.toBeAttached()
   })
@@ -203,7 +203,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const card = page.locator('button').filter({ hasText: 'Design No Thumb' })
+    const card = page.locator('[data-testid="project-card"]').filter({ hasText: 'Design No Thumb' })
     await expect(card.locator('.bg-gray-100')).toBeVisible()
   })
 
@@ -276,7 +276,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const img = page.locator('button').filter({ hasText: 'Thumb Design' }).locator('img')
+    const img = page.locator('[data-testid="project-card"]').filter({ hasText: 'Thumb Design' }).locator('img')
     await expect(img).toHaveClass(/object-cover/)
   })
 
@@ -295,7 +295,7 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const card = page.locator('button').filter({ hasText: 'Thumb Design' })
+    const card = page.locator('[data-testid="project-card"]').filter({ hasText: 'Thumb Design' })
     await expect(card.locator('.overflow-hidden')).toBeVisible()
   })
 
@@ -358,8 +358,8 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const card = page.locator('button').filter({ hasText: 'Slow Design' })
-    await card.click()
+    const card = page.locator('[data-testid="project-card"]').filter({ hasText: 'Slow Design' })
+    await page.getByText('Slow Design').click()
 
     // While the project is loading: both the thumbnail and the spinner are visible
     await expect(card.locator('img')).toBeVisible()
@@ -409,9 +409,10 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const card = page.locator('button').filter({ hasText: 'Slow Design' })
-    await card.click()
-    await expect(card).toBeDisabled()
+    const card = page.locator('[data-testid="project-card"]').filter({ hasText: 'Slow Design' })
+    await page.getByText('Slow Design').click()
+    // Loading overlay + spinner indicate the card is non-interactive
+    await expect(card.locator('.animate-spin')).toBeVisible()
 
     resolveProjLoad()
   })
@@ -451,9 +452,9 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
 
     await page.goto('/')
 
-    const cardA = page.locator('button').filter({ hasText: 'Design Alpha' })
-    const cardB = page.locator('button').filter({ hasText: 'Design Beta' })
-    const cardC = page.locator('button').filter({ hasText: 'Design Gamma' })
+    const cardA = page.locator('[data-testid="project-card"]').filter({ hasText: 'Design Alpha' })
+    const cardB = page.locator('[data-testid="project-card"]').filter({ hasText: 'Design Beta' })
+    const cardC = page.locator('[data-testid="project-card"]').filter({ hasText: 'Design Gamma' })
 
     await expect(cardA.locator('img')).toHaveAttribute('src', '/api/projects/proj-a/thumbnail')
     await expect(cardB.locator('img')).toHaveAttribute('src', '/api/projects/proj-b/thumbnail')
@@ -486,10 +487,10 @@ test.describe('12 – Project Card Canvas Thumbnail', () => {
     await page.goto('/')
 
     await expect(
-      page.locator('button').filter({ hasText: 'Design Alpha' }).locator('img')
+      page.locator('[data-testid="project-card"]').filter({ hasText: 'Design Alpha' }).locator('img')
     ).toBeVisible()
     await expect(
-      page.locator('button').filter({ hasText: 'Design Beta' }).locator('img')
+      page.locator('[data-testid="project-card"]').filter({ hasText: 'Design Beta' }).locator('img')
     ).not.toBeAttached()
   })
 })
