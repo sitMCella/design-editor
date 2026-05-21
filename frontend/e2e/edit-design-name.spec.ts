@@ -405,9 +405,7 @@ test.describe('AC14 – Enter submits the rename', () => {
 
   test('AC14: pressing Enter with a valid new name submits the rename', async ({ page }) => {
     await mockPatchProject(page, PROJECT_A.id)
-    await mockProjectsList(page, [{ ...PROJECT_A, name: 'Enter Renamed' }])
-    await page.goto('/')
-    await expect(page.getByText(PROJECT_A.name)).toBeVisible()
+    await gotoHomeWithProjects(page, [PROJECT_A])
 
     await page.getByRole('button', { name: /project options/i }).click()
     await page.getByRole('button', { name: /^rename$/i }).click()
@@ -500,8 +498,13 @@ test.describe('AC16 – successful rename updates the card', () => {
 
   test('AC16: modal closes after a successful save', async ({ page }) => {
     await mockPatchProject(page, PROJECT_A.id)
-    // After invalidation, the refetch returns the updated name
-    await mockProjectsList(page, [{ ...PROJECT_A, name: 'Renamed Alpha' }])
+    let callCount = 0
+    await page.route(/\/api\/projects$/, async (route) => {
+      if (route.request().method() !== 'GET') { await route.continue(); return }
+      callCount++
+      const project = callCount === 1 ? PROJECT_A : { ...PROJECT_A, name: 'Renamed Alpha' }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: [project] }) })
+    })
     await page.goto('/')
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
 
@@ -517,7 +520,13 @@ test.describe('AC16 – successful rename updates the card', () => {
     page,
   }) => {
     await mockPatchProject(page, PROJECT_A.id)
-    await mockProjectsList(page, [{ ...PROJECT_A, name: 'Renamed Alpha' }])
+    let callCount = 0
+    await page.route(/\/api\/projects$/, async (route) => {
+      if (route.request().method() !== 'GET') { await route.continue(); return }
+      callCount++
+      const project = callCount === 1 ? PROJECT_A : { ...PROJECT_A, name: 'Renamed Alpha' }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: [project] }) })
+    })
     await page.goto('/')
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
 
@@ -642,9 +651,13 @@ test.describe('AC18 – rename flow inside the All Designs modal', () => {
   }) => {
     const projects = manyProjects()
     await mockPatchProject(page, projects[0].id)
-    const updatedProjects = [...projects]
-    updatedProjects[0] = { ...projects[0], name: 'Modal Renamed' }
-    await mockProjectsList(page, updatedProjects)
+    let callCount = 0
+    await page.route(/\/api\/projects$/, async (route) => {
+      if (route.request().method() !== 'GET') { await route.continue(); return }
+      callCount++
+      const list = callCount === 1 ? projects : [{ ...projects[0], name: 'Modal Renamed' }, ...projects.slice(1)]
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: list }) })
+    })
     await page.goto('/')
 
     await page.getByRole('button', { name: /view all designs/i }).click()
@@ -672,11 +685,13 @@ test.describe('AC19 – rename only affects the targeted project', () => {
 
   test('AC19: other cards retain their original names after a rename', async ({ page }) => {
     await mockPatchProject(page, PROJECT_A.id)
-    // After refetch: A is renamed, B is unchanged
-    await mockProjectsList(page, [
-      { ...PROJECT_A, name: 'Renamed Alpha' },
-      PROJECT_B,
-    ])
+    let callCount = 0
+    await page.route(/\/api\/projects$/, async (route) => {
+      if (route.request().method() !== 'GET') { await route.continue(); return }
+      callCount++
+      const aName = callCount === 1 ? PROJECT_A.name : 'Renamed Alpha'
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: [{ ...PROJECT_A, name: aName }, PROJECT_B] }) })
+    })
     await page.goto('/')
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
     await expect(page.getByText(PROJECT_B.name)).toBeVisible()
