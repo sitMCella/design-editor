@@ -26,14 +26,7 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
 
     generating.current = true
 
-    // worldRef is DesignSurface (no transform). The zoom/pan transform lives
-    // on the parent world-layer div. We must clear that, not the node itself.
     const node = worldRef.current
-    const worldLayer = node.parentElement
-    if (!worldLayer) {
-      generating.current = false
-      return
-    }
 
     const captureX = bbox.x - THUMBNAIL_PADDING
     const captureY = bbox.y - THUMBNAIL_PADDING
@@ -41,19 +34,22 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
     const captureH = bbox.height + THUMBNAIL_PADDING * 2
     const scale = Math.min(THUMB_MAX_W / captureW, THUMB_MAX_H / captureH)
 
-    const prevLayerTransform = worldLayer.style.transform
-    const prevNodeWidth = node.style.width
-    const prevNodeHeight = node.style.height
-
-    worldLayer.style.transform = 'none'
-
     const nodeRight = captureX + captureW
     const nodeBottom = captureY + captureH
-    node.style.width = `${nodeRight}px`
-    node.style.height = `${nodeBottom}px`
+
+    // Clone DesignSurface off-screen so we never mutate the live world-layer
+    // transform (which would cause a visible canvas jump during the async capture).
+    const clone = node.cloneNode(true) as HTMLElement
+    clone.style.position = 'fixed'
+    clone.style.left = '-99999px'
+    clone.style.top = '0'
+    clone.style.width = `${nodeRight}px`
+    clone.style.height = `${nodeBottom}px`
+    clone.style.pointerEvents = 'none'
+    document.body.appendChild(clone)
 
     requestAnimationFrame(() => {
-      html2canvas(node, {
+      html2canvas(clone, {
         x: 0,
         y: 0,
         width: nodeRight,
@@ -64,9 +60,7 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
         backgroundColor: backgroundColor === 'transparent' ? '#F3F4F6' : backgroundColor,
       })
         .then((fullCanvas) => {
-          worldLayer.style.transform = prevLayerTransform
-          node.style.width = prevNodeWidth
-          node.style.height = prevNodeHeight
+          document.body.removeChild(clone)
 
           // Crop to the desired region using 2D API.
           const croppedW = Math.round(captureW * scale)
@@ -106,9 +100,7 @@ export function useThumbnail(designId: string, worldRef: RefObject<HTMLDivElemen
           )
         })
         .catch(() => {
-          worldLayer.style.transform = prevLayerTransform
-          node.style.width = prevNodeWidth
-          node.style.height = prevNodeHeight
+          document.body.removeChild(clone)
           generating.current = false
         })
     })

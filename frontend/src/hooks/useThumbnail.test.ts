@@ -102,7 +102,7 @@ describe('AC1 — trigger on auto-save completion', () => {
 
     await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
     expect(mockHtml2canvas).toHaveBeenCalledWith(
-      fakeDiv,
+      expect.any(HTMLElement),
       expect.objectContaining({
         useCORS: true,
         logging: false,
@@ -437,35 +437,17 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
     expect(opts.height).toBe(174)
   })
 
-  it('clears the world-layer CSS transform before calling html2canvas', async () => {
-    // The transform lives on worldLayer (node.parentElement), not on the node itself.
+  it('does not modify the world-layer CSS transform during or after html2canvas', async () => {
     const worldLayerDiv = document.createElement('div')
     worldLayerDiv.style.transform = 'translate(100px, 50px) scale(1.5)'
     const nodeDiv = document.createElement('div')
     worldLayerDiv.appendChild(nodeDiv)
 
-    let transformAtCallTime = ''
+    const transformsDuringSave: string[] = []
     mockHtml2canvas.mockImplementationOnce(async () => {
-      transformAtCallTime = worldLayerDiv.style.transform
+      transformsDuringSave.push(worldLayerDiv.style.transform)
       return makeCanvas() as unknown as HTMLCanvasElement
     })
-
-    useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
-    renderHook(() => useThumbnail('design-1', makeRef(nodeDiv)))
-
-    act(() => {
-      useCanvasStore.setState({ isDirty: false })
-    })
-
-    await waitFor(() => expect(mockHtml2canvas).toHaveBeenCalled())
-    expect(transformAtCallTime).toBe('none')
-  })
-
-  it('restores the world-layer CSS transform after html2canvas resolves', async () => {
-    const worldLayerDiv = document.createElement('div')
-    worldLayerDiv.style.transform = 'translate(100px, 50px) scale(1.5)'
-    const nodeDiv = document.createElement('div')
-    worldLayerDiv.appendChild(nodeDiv)
 
     useCanvasStore.setState({ isDirty: true, elements: [fakeElement] })
     renderHook(() => useThumbnail('design-1', makeRef(nodeDiv)))
@@ -479,6 +461,8 @@ describe('AC15/16/17/18 — bounding-box capture options', () => {
       await new Promise((r) => setTimeout(r, 50))
     })
 
+    // The live world-layer transform must never be mutated.
+    expect(transformsDuringSave).toEqual(['translate(100px, 50px) scale(1.5)'])
     expect(worldLayerDiv.style.transform).toBe('translate(100px, 50px) scale(1.5)')
   })
 })
