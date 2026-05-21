@@ -9,10 +9,13 @@ import { projectRoutes } from './routes/projects.js';
 
 export async function buildServer() {
   const isDev = process.env.NODE_ENV !== 'production';
+  // 50 MB body limit: locally-uploaded images are stored as base64 data URLs
+  // in the canvas JSON, which can easily exceed Fastify's default 1 MB limit.
   const app = Fastify({
     logger: isDev
       ? { level: 'info', transport: { target: 'pino/file', options: { destination: 1 } } }
       : true,
+    bodyLimit: 50 * 1024 * 1024,
   });
 
   await migrate();
