@@ -238,6 +238,30 @@ export async function projectRoutes(app: FastifyInstance): Promise<void> {
     return reply.status(204).send();
   });
 
+  // DELETE /projects/:id — permanently delete a project and its thumbnail
+  app.delete<{ Params: { id: string } }>('/projects/:id', async (request, reply) => {
+    const { id } = request.params;
+
+    const [project] = await sql<{ id: string }[]>`SELECT id FROM project WHERE id = ${id}`;
+    if (!project) {
+      return reply
+        .status(404)
+        .send({ ok: false, error: { code: 'NOT_FOUND', message: 'Project not found' } });
+    }
+
+    await sql`DELETE FROM project WHERE id = ${id}`;
+
+    const thumbPath = join(assetDir(), `thumb_${id}.jpg`);
+    try {
+      const { unlink } = await import('node:fs/promises');
+      await unlink(thumbPath);
+    } catch {
+      // File may not exist — skip silently
+    }
+
+    return reply.status(204).send();
+  });
+
   // GET /projects/:id/thumbnail — stream the thumbnail file
   app.get<{ Params: { id: string } }>('/projects/:id/thumbnail', async (request, reply) => {
     const { id } = request.params;

@@ -8,6 +8,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof KebabMenu>> = {}) 
     onOpen: vi.fn(),
     onClose: vi.fn(),
     onRename: vi.fn(),
+    onDelete: vi.fn(),
     ...overrides,
   }
   render(<KebabMenu {...props} />)
@@ -68,7 +69,7 @@ describe('event propagation', () => {
     const parentClick = vi.fn()
     render(
       <div onClick={parentClick}>
-        <KebabMenu isOpen={false} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} />
+        <KebabMenu isOpen={false} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} onDelete={vi.fn()} />
       </div>
     )
     fireEvent.click(screen.getByRole('button', { name: /project options/i }))
@@ -98,7 +99,7 @@ describe('dropdown portal', () => {
     const parentMouseDown = vi.fn()
     render(
       <div onMouseDown={parentMouseDown}>
-        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} />
+        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} onDelete={vi.fn()} />
       </div>
     )
     fireEvent.mouseDown(screen.getByRole('button', { name: /rename/i }))
@@ -121,7 +122,7 @@ describe('Rename action', () => {
     const parentClick = vi.fn()
     render(
       <div onClick={parentClick}>
-        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} />
+        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} onDelete={vi.fn()} />
       </div>
     )
     fireEvent.click(screen.getByRole('button', { name: /rename/i }))

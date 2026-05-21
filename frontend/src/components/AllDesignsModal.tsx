@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ProjectSummary } from '../api/projects'
-import { patchProject } from '../api/projects'
+import { deleteProject, patchProject } from '../api/projects'
 import { ProjectCard } from './ProjectCard'
 import { RenameModal } from './RenameModal'
+import { DeleteConfirmModal } from './DeleteConfirmModal'
 
 type Props = {
   projects: ProjectSummary[]
@@ -17,7 +18,22 @@ export function AllDesignsModal({ projects, loadingCardId, onCardClick, onClose 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [renameTarget, setRenameTarget] = useState<{ id: string; currentName: string } | null>(null)
   const [renameError, setRenameError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const queryClient = useQueryClient()
+
+  const { mutate: doDelete, isPending: isDeleting } = useMutation({
+    mutationFn: (id: string) => deleteProject(id),
+    onSuccess: () => {
+      setDeleteTarget(null)
+      void queryClient.invalidateQueries({ queryKey: ['designs'] })
+    },
+    onError: () => {
+      setDeleteTarget(null)
+      setDeleteError('Could not delete the design. Please try again.')
+      setTimeout(() => setDeleteError(null), 4000)
+    },
+  })
 
   const { mutate: renameProject, isPending: isRenaming } = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => patchProject(id, { name }),
@@ -33,11 +49,11 @@ export function AllDesignsModal({ projects, loadingCardId, onCardClick, onClose 
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !renameTarget) onClose()
+      if (e.key === 'Escape' && !renameTarget && !deleteTarget) onClose()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, renameTarget])
+  }, [onClose, renameTarget, deleteTarget])
 
   function handleOverlayMouseDown(e: React.MouseEvent<HTMLDivElement>) {
     if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -86,6 +102,10 @@ export function AllDesignsModal({ projects, loadingCardId, onCardClick, onClose 
                     setOpenMenuId(null)
                     setRenameTarget({ id: project.id, currentName: project.name })
                   }}
+                  onDelete={() => {
+                    setOpenMenuId(null)
+                    setDeleteTarget({ id: project.id, name: project.name })
+                  }}
                   isMenuOpen={openMenuId === project.id}
                   onMenuOpenChange={(open) => setOpenMenuId(open ? project.id : null)}
                 />
@@ -106,6 +126,21 @@ export function AllDesignsModal({ projects, loadingCardId, onCardClick, onClose 
           isLoading={isRenaming}
           error={renameError}
         />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          projectName={deleteTarget.name}
+          onConfirm={() => doDelete(deleteTarget.id)}
+          onClose={() => setDeleteTarget(null)}
+          isLoading={isDeleting}
+        />
+      )}
+
+      {deleteError && (
+        <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+          {deleteError}
+        </div>
       )}
     </>
   )

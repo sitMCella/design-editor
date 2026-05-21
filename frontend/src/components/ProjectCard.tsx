@@ -7,6 +7,7 @@ type Props = {
   isLoading: boolean
   onClick: () => void
   onRename: () => void
+  onDelete: () => void
   isMenuOpen: boolean
   onMenuOpenChange: (open: boolean) => void
 }
@@ -16,6 +17,7 @@ export function ProjectCard({
   isLoading,
   onClick,
   onRename,
+  onDelete,
   isMenuOpen,
   onMenuOpenChange,
 }: Props) {
@@ -73,6 +75,7 @@ export function ProjectCard({
           onOpen={() => onMenuOpenChange(true)}
           onClose={() => onMenuOpenChange(false)}
           onRename={onRename}
+          onDelete={onDelete}
         />
       </div>
     </div>

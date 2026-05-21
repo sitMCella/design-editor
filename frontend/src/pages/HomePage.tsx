@@ -7,7 +7,8 @@ import { ProjectCard } from '../components/ProjectCard'
 import { ProjectCardSkeleton } from '../components/ProjectCardSkeleton'
 import { AllDesignsModal } from '../components/AllDesignsModal'
 import { RenameModal } from '../components/RenameModal'
-import { createProject, getProject, getProjects, patchProject } from '../api/projects'
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal'
+import { createProject, deleteProject, getProject, getProjects, patchProject } from '../api/projects'
 
 const RECENT_LIMIT = 6
 
@@ -20,6 +21,8 @@ export function HomePage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [renameTarget, setRenameTarget] = useState<{ id: string; currentName: string } | null>(null)
   const [renameError, setRenameError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const navigate = useNavigate()
   const initDesign = useCanvasStore((s) => s.initDesign)
   const loadDesign = useCanvasStore((s) => s.loadDesign)
@@ -45,6 +48,19 @@ export function HomePage() {
     },
     onError: (err) => {
       setCreateError(err instanceof Error ? err.message : 'Failed to create project')
+    },
+  })
+
+  const { mutate: doDelete, isPending: isDeleting } = useMutation({
+    mutationFn: (id: string) => deleteProject(id),
+    onSuccess: () => {
+      setDeleteTarget(null)
+      void queryClient.invalidateQueries({ queryKey: ['designs'] })
+    },
+    onError: () => {
+      setDeleteTarget(null)
+      setDeleteError('Could not delete the design. Please try again.')
+      setTimeout(() => setDeleteError(null), 4000)
     },
   })
 
@@ -147,6 +163,10 @@ export function HomePage() {
                     setOpenMenuId(null)
                     setRenameTarget({ id: project.id, currentName: project.name })
                   }}
+                  onDelete={() => {
+                    setOpenMenuId(null)
+                    setDeleteTarget({ id: project.id, name: project.name })
+                  }}
                   isMenuOpen={openMenuId === project.id}
                   onMenuOpenChange={(open) => setOpenMenuId(open ? project.id : null)}
                 />
@@ -183,6 +203,21 @@ export function HomePage() {
           onCardClick={(id) => void handleOpenProject(id)}
           onClose={() => setIsAllDesignsOpen(false)}
         />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          projectName={deleteTarget.name}
+          onConfirm={() => doDelete(deleteTarget.id)}
+          onClose={() => setDeleteTarget(null)}
+          isLoading={isDeleting}
+        />
+      )}
+
+      {deleteError && (
+        <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+          {deleteError}
+        </div>
       )}
 
       {renameTarget && (
