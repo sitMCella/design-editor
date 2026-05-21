@@ -20,7 +20,7 @@ export function ProjectCard({
   onMenuOpenChange,
 }: Props) {
   return (
-    <div className="group relative w-full rounded-lg border border-gray-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md">
+    <div data-testid="project-card" className="group relative w-full rounded-lg border border-gray-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md">
       {/* Thumbnail area — click to open */}
       <div
         role="button"
