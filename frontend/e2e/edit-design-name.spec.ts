@@ -108,8 +108,8 @@ test.describe('AC1 – kebab button visible on home page cards', () => {
     const cards = page.locator('[data-testid="project-card"]')
     await expect(cards).toHaveCount(2)
 
-    await expect(cards.first().getByRole('button', { name: /open menu/i })).toBeVisible()
-    await expect(cards.last().getByRole('button', { name: /open menu/i })).toBeVisible()
+    await expect(cards.first().getByRole('button', { name: /project options/i })).toBeVisible()
+    await expect(cards.last().getByRole('button', { name: /project options/i })).toBeVisible()
   })
 })
 
@@ -125,19 +125,19 @@ test.describe('AC3 – dropdown opens and closes via kebab button', () => {
   test('AC3: clicking ⋮ opens a dropdown with a Rename item', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
 
-    await expect(page.getByRole('menuitem', { name: /rename/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^rename$/i })).toBeVisible()
   })
 
   test('AC3: clicking ⋮ again closes the dropdown', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await expect(page.getByRole('menuitem', { name: /rename/i })).toBeVisible()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await expect(page.getByRole('button', { name: /^rename$/i })).toBeVisible()
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await expect(page.getByRole('menuitem', { name: /rename/i })).not.toBeVisible()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await expect(page.getByRole('button', { name: /^rename$/i })).not.toBeVisible()
   })
 })
 
@@ -154,15 +154,15 @@ test.describe('AC4 – only one dropdown open at a time', () => {
     await gotoHomeWithProjects(page, [PROJECT_A, PROJECT_B])
 
     const cards = page.locator('[data-testid="project-card"]')
-    const menuBtnA = cards.first().getByRole('button', { name: /open menu/i })
-    const menuBtnB = cards.last().getByRole('button', { name: /open menu/i })
+    const menuBtnA = cards.first().getByRole('button', { name: /project options/i })
+    const menuBtnB = cards.last().getByRole('button', { name: /project options/i })
 
     await menuBtnA.click()
-    await expect(page.getByRole('menuitem', { name: /rename/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^rename$/i })).toBeVisible()
 
     await menuBtnB.click()
     // Still exactly one "Rename" item visible (from card B's dropdown)
-    await expect(page.getByRole('menuitem', { name: /rename/i })).toHaveCount(1)
+    await expect(page.getByRole('button', { name: /^rename$/i })).toHaveCount(1)
   })
 })
 
@@ -178,13 +178,13 @@ test.describe('AC5 – clicking outside closes the dropdown', () => {
   test('AC5: clicking outside the dropdown closes it', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await expect(page.getByRole('menuitem', { name: /rename/i })).toBeVisible()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await expect(page.getByRole('button', { name: /^rename$/i })).toBeVisible()
 
     // Click on the page background (far from the card)
     await page.mouse.click(10, 10)
 
-    await expect(page.getByRole('menuitem', { name: /rename/i })).not.toBeVisible()
+    await expect(page.getByRole('button', { name: /^rename$/i })).not.toBeVisible()
   })
 })
 
@@ -200,12 +200,12 @@ test.describe('AC6 – Escape closes the dropdown', () => {
   test('AC6: pressing Escape closes the dropdown', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await expect(page.getByRole('menuitem', { name: /rename/i })).toBeVisible()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await expect(page.getByRole('button', { name: /^rename$/i })).toBeVisible()
 
     await page.keyboard.press('Escape')
 
-    await expect(page.getByRole('menuitem', { name: /rename/i })).not.toBeVisible()
+    await expect(page.getByRole('button', { name: /^rename$/i })).not.toBeVisible()
   })
 })
 
@@ -221,7 +221,7 @@ test.describe('AC7 – kebab click does not open the project', () => {
   test('AC7: clicking ⋮ does not navigate to the editor', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
 
     await expect(page).toHaveURL('/')
   })
@@ -257,11 +257,11 @@ test.describe('AC9 – Rename opens modal pre-filled', () => {
   test('AC9: selecting Rename closes dropdown and opens the rename modal', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     // Dropdown gone
-    await expect(page.getByRole('menuitem', { name: /rename/i })).not.toBeVisible()
+    await expect(page.getByRole('button', { name: /^rename$/i })).not.toBeVisible()
     // Modal visible
     await expect(page.getByRole('dialog')).toBeVisible()
   })
@@ -271,8 +271,8 @@ test.describe('AC9 – Rename opens modal pre-filled', () => {
   }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     const input = page.getByLabel(/design name/i)
     await expect(input).toHaveValue(PROJECT_A.name)
@@ -293,8 +293,8 @@ test.describe('AC10 – input text selected on modal open', () => {
   }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     // If the text is selected, typing replaces it entirely
     await page.keyboard.type('Replaced Name')
@@ -316,8 +316,8 @@ test.describe('AC11 – Save disabled for empty input', () => {
   test('AC11: Save is disabled when the input is cleared', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     await page.getByLabel(/design name/i).fill('')
 
@@ -327,8 +327,8 @@ test.describe('AC11 – Save disabled for empty input', () => {
   test('AC11: Save is disabled when input contains only whitespace', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     await page.getByLabel(/design name/i).fill('   ')
 
@@ -350,8 +350,8 @@ test.describe('AC12 – Save disabled when name unchanged', () => {
   }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     // The input opens pre-filled — Save should already be disabled
     await expect(page.getByRole('button', { name: /^save$/i })).toBeDisabled()
@@ -362,8 +362,8 @@ test.describe('AC12 – Save disabled when name unchanged', () => {
   }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     const input = page.getByLabel(/design name/i)
     await input.fill('')
@@ -385,8 +385,8 @@ test.describe('AC13 – Save enabled for a valid new name', () => {
   test('AC13: Save becomes enabled after typing a different name', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     await page.getByLabel(/design name/i).fill('Totally New Name')
 
@@ -409,8 +409,8 @@ test.describe('AC14 – Enter submits the rename', () => {
     await page.goto('/')
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     await page.getByLabel(/design name/i).fill('Enter Renamed')
     await page.keyboard.press('Enter')
@@ -423,8 +423,8 @@ test.describe('AC14 – Enter submits the rename', () => {
   }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     // Name unchanged → Save disabled
     await page.keyboard.press('Enter')
@@ -446,8 +446,8 @@ test.describe('AC15 – dismissing the modal makes no API call', () => {
   test('AC15: clicking Cancel closes the modal', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     await page.getByRole('button', { name: /cancel/i }).click()
 
@@ -457,8 +457,8 @@ test.describe('AC15 – dismissing the modal makes no API call', () => {
   test('AC15: pressing Escape closes the modal', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     await page.keyboard.press('Escape')
 
@@ -468,8 +468,8 @@ test.describe('AC15 – dismissing the modal makes no API call', () => {
   test('AC15: clicking the backdrop closes the modal', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     await expect(page.getByRole('dialog')).toBeVisible()
     // Click the fixed overlay backdrop
@@ -481,8 +481,8 @@ test.describe('AC15 – dismissing the modal makes no API call', () => {
   test('AC15: Cancel does not navigate away from the home page', async ({ page }) => {
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
     await page.getByRole('button', { name: /cancel/i }).click()
 
     await expect(page).toHaveURL('/')
@@ -505,8 +505,8 @@ test.describe('AC16 – successful rename updates the card', () => {
     await page.goto('/')
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
     await page.getByLabel(/design name/i).fill('Renamed Alpha')
     await page.getByRole('button', { name: /^save$/i }).click()
 
@@ -521,8 +521,8 @@ test.describe('AC16 – successful rename updates the card', () => {
     await page.goto('/')
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
     await page.getByLabel(/design name/i).fill('Renamed Alpha')
     await page.getByRole('button', { name: /^save$/i }).click()
 
@@ -544,8 +544,8 @@ test.describe('AC17 – API error shows inline error in modal', () => {
     await mockPatchProject(page, PROJECT_A.id, { fail: true })
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
     await page.getByLabel(/design name/i).fill('Will Fail')
     await page.getByRole('button', { name: /^save$/i }).click()
 
@@ -558,8 +558,8 @@ test.describe('AC17 – API error shows inline error in modal', () => {
     await mockPatchProject(page, PROJECT_A.id, { fail: true })
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
     await page.getByLabel(/design name/i).fill('Will Fail')
     await page.getByRole('button', { name: /^save$/i }).click()
 
@@ -572,8 +572,8 @@ test.describe('AC17 – API error shows inline error in modal', () => {
     await mockPatchProject(page, PROJECT_A.id, { fail: true })
     await gotoHomeWithProjects(page, [PROJECT_A])
 
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
     await page.getByLabel(/design name/i).fill('Will Fail')
     await page.getByRole('button', { name: /^save$/i }).click()
 
@@ -608,12 +608,12 @@ test.describe('AC18 – rename flow inside the All Designs modal', () => {
     await mockProjectsList(page, manyProjects())
     await page.goto('/')
 
-    await page.getByRole('link', { name: /view all designs/i }).click()
+    await page.getByRole('button', { name: /view all designs/i }).click()
     await expect(page.getByRole('dialog', { name: /all designs/i })).toBeVisible()
 
     // At least one kebab button visible inside the modal
     const modal = page.getByRole('dialog', { name: /all designs/i })
-    await expect(modal.getByRole('button', { name: /open menu/i }).first()).toBeVisible()
+    await expect(modal.getByRole('button', { name: /project options/i }).first()).toBeVisible()
   })
 
   test('AC18: Rename from inside All Designs modal pre-fills the correct name', async ({
@@ -623,13 +623,13 @@ test.describe('AC18 – rename flow inside the All Designs modal', () => {
     await mockProjectsList(page, projects)
     await page.goto('/')
 
-    await page.getByRole('link', { name: /view all designs/i }).click()
+    await page.getByRole('button', { name: /view all designs/i }).click()
     const allDesignsModal = page.getByRole('dialog', { name: /all designs/i })
     await expect(allDesignsModal).toBeVisible()
 
     // Click the ⋮ on the first card inside the modal
-    await allDesignsModal.getByRole('button', { name: /open menu/i }).first().click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await allDesignsModal.getByRole('button', { name: /project options/i }).first().click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     // Rename modal should open pre-filled with that card's name
     const renameModal = page.getByRole('dialog', { name: /rename design/i })
@@ -647,12 +647,12 @@ test.describe('AC18 – rename flow inside the All Designs modal', () => {
     await mockProjectsList(page, updatedProjects)
     await page.goto('/')
 
-    await page.getByRole('link', { name: /view all designs/i }).click()
+    await page.getByRole('button', { name: /view all designs/i }).click()
     const allDesignsModal = page.getByRole('dialog', { name: /all designs/i })
     await expect(allDesignsModal).toBeVisible()
 
-    await allDesignsModal.getByRole('button', { name: /open menu/i }).first().click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await allDesignsModal.getByRole('button', { name: /project options/i }).first().click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
 
     await page.getByLabel(/design name/i).fill('Modal Renamed')
     await page.getByRole('button', { name: /^save$/i }).click()
@@ -682,8 +682,8 @@ test.describe('AC19 – rename only affects the targeted project', () => {
     await expect(page.getByText(PROJECT_B.name)).toBeVisible()
 
     const cards = page.locator('[data-testid="project-card"]')
-    await cards.first().getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await cards.first().getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
     await page.getByLabel(/design name/i).fill('Renamed Alpha')
     await page.getByRole('button', { name: /^save$/i }).click()
 
@@ -728,8 +728,8 @@ test.describe('AC20 – persisted rename survives a page reload', () => {
     await expect(page.getByText(PROJECT_A.name)).toBeVisible()
 
     // Rename
-    await page.getByRole('button', { name: /open menu/i }).click()
-    await page.getByRole('menuitem', { name: /rename/i }).click()
+    await page.getByRole('button', { name: /project options/i }).click()
+    await page.getByRole('button', { name: /^rename$/i }).click()
     await page.getByLabel(/design name/i).fill(RENAMED)
     await page.getByRole('button', { name: /^save$/i }).click()
     await expect(page.getByRole('dialog')).not.toBeVisible()
