@@ -1,20 +1,39 @@
 import type { ProjectSummary } from '../api/projects'
 import { relativeDate } from '../utils/relativeDate'
+import { KebabMenu } from './KebabMenu'
 
 type Props = {
   project: ProjectSummary
   isLoading: boolean
   onClick: () => void
+  onRename: () => void
+  isMenuOpen: boolean
+  onMenuOpenChange: (open: boolean) => void
 }
 
-export function ProjectCard({ project, isLoading, onClick }: Props) {
+export function ProjectCard({
+  project,
+  isLoading,
+  onClick,
+  onRename,
+  isMenuOpen,
+  onMenuOpenChange,
+}: Props) {
   return (
-    <button
-      onClick={onClick}
-      disabled={isLoading}
-      className="group w-full cursor-pointer rounded-lg border border-gray-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70"
+    <div
+      data-testid="project-card"
+      className="group relative w-full rounded-lg border border-gray-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md"
     >
-      <div className="relative h-36 w-full overflow-hidden rounded-t-lg bg-gray-100">
+      {/* Thumbnail area — click to open */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onClick()
+        }}
+        className="relative h-36 w-full cursor-pointer overflow-hidden rounded-t-lg bg-gray-100"
+      >
         {project.thumbnailUrl ? (
           <img
             src={project.thumbnailUrl}
@@ -28,13 +47,34 @@ export function ProjectCard({ project, isLoading, onClick }: Props) {
           </div>
         )}
       </div>
-      <div className="px-3 py-2">
-        <p className="truncate text-sm font-medium text-gray-900">{project.name}</p>
-        <p className="mt-0.5 text-xs text-gray-500">
-          {project.elementCount} element{project.elementCount === 1 ? '' : 's'} ·{' '}
-          {relativeDate(project.updatedAt)}
-        </p>
+
+      {/* Info bar */}
+      <div className="flex items-stretch justify-between px-3 py-2">
+        {/* Left: name + subtitle — click to open */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={onClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onClick()
+          }}
+          className="min-w-0 flex-1 cursor-pointer"
+        >
+          <p className="truncate text-sm font-medium text-gray-900">{project.name}</p>
+          <p className="mt-0.5 text-xs text-gray-500">
+            {project.elementCount} element{project.elementCount === 1 ? '' : 's'} ·{' '}
+            {relativeDate(project.updatedAt)}
+          </p>
+        </div>
+
+        {/* Kebab menu */}
+        <KebabMenu
+          isOpen={isMenuOpen}
+          onOpen={() => onMenuOpenChange(true)}
+          onClose={() => onMenuOpenChange(false)}
+          onRename={onRename}
+        />
       </div>
-    </button>
+    </div>
   )
 }
