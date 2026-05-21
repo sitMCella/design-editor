@@ -23,6 +23,7 @@ const defaultProps = {
   isLoading: false,
   onClick: vi.fn(),
   onRename: vi.fn(),
+  onDelete: vi.fn(),
   isMenuOpen: false,
   onMenuOpenChange: vi.fn(),
 }
