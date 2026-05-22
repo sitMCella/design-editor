@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AllDesignsModal } from './AllDesignsModal'
-import { patchProject } from '../api/projects'
+import { patchProject, deleteProject } from '../api/projects'
 import type { ProjectSummary } from '../api/projects'
 
 vi.mock('../api/projects', () => ({
   patchProject: vi.fn(),
+  deleteProject: vi.fn(),
 }))
 
 const mockPatchProject = vi.mocked(patchProject)
+const mockDeleteProject = vi.mocked(deleteProject)
 
 const projectA: ProjectSummary = {
   id: 'proj-1',
@@ -55,11 +57,13 @@ function setup(overrides: Partial<React.ComponentProps<typeof AllDesignsModal>> 
 
 beforeEach(() => {
   mockPatchProject.mockReset()
+  mockDeleteProject.mockReset()
   mockPatchProject.mockResolvedValue({
     id: 'proj-1',
     name: 'Renamed',
     updatedAt: '2026-05-10T11:00:00Z',
   })
+  mockDeleteProject.mockResolvedValue(undefined)
 })
 
 // ---------------------------------------------------------------------------
@@ -352,6 +356,203 @@ describe('AC18 — rename is per project', () => {
 
     await waitFor(() =>
       expect(mockPatchProject).toHaveBeenCalledWith('proj-2', { name: 'Renamed Beta' })
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC1 (feat24) — Delete item appears in the dropdown inside the modal
+// ---------------------------------------------------------------------------
+
+describe('AC1 (feat24) — Delete item in modal dropdown', () => {
+  it('shows a "Delete" option in the dropdown when ⋮ is clicked on a card inside the modal', () => {
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument()
+  })
+
+  it('Delete item has red text colour inside the modal dropdown', () => {
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    expect(screen.getByRole('button', { name: /^delete$/i })).toHaveClass('text-red-600')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC3 (feat24) — clicking Delete in the modal dropdown opens the confirmation dialog
+// ---------------------------------------------------------------------------
+
+describe('AC3 (feat24) — Delete opens confirmation dialog inside modal', () => {
+  it('opens the confirmation dialog when Delete is clicked', () => {
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    expect(screen.getByRole('dialog', { name: /delete design\?/i })).toBeInTheDocument()
+  })
+
+  it('does not close the all-designs modal when the delete dialog opens', () => {
+    const { onClose } = setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: /all designs/i })).toBeInTheDocument()
+  })
+
+  it('displays the correct project name in the confirmation dialog', () => {
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    expect(screen.getByRole('dialog', { name: /delete design\?/i })).toHaveTextContent('Design Alpha')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC5 (feat24) — Cancel / Escape / backdrop close dialog without API call in modal
+// ---------------------------------------------------------------------------
+
+describe('AC5 (feat24) — Cancel in delete dialog inside modal', () => {
+  it('closes the delete dialog when Cancel is clicked', () => {
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(screen.queryByRole('dialog', { name: /delete design\?/i })).not.toBeInTheDocument()
+  })
+
+  it('does not call deleteProject when Cancel is clicked', () => {
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(mockDeleteProject).not.toHaveBeenCalled()
+  })
+})
+
+describe('AC5 (feat24) — Escape with delete dialog open', () => {
+  it('does not close the all-designs modal via Escape when delete dialog is open', () => {
+    const { onClose } = setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC6 (feat24) — clicking Delete in the dialog calls deleteProject
+// ---------------------------------------------------------------------------
+
+describe('AC6 (feat24) — Delete button in modal calls deleteProject', () => {
+  it('calls deleteProject with the correct project id', async () => {
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    await waitFor(() => expect(mockDeleteProject).toHaveBeenCalledWith('proj-1'))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC7 (feat24) — loading state inside the delete dialog in the modal
+// ---------------------------------------------------------------------------
+
+describe('AC7 (feat24) — loading state in delete dialog inside modal', () => {
+  it('shows a spinner on the Delete button while the API call is pending', async () => {
+    let resolveDelete!: () => void
+    mockDeleteProject.mockReturnValue(new Promise<void>((r) => { resolveDelete = r }))
+
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+
+    await waitFor(() => expect(document.querySelector('.animate-spin')).toBeInTheDocument())
+    act(() => resolveDelete())
+  })
+
+  it('keeps the Cancel button interactive while deletion is pending', async () => {
+    let resolveDelete!: () => void
+    mockDeleteProject.mockReturnValue(new Promise<void>((r) => { resolveDelete = r }))
+
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+
+    await waitFor(() => expect(document.querySelector('.animate-spin')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /cancel/i })).not.toBeDisabled()
+    act(() => resolveDelete())
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC8 (feat24) — on success: dialog closes and designs query is invalidated
+// ---------------------------------------------------------------------------
+
+describe('AC8 (feat24) — successful deletion in modal', () => {
+  it('closes the delete confirmation dialog after a successful delete', async () => {
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /delete design\?/i })).not.toBeInTheDocument()
+    )
+  })
+
+  it('keeps the all-designs modal open after a successful delete', async () => {
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /delete design\?/i })).not.toBeInTheDocument()
+    )
+    expect(screen.getByRole('heading', { name: /all designs/i })).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC9 (feat24) — on error: dialog closes and toast notification appears
+// ---------------------------------------------------------------------------
+
+describe('AC9 (feat24) — delete API error in modal', () => {
+  it('closes the delete dialog after a failed delete', async () => {
+    mockDeleteProject.mockRejectedValue(new Error('Network error'))
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /delete design\?/i })).not.toBeInTheDocument()
+    )
+  })
+
+  it('shows the error toast when deletion fails', async () => {
+    mockDeleteProject.mockRejectedValue(new Error('Network error'))
+    setup()
+    const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
+    fireEvent.click(firstKebab)
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    await waitFor(() =>
+      expect(
+        screen.getByText(/could not delete the design. please try again./i)
+      ).toBeInTheDocument()
     )
   })
 })

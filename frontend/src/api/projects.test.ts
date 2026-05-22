@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getProjects, getProject, createProject, patchProject } from './projects'
+import { getProjects, getProject, createProject, patchProject, deleteProject } from './projects'
 
 const mockFetch = vi.fn()
 
@@ -287,6 +287,48 @@ describe('patchProject', () => {
     await expect(patchProject('abc123', {})).rejects.toMatchObject({
       code: 'INVALID_BODY',
       status: 400,
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// deleteProject (feature 24)
+// ---------------------------------------------------------------------------
+
+describe('deleteProject', () => {
+  it('sends DELETE /api/projects/:id', async () => {
+    mockFetch.mockResolvedValue({
+      status: 204,
+      json: () => Promise.resolve(null),
+    })
+
+    await deleteProject('abc123')
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/projects/abc123',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('resolves without a value on a 204 No Content response', async () => {
+    mockFetch.mockResolvedValue({
+      status: 204,
+      json: () => Promise.resolve(null),
+    })
+
+    await expect(deleteProject('abc123')).resolves.toBeUndefined()
+  })
+
+  it('throws ApiError with NOT_FOUND (404) for an unknown project id', async () => {
+    mockFetch.mockResolvedValue({
+      status: 404,
+      json: () =>
+        Promise.resolve({ ok: false, error: { code: 'NOT_FOUND', message: 'not found' } }),
+    })
+
+    await expect(deleteProject('missing')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      status: 404,
     })
   })
 })
