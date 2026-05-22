@@ -39,6 +39,10 @@ export function createProject(id: string, name: string): Promise<Project> {
   })
 }
 
+export function deleteProject(id: string): Promise<void> {
+  return apiFetch<void>(`/api/projects/${id}`, { method: 'DELETE' })
+}
+
 export function patchProject(
   id: string,
   patch: { name?: string; canvas?: { elements: CanvasElement[]; backgroundColor?: string } }

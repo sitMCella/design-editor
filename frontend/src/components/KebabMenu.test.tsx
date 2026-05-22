@@ -8,6 +8,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof KebabMenu>> = {}) 
     onOpen: vi.fn(),
     onClose: vi.fn(),
     onRename: vi.fn(),
+    onDelete: vi.fn(),
     ...overrides,
   }
   render(<KebabMenu {...props} />)
@@ -68,7 +69,13 @@ describe('event propagation', () => {
     const parentClick = vi.fn()
     render(
       <div onClick={parentClick}>
-        <KebabMenu isOpen={false} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} />
+        <KebabMenu
+          isOpen={false}
+          onOpen={vi.fn()}
+          onClose={vi.fn()}
+          onRename={vi.fn()}
+          onDelete={vi.fn()}
+        />
       </div>
     )
     fireEvent.click(screen.getByRole('button', { name: /project options/i }))
@@ -98,7 +105,13 @@ describe('dropdown portal', () => {
     const parentMouseDown = vi.fn()
     render(
       <div onMouseDown={parentMouseDown}>
-        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} />
+        <KebabMenu
+          isOpen={true}
+          onOpen={vi.fn()}
+          onClose={vi.fn()}
+          onRename={vi.fn()}
+          onDelete={vi.fn()}
+        />
       </div>
     )
     fireEvent.mouseDown(screen.getByRole('button', { name: /rename/i }))
@@ -121,10 +134,94 @@ describe('Rename action', () => {
     const parentClick = vi.fn()
     render(
       <div onClick={parentClick}>
-        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} />
+        <KebabMenu
+          isOpen={true}
+          onOpen={vi.fn()}
+          onClose={vi.fn()}
+          onRename={vi.fn()}
+          onDelete={vi.fn()}
+        />
       </div>
     )
     fireEvent.click(screen.getByRole('button', { name: /rename/i }))
+    expect(parentClick).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC1 (feat24) — Delete item appears in dropdown with red styling
+// ---------------------------------------------------------------------------
+
+describe('AC1 (feat24) — Delete item in dropdown', () => {
+  it('renders the "Delete" option in the dropdown when isOpen is true', () => {
+    setup({ isOpen: true })
+    expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument()
+  })
+
+  it('does not render the Delete option when isOpen is false', () => {
+    setup({ isOpen: false })
+    expect(screen.queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument()
+  })
+
+  it('Delete item has red text colour (text-red-600)', () => {
+    setup({ isOpen: true })
+    expect(screen.getByRole('button', { name: /^delete$/i })).toHaveClass('text-red-600')
+  })
+
+  it('Delete item has red hover background (hover:bg-red-50)', () => {
+    setup({ isOpen: true })
+    expect(screen.getByRole('button', { name: /^delete$/i })).toHaveClass('hover:bg-red-50')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC2 (feat24) — Delete is separated from Rename by a horizontal divider
+// ---------------------------------------------------------------------------
+
+describe('AC2 (feat24) — divider between Rename and Delete', () => {
+  it('renders a border-t divider between the Rename and Delete buttons', () => {
+    setup({ isOpen: true })
+    const renameBtn = screen.getByRole('button', { name: /rename/i })
+    const deleteBtn = screen.getByRole('button', { name: /^delete$/i })
+    const divider = renameBtn.nextElementSibling
+    expect(divider).not.toBeNull()
+    expect(divider).toHaveClass('border-t')
+    expect(divider?.nextElementSibling).toBe(deleteBtn)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// AC3 (feat24) — selecting Delete calls onDelete
+// ---------------------------------------------------------------------------
+
+describe('AC3 (feat24) — Delete action', () => {
+  it('calls onDelete when the Delete option is clicked', () => {
+    const { onDelete } = setup({ isOpen: true })
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    expect(onDelete).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not call onRename when Delete is clicked', () => {
+    const { onRename, onDelete } = setup({ isOpen: true })
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    expect(onDelete).toHaveBeenCalledTimes(1)
+    expect(onRename).not.toHaveBeenCalled()
+  })
+
+  it('stops click propagation from the Delete button', () => {
+    const parentClick = vi.fn()
+    render(
+      <div onClick={parentClick}>
+        <KebabMenu
+          isOpen={true}
+          onOpen={vi.fn()}
+          onClose={vi.fn()}
+          onRename={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      </div>
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
     expect(parentClick).not.toHaveBeenCalled()
   })
 })

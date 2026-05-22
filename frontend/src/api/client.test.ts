@@ -47,8 +47,17 @@ describe('apiFetch — success', () => {
     expect(vi.mocked(fetch)).toHaveBeenCalledWith('/api/projects', expect.objectContaining({}))
   })
 
-  it('includes Content-Type: application/json header', async () => {
+  it('omits Content-Type header when no body is provided', async () => {
     await apiFetch('/api/projects')
+    const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).headers as Record<
+      string,
+      string
+    >
+    expect(headers['Content-Type']).toBeUndefined()
+  })
+
+  it('includes Content-Type: application/json header when a body is provided', async () => {
+    await apiFetch('/api/projects', { method: 'POST', body: '{"name":"x"}' })
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
       '/api/projects',
       expect.objectContaining({
@@ -70,17 +79,19 @@ describe('apiFetch — success', () => {
     )
   })
 
-  it('merges caller headers with the default Content-Type header', async () => {
+  it('merges caller headers and omits Content-Type when no body is provided', async () => {
     await apiFetch('/api/projects', { headers: { Authorization: 'Bearer token' } })
     expect(vi.mocked(fetch)).toHaveBeenCalledWith(
       '/api/projects',
       expect.objectContaining({
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer token',
-        }),
+        headers: expect.objectContaining({ Authorization: 'Bearer token' }),
       })
     )
+    const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).headers as Record<
+      string,
+      string
+    >
+    expect(headers['Content-Type']).toBeUndefined()
   })
 })
 
