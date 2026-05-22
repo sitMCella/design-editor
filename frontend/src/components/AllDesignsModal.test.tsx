@@ -407,7 +407,9 @@ describe('AC3 (feat24) — Delete opens confirmation dialog inside modal', () =>
     const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
     fireEvent.click(firstKebab)
     fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
-    expect(screen.getByRole('dialog', { name: /delete design\?/i })).toHaveTextContent('Design Alpha')
+    expect(screen.getByRole('dialog', { name: /delete design\?/i })).toHaveTextContent(
+      'Design Alpha'
+    )
   })
 })
 
@@ -468,7 +470,11 @@ describe('AC6 (feat24) — Delete button in modal calls deleteProject', () => {
 describe('AC7 (feat24) — loading state in delete dialog inside modal', () => {
   it('shows a spinner on the Delete button while the API call is pending', async () => {
     let resolveDelete!: () => void
-    mockDeleteProject.mockReturnValue(new Promise<void>((r) => { resolveDelete = r }))
+    mockDeleteProject.mockReturnValue(
+      new Promise<void>((r) => {
+        resolveDelete = r
+      })
+    )
 
     setup()
     const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })
@@ -482,7 +488,11 @@ describe('AC7 (feat24) — loading state in delete dialog inside modal', () => {
 
   it('keeps the Cancel button interactive while deletion is pending', async () => {
     let resolveDelete!: () => void
-    mockDeleteProject.mockReturnValue(new Promise<void>((r) => { resolveDelete = r }))
+    mockDeleteProject.mockReturnValue(
+      new Promise<void>((r) => {
+        resolveDelete = r
+      })
+    )
 
     setup()
     const [firstKebab] = screen.getAllByRole('button', { name: /project options/i })

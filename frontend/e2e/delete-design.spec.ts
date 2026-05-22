@@ -50,11 +50,7 @@ async function mockProjectsList(page: Page, projects: ProjectSummary[]) {
   })
 }
 
-async function mockDeleteProject(
-  page: Page,
-  projectId: string,
-  opts: { fail?: boolean } = {},
-) {
+async function mockDeleteProject(page: Page, projectId: string, opts: { fail?: boolean } = {}) {
   await page.route(new RegExp(`/api/projects/${projectId}$`), async (route) => {
     if (route.request().method() !== 'DELETE') {
       await route.continue()
@@ -107,12 +103,18 @@ test.describe('AC1 – Delete item in kebab dropdown', () => {
     const cards = page.locator('[data-testid="project-card"]')
 
     // First card
-    await cards.first().getByRole('button', { name: /project options/i }).click()
+    await cards
+      .first()
+      .getByRole('button', { name: /project options/i })
+      .click()
     await expect(page.getByRole('button', { name: /^delete$/i })).toBeVisible()
     await page.keyboard.press('Escape')
 
     // Second card
-    await cards.last().getByRole('button', { name: /project options/i }).click()
+    await cards
+      .last()
+      .getByRole('button', { name: /project options/i })
+      .click()
     await expect(page.getByRole('button', { name: /^delete$/i })).toBeVisible()
   })
 })
@@ -318,7 +320,9 @@ test.describe('AC7 – loading state while API call is in flight', () => {
     await mockApiRoutes(page)
   })
 
-  test('AC7: Delete button shows spinner and is non-interactive while loading', async ({ page }) => {
+  test('AC7: Delete button shows spinner and is non-interactive while loading', async ({
+    page,
+  }) => {
     // Intercept and delay the DELETE so we can inspect the loading state
     await page.route(new RegExp(`/api/projects/${PROJECT_A.id}$`), async (route) => {
       if (route.request().method() === 'DELETE') {
@@ -388,7 +392,10 @@ test.describe('AC8 – successful deletion removes the card', () => {
 
     await page.getByRole('button', { name: /project options/i }).click()
     await page.getByRole('button', { name: /^delete$/i }).click()
-    await page.getByRole('dialog').getByRole('button', { name: /^delete$/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^delete$/i })
+      .click()
 
     await expect(page.getByRole('dialog')).not.toBeVisible()
   })
@@ -420,7 +427,10 @@ test.describe('AC8 – successful deletion removes the card', () => {
       .getByRole('button', { name: /project options/i })
       .click()
     await page.getByRole('button', { name: /^delete$/i }).click()
-    await page.getByRole('dialog').getByRole('button', { name: /^delete$/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^delete$/i })
+      .click()
 
     await expect(page.getByRole('dialog')).not.toBeVisible()
     await expect(page.getByText(PROJECT_A.name)).not.toBeVisible()
@@ -442,7 +452,10 @@ test.describe('AC9 – API error shows toast notification', () => {
 
     await page.getByRole('button', { name: /project options/i }).click()
     await page.getByRole('button', { name: /^delete$/i }).click()
-    await page.getByRole('dialog').getByRole('button', { name: /^delete$/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^delete$/i })
+      .click()
 
     await expect(page.getByRole('dialog')).not.toBeVisible()
   })
@@ -453,11 +466,12 @@ test.describe('AC9 – API error shows toast notification', () => {
 
     await page.getByRole('button', { name: /project options/i }).click()
     await page.getByRole('button', { name: /^delete$/i }).click()
-    await page.getByRole('dialog').getByRole('button', { name: /^delete$/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^delete$/i })
+      .click()
 
-    await expect(
-      page.getByText(/could not delete the design/i),
-    ).toBeVisible()
+    await expect(page.getByText(/could not delete the design/i)).toBeVisible()
   })
 
   test('AC9: the toast auto-dismisses after 4 seconds', async ({ page }) => {
@@ -466,7 +480,10 @@ test.describe('AC9 – API error shows toast notification', () => {
 
     await page.getByRole('button', { name: /project options/i }).click()
     await page.getByRole('button', { name: /^delete$/i }).click()
-    await page.getByRole('dialog').getByRole('button', { name: /^delete$/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^delete$/i })
+      .click()
 
     await expect(page.getByText(/could not delete the design/i)).toBeVisible()
 
@@ -510,7 +527,10 @@ test.describe('AC10 – deletion is permanent', () => {
 
     await page.getByRole('button', { name: /project options/i }).click()
     await page.getByRole('button', { name: /^delete$/i }).click()
-    await page.getByRole('dialog').getByRole('button', { name: /^delete$/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^delete$/i })
+      .click()
     await expect(page.getByRole('dialog')).not.toBeVisible()
 
     await page.reload()
@@ -637,7 +657,10 @@ test.describe('AC11 – delete from AllDesignsModal', () => {
       .first()
       .click()
     await page.getByRole('button', { name: /^delete$/i }).click()
-    await page.getByRole('dialog', { name: /delete design/i }).getByRole('button', { name: /^delete$/i }).click()
+    await page
+      .getByRole('dialog', { name: /delete design/i })
+      .getByRole('button', { name: /^delete$/i })
+      .click()
 
     await expect(page.getByRole('dialog', { name: /delete design/i })).not.toBeVisible()
 
@@ -683,7 +706,10 @@ test.describe('AC12 – delete only affects the targeted project', () => {
       .getByRole('button', { name: /project options/i })
       .click()
     await page.getByRole('button', { name: /^delete$/i }).click()
-    await page.getByRole('dialog').getByRole('button', { name: /^delete$/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^delete$/i })
+      .click()
 
     await expect(page.getByRole('dialog')).not.toBeVisible()
     await expect(page.getByText(PROJECT_B.name)).toBeVisible()

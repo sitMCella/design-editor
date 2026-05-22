@@ -227,7 +227,11 @@ describe('AC6 — Delete button calls deleteProject', () => {
 describe('AC7 — loading state while delete is in flight', () => {
   it('shows a spinner on the Delete button while the API call is pending', async () => {
     let resolveDelete!: () => void
-    mockDeleteProject.mockReturnValue(new Promise<void>((r) => { resolveDelete = r }))
+    mockDeleteProject.mockReturnValue(
+      new Promise<void>((r) => {
+        resolveDelete = r
+      })
+    )
 
     renderPage()
     await openDeleteDialog()
@@ -239,7 +243,11 @@ describe('AC7 — loading state while delete is in flight', () => {
 
   it('disables the Delete button while the API call is pending', async () => {
     let resolveDelete!: () => void
-    mockDeleteProject.mockReturnValue(new Promise<void>((r) => { resolveDelete = r }))
+    mockDeleteProject.mockReturnValue(
+      new Promise<void>((r) => {
+        resolveDelete = r
+      })
+    )
 
     renderPage()
     await openDeleteDialog()
@@ -251,7 +259,11 @@ describe('AC7 — loading state while delete is in flight', () => {
 
   it('keeps the Cancel button interactive while the API call is pending', async () => {
     let resolveDelete!: () => void
-    mockDeleteProject.mockReturnValue(new Promise<void>((r) => { resolveDelete = r }))
+    mockDeleteProject.mockReturnValue(
+      new Promise<void>((r) => {
+        resolveDelete = r
+      })
+    )
 
     renderPage()
     await openDeleteDialog()
@@ -328,9 +340,7 @@ describe('AC9 — delete API error', () => {
 describe('AC12 — deleting one project does not affect others', () => {
   it('only removes the deleted project from the list; the other card remains', async () => {
     // First fetch returns two projects; after deletion, re-fetch returns only projectB
-    mockGetProjects
-      .mockResolvedValueOnce([projectA, projectB])
-      .mockResolvedValue([projectB])
+    mockGetProjects.mockResolvedValueOnce([projectA, projectB]).mockResolvedValue([projectB])
 
     renderPage()
     await waitFor(() => screen.getByText('Design Alpha'))

@@ -69,7 +69,13 @@ describe('event propagation', () => {
     const parentClick = vi.fn()
     render(
       <div onClick={parentClick}>
-        <KebabMenu isOpen={false} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} onDelete={vi.fn()} />
+        <KebabMenu
+          isOpen={false}
+          onOpen={vi.fn()}
+          onClose={vi.fn()}
+          onRename={vi.fn()}
+          onDelete={vi.fn()}
+        />
       </div>
     )
     fireEvent.click(screen.getByRole('button', { name: /project options/i }))
@@ -99,7 +105,13 @@ describe('dropdown portal', () => {
     const parentMouseDown = vi.fn()
     render(
       <div onMouseDown={parentMouseDown}>
-        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} onDelete={vi.fn()} />
+        <KebabMenu
+          isOpen={true}
+          onOpen={vi.fn()}
+          onClose={vi.fn()}
+          onRename={vi.fn()}
+          onDelete={vi.fn()}
+        />
       </div>
     )
     fireEvent.mouseDown(screen.getByRole('button', { name: /rename/i }))
@@ -122,7 +134,13 @@ describe('Rename action', () => {
     const parentClick = vi.fn()
     render(
       <div onClick={parentClick}>
-        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} onDelete={vi.fn()} />
+        <KebabMenu
+          isOpen={true}
+          onOpen={vi.fn()}
+          onClose={vi.fn()}
+          onRename={vi.fn()}
+          onDelete={vi.fn()}
+        />
       </div>
     )
     fireEvent.click(screen.getByRole('button', { name: /rename/i }))
@@ -194,7 +212,13 @@ describe('AC3 (feat24) — Delete action', () => {
     const parentClick = vi.fn()
     render(
       <div onClick={parentClick}>
-        <KebabMenu isOpen={true} onOpen={vi.fn()} onClose={vi.fn()} onRename={vi.fn()} onDelete={vi.fn()} />
+        <KebabMenu
+          isOpen={true}
+          onOpen={vi.fn()}
+          onClose={vi.fn()}
+          onRename={vi.fn()}
+          onDelete={vi.fn()}
+        />
       </div>
     )
     fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))

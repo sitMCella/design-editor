@@ -8,7 +8,13 @@ import { ProjectCardSkeleton } from '../components/ProjectCardSkeleton'
 import { AllDesignsModal } from '../components/AllDesignsModal'
 import { RenameModal } from '../components/RenameModal'
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal'
-import { createProject, deleteProject, getProject, getProjects, patchProject } from '../api/projects'
+import {
+  createProject,
+  deleteProject,
+  getProject,
+  getProjects,
+  patchProject,
+} from '../api/projects'
 
 const RECENT_LIMIT = 6
 

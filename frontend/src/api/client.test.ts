@@ -49,7 +49,10 @@ describe('apiFetch — success', () => {
 
   it('omits Content-Type header when no body is provided', async () => {
     await apiFetch('/api/projects')
-    const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).headers as Record<string, string>
+    const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).headers as Record<
+      string,
+      string
+    >
     expect(headers['Content-Type']).toBeUndefined()
   })
 
@@ -84,7 +87,10 @@ describe('apiFetch — success', () => {
         headers: expect.objectContaining({ Authorization: 'Bearer token' }),
       })
     )
-    const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).headers as Record<string, string>
+    const headers = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).headers as Record<
+      string,
+      string
+    >
     expect(headers['Content-Type']).toBeUndefined()
   })
 })

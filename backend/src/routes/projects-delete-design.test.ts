@@ -81,9 +81,7 @@ describe('DELETE /api/projects/:id (feature 24 — delete design)', () => {
   });
 
   it('attempts to remove the thumbnail file after deleting the row', async () => {
-    mockSql
-      .mockResolvedValueOnce([{ id: 'proj-3' }])
-      .mockResolvedValueOnce([]);
+    mockSql.mockResolvedValueOnce([{ id: 'proj-3' }]).mockResolvedValueOnce([]);
 
     await app.inject({ method: 'DELETE', url: '/api/projects/proj-3' });
 
@@ -93,9 +91,7 @@ describe('DELETE /api/projects/:id (feature 24 — delete design)', () => {
   });
 
   it('returns 204 and skips silently when the thumbnail file does not exist', async () => {
-    mockSql
-      .mockResolvedValueOnce([{ id: 'proj-no-thumb' }])
-      .mockResolvedValueOnce([]);
+    mockSql.mockResolvedValueOnce([{ id: 'proj-no-thumb' }]).mockResolvedValueOnce([]);
     // Simulate the file not being present
     mockUnlink.mockRejectedValueOnce(
       Object.assign(new Error('ENOENT: no such file or directory'), { code: 'ENOENT' }),
@@ -150,9 +146,7 @@ describe('DELETE /api/projects/:id (feature 24 — delete design)', () => {
 
   it('deleting one project does not affect another project (AC12)', async () => {
     // Delete project A
-    mockSql
-      .mockResolvedValueOnce([{ id: 'proj-a' }])
-      .mockResolvedValueOnce([]);
+    mockSql.mockResolvedValueOnce([{ id: 'proj-a' }]).mockResolvedValueOnce([]);
 
     const deleteResp = await app.inject({
       method: 'DELETE',
@@ -183,9 +177,7 @@ describe('DELETE /api/projects/:id (feature 24 — delete design)', () => {
   // -------------------------------------------------------------------------
 
   it('requires no authentication', async () => {
-    mockSql
-      .mockResolvedValueOnce([{ id: 'proj-noauth' }])
-      .mockResolvedValueOnce([]);
+    mockSql.mockResolvedValueOnce([{ id: 'proj-noauth' }]).mockResolvedValueOnce([]);
 
     const response = await app.inject({
       method: 'DELETE',
@@ -202,9 +194,7 @@ describe('DELETE /api/projects/:id (feature 24 — delete design)', () => {
 
   it('the deleted project does not appear in the subsequent project list (AC8, AC10)', async () => {
     // Delete
-    mockSql
-      .mockResolvedValueOnce([{ id: 'proj-gone' }])
-      .mockResolvedValueOnce([]);
+    mockSql.mockResolvedValueOnce([{ id: 'proj-gone' }]).mockResolvedValueOnce([]);
 
     await app.inject({ method: 'DELETE', url: '/api/projects/proj-gone' });
 
@@ -229,9 +219,7 @@ describe('DELETE /api/projects/:id (feature 24 — delete design)', () => {
 
   it('GET /api/projects/:id returns 404 after deletion (AC10)', async () => {
     // Delete
-    mockSql
-      .mockResolvedValueOnce([{ id: 'proj-del' }])
-      .mockResolvedValueOnce([]);
+    mockSql.mockResolvedValueOnce([{ id: 'proj-del' }]).mockResolvedValueOnce([]);
 
     await app.inject({ method: 'DELETE', url: '/api/projects/proj-del' });
 
